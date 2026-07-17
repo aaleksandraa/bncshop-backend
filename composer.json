@@ -59,6 +59,7 @@
             "@php artisan test"
         ],
         "post-autoload-dump": [
+            "@php scripts/ensure-valid-env.php",
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
             "@php artisan package:discover --ansi",
             "@php artisan filament:upgrade"
@@ -67,7 +68,7 @@
             "@php artisan vendor:publish --tag=laravel-assets --ansi --force"
         ],
         "post-root-package-install": [
-            "@php -r \"file_exists('.env') || copy('.env.example', '.env');\""
+            "@php scripts/ensure-valid-env.php"
         ],
         "post-create-project-cmd": [
             "@php artisan key:generate --ansi",
