@@ -1,0 +1,26 @@
+{
+  "productAttributeDefinitionId": "8a8a06a5-7233-4629-9e51-8ba0189b8cb6",
+  "name": "3D",
+  "externalId": null,
+  "olxId": 3108,
+  "olxName": "3D",
+  "type": 2,
+  "isPublic": true,
+  "isFilter": true,
+  "olxRequired": false,
+  "optionsJson": null,
+  "categories": [
+    {
+      "categoryId": "227925eb-0811-41fc-b009-34778f5822c8",
+      "name": "Opcije"
+    },
+    {
+      "categoryId": "7d697b0e-b001-48d0-b230-4dc487c2cf3d",
+      "name": "Projektori"
+    },
+    {
+      "categoryId": "80bf5f05-5931-4e51-a63c-deb9d0f56ac8",
+      "name": "Projektori"
+    }
+  ]
+}

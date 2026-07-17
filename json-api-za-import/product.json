@@ -1,0 +1,238 @@
+{
+  "data": [
+    {
+      "productId": "a6026481-6560-4c05-9aac-b469f5ce3b5e",
+      "name": "HP ScanJet Pro 2600 f1",
+      "slug": "hp-scanjet-pro-2600-f1",
+      "manufacturer": {
+        "manufacturerId": "145f78da-2974-4ec9-99c4-b135497fbd13",
+        "name": "HP",
+        "slug": "hp",
+        "externalId": null,
+        "system": true,
+        "featured": true,
+        "description": null,
+        "metaTitle": null,
+        "metaDescription": null,
+        "logoId": null,
+        "logo": null,
+        "categorySeoOverrides": []
+      },
+      "category": {
+        "categoryId": "0ecc3f08-28e8-4742-aabf-52bb11fdb65b",
+        "name": "Skeneri",
+        "slug": "print-kancelarija/skeneri",
+        "description": "U kategoriji skenera dostupni su različiti modeli koji su savršeni za efikasno skeniranje dokumenata, slika i drugih materijala, kako za kancelarijske tako i za kućne potrebe. Ovi uređaji nude razne funkcionalnosti, uključujući mogućnost skeniranja u boji, brzinu ispisa, kapacitet automatskog hranjenja dokumenata te različite rezolucije skeniranja. Prilikom izbora skenera, razmislite o tome koliko često planirate koristiti uređaj, koje vrste dokumenata ćete skenirati i da li su vam potrebne dodatne funkcije poput wireless povezivanja ili multifunkcionalnosti. Naši skeneri su pouzdani i prilagođeni potrebama korisnika u Bosni i Hercegovini, a uz to nude i različite garancije koje dodatno osiguravaju vašu investiciju. Pregledajte našu ponudu i pronađite pravi skener koji će vam olakšati svakodnevne zadatke.",
+        "shortDescription": "U našoj ponudi skenera pronaći ćete modele za efikasno skeniranje dokumenata, slika i više. Idealni su za poslovne korisnike i domaće potrebe.",
+        "externalId": null,
+        "parentId": "167b85b7-c1c3-427e-bcaa-cf0456819d07",
+        "parentName": null,
+        "marginId": "3b53c8fe-22bb-443a-a93b-e2862dca820d",
+        "marginName": "Skeneri",
+        "marginPercentage": 23,
+        "olxId": 166,
+        "olxName": "Printer, skener i kopir aparati",
+        "system": true,
+        "imageId": null,
+        "imageUrl": null,
+        "iconId": null,
+        "iconUrl": null,
+        "metaTitle": "Skeneri za kancelariju i dom | A1 Team Technoshop",
+        "metaDescription": "Otkrijte kvalitetne skenerе za kancelarijske i kućne potrebe u BiH.",
+        "ogImageId": null,
+        "ogImageUrl": null
+      },
+      "isGaming": false,
+      "isPublic": false,
+      "description": "HP ScanJet Pro 2600 f1 je napredni skener dizajniran za poslovne korisnike koji traže efikasnost i kvalitetu u skeniranju dokumenata. Ovaj skener omogućava brzo i jednostavno skeniranje uz visoku preciznost, što ga čini idealnim rješenjem za uredske prostore. Osim toga, podržava različite formate skeniranja, olakšavajući tako upravljanje dokumentima.\n\nKljučne karakteristike:\n- Visoka rezolucija skeniranja za oštre i jasne slike\n- Brzo skeniranje više stranica zahvaljujući automatskom hranjenju papira\n- Kompaktan dizajn koji štedi prostor u uredu\n- Jednostavna upotreba uz intuitivan korisnički interfejs\n\nPreporučena upotreba:\n- Uredski skener za digitalizaciju dokumenata\n- Skeniranje ugovora, izvještaja i drugih važnih dokumenata\n- Idealno za male i srednje poslovne korisnike\n\nNapomena:\n- Provjerite kompatibilnost sa vašim operativnim sistemom prije kupovine.",
+      "shortDescription": "HP ScanJet Pro 2600 f1 je efikasan skener za poslovne korisnike.\n- Visoka rezolucija\n- Brzo skeniranje\n- Kompaktan dizajn\n- Jednostavna upotreba",
+      "barcode": "195697673863",
+      "marginPercentage": 23,
+      "isNew": true,
+      "price": 809,
+      "finalPrice": 809,
+      "rebate": null,
+      "rebateValidUntil": null,
+      "rebateType": 0,
+      "stock": 0,
+      "viewsCount": 0,
+      "attributes": [
+        {
+          "attribute": "e3ac54bb-a6bc-48f3-905a-42c16b59e01a",
+          "attributeId": "e3ac54bb-a6bc-48f3-905a-42c16b59e01a",
+          "attributeName": "ADAPTER_SC",
+          "externalId": null,
+          "value": "Ne"
+        },
+        {
+          "attribute": "7983ea06-2481-4d93-85ea-1aa733c3d528",
+          "attributeId": "7983ea06-2481-4d93-85ea-1aa733c3d528",
+          "attributeName": "BACKSIDE_SC",
+          "externalId": null,
+          "value": "true"
+        },
+        {
+          "attribute": "f0de2517-01df-4303-9d47-4776dcadce0e",
+          "attributeId": "f0de2517-01df-4303-9d47-4776dcadce0e",
+          "attributeName": "Brzina ispisa (str. u minuti)",
+          "externalId": null,
+          "value": "25"
+        },
+        {
+          "attribute": "728e69b4-39a5-45e0-aa1f-02ad3ea37a47",
+          "attributeId": "728e69b4-39a5-45e0-aa1f-02ad3ea37a47",
+          "attributeName": "CAPACITYADF",
+          "externalId": null,
+          "value": "60"
+        },
+        {
+          "attribute": "1a4a3df6-b420-41db-bc53-0c3c4eb669bb",
+          "attributeId": "1a4a3df6-b420-41db-bc53-0c3c4eb669bb",
+          "attributeName": "DPI",
+          "externalId": null,
+          "value": "1200"
+        },
+        {
+          "attribute": "4933f5e9-206a-4f45-a112-5c743779bf4d",
+          "attributeId": "4933f5e9-206a-4f45-a112-5c743779bf4d",
+          "attributeName": "FLATBED",
+          "externalId": null,
+          "value": "true"
+        },
+        {
+          "attribute": "28837763-cc7d-4251-8b27-834cee052a28",
+          "attributeId": "28837763-cc7d-4251-8b27-834cee052a28",
+          "attributeName": "FORMAT_SC",
+          "externalId": null,
+          "value": "A4"
+        },
+        {
+          "attribute": "95523716-a5ef-4c73-84fe-b0380519f0fb",
+          "attributeId": "95523716-a5ef-4c73-84fe-b0380519f0fb",
+          "attributeName": "MAXPGD_SC",
+          "externalId": null,
+          "value": "1500"
+        },
+        {
+          "attribute": "aac5dc35-01dd-4939-8c96-11aed69a774f",
+          "attributeId": "aac5dc35-01dd-4939-8c96-11aed69a774f",
+          "attributeName": "Model",
+          "externalId": null,
+          "value": "HP ScanJet Pro 2600f1"
+        },
+        {
+          "attribute": "3d65d1c5-2624-44c4-a19a-5cf2891be5a9",
+          "attributeId": "3d65d1c5-2624-44c4-a19a-5cf2891be5a9",
+          "attributeName": "Multifunkcijski",
+          "externalId": null,
+          "value": "false"
+        },
+        {
+          "attribute": "11da0b8d-d29b-44c6-93ab-1cd6346e4504",
+          "attributeId": "11da0b8d-d29b-44c6-93ab-1cd6346e4504",
+          "attributeName": "TECHNOLOGY_SC",
+          "externalId": null,
+          "value": "CIS"
+        },
+        {
+          "attribute": "c687543c-9019-4b8a-9917-613331428332",
+          "attributeId": "c687543c-9019-4b8a-9917-613331428332",
+          "attributeName": "Tip uređaja",
+          "externalId": null,
+          "value": "Skener"
+        }
+      ],
+      "gallery": [
+        {
+          "imageId": "4d247cab-403f-4b0a-a320-0aa2cf5ff6a0",
+          "imageUrl": "https://eu2.contabostorage.com/5c48f6820af84834bf563437f78bc8b1:mm-shop/images/4d247cab-403f-4b0a-a320-0aa2cf5ff6a0.webp",
+          "image": {
+            "storedFileId": "4d247cab-403f-4b0a-a320-0aa2cf5ff6a0",
+            "storageKey": "images/4d247cab-403f-4b0a-a320-0aa2cf5ff6a0.webp",
+            "publicUrl": "https://eu2.contabostorage.com/5c48f6820af84834bf563437f78bc8b1:mm-shop/images/4d247cab-403f-4b0a-a320-0aa2cf5ff6a0.webp",
+            "sourceUrl": "http://www.ct4partners.ba/UploadDownload/ProductImages/20G05A_220810040834332.png",
+            "originalFileName": "20G05A_220810040834332.png",
+            "storedFileName": "4d247cab-403f-4b0a-a320-0aa2cf5ff6a0.webp",
+            "contentType": "image/webp",
+            "fileExtension": "webp",
+            "fileSizeBytes": 310456,
+            "fileType": 0,
+            "isPublic": true,
+            "width": null,
+            "height": null
+          },
+          "isPrimary": true
+        },
+        {
+          "imageId": "b6bade42-c1ae-41a5-8510-41197ecff074",
+          "imageUrl": "https://eu2.contabostorage.com/5c48f6820af84834bf563437f78bc8b1:mm-shop/images/b6bade42-c1ae-41a5-8510-41197ecff074.webp",
+          "image": {
+            "storedFileId": "b6bade42-c1ae-41a5-8510-41197ecff074",
+            "storageKey": "images/b6bade42-c1ae-41a5-8510-41197ecff074.webp",
+            "publicUrl": "https://eu2.contabostorage.com/5c48f6820af84834bf563437f78bc8b1:mm-shop/images/b6bade42-c1ae-41a5-8510-41197ecff074.webp",
+            "sourceUrl": "http://www.ct4partners.ba/UploadDownload/ProductImages/20G05A_220810040837624.png",
+            "originalFileName": "20G05A_220810040837624.png",
+            "storedFileName": "b6bade42-c1ae-41a5-8510-41197ecff074.webp",
+            "contentType": "image/webp",
+            "fileExtension": "webp",
+            "fileSizeBytes": 208424,
+            "fileType": 0,
+            "isPublic": true,
+            "width": null,
+            "height": null
+          },
+          "isPrimary": false
+        },
+        {
+          "imageId": "9e17574a-1535-45e6-9044-cc1d2b3d5b85",
+          "imageUrl": "https://eu2.contabostorage.com/5c48f6820af84834bf563437f78bc8b1:mm-shop/images/9e17574a-1535-45e6-9044-cc1d2b3d5b85.webp",
+          "image": {
+            "storedFileId": "9e17574a-1535-45e6-9044-cc1d2b3d5b85",
+            "storageKey": "images/9e17574a-1535-45e6-9044-cc1d2b3d5b85.webp",
+            "publicUrl": "https://eu2.contabostorage.com/5c48f6820af84834bf563437f78bc8b1:mm-shop/images/9e17574a-1535-45e6-9044-cc1d2b3d5b85.webp",
+            "sourceUrl": "http://www.ct4partners.ba/UploadDownload/ProductImages/20G05A_220810040839969.png",
+            "originalFileName": "20G05A_220810040839969.png",
+            "storedFileName": "9e17574a-1535-45e6-9044-cc1d2b3d5b85.webp",
+            "contentType": "image/webp",
+            "fileExtension": "webp",
+            "fileSizeBytes": 212550,
+            "fileType": 0,
+            "isPublic": true,
+            "width": null,
+            "height": null
+          },
+          "isPrimary": false
+        }
+      ],
+      "defaultImageId": "4d247cab-403f-4b0a-a320-0aa2cf5ff6a0",
+      "defaultImageUrl": "https://eu2.contabostorage.com/5c48f6820af84834bf563437f78bc8b1:mm-shop/images/4d247cab-403f-4b0a-a320-0aa2cf5ff6a0.webp",
+      "olxListingId": null,
+      "olxSyncedAt": null,
+      "olxLastError": null,
+      "seoFields": {
+        "metaTitle": "HP ScanJet Pro 2600 f1 - Efikasan skener",
+        "metaDescription": "Kupite HP ScanJet Pro 2600 f1, napredni skener za brzo i kvalitetno skeniranje dokumenata. Idealno za poslovne korisnike!",
+        "ogImageId": null,
+        "ogImageUrl": null
+      },
+      "supplierOffers": [
+        {
+          "supplierId": "d79213a7-15d1-43a0-8d4c-54e418e89ba8",
+          "supplierName": "comtrade",
+          "supplierSku": "20G05A",
+          "supplierPrice": 559.2,
+          "supplierStock": 0,
+          "isSelectedPriceSource": true
+        }
+      ]
+    }
+  ],
+  "pagination": {
+    "totalRecords": 5777,
+    "totalPages": 5777,
+    "currentPage": 1,
+    "pageSize": 1,
+    "nextPage": 2,
+    "previousPage": null
+  }
+}

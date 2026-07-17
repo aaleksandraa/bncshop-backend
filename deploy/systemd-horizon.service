@@ -1,0 +1,24 @@
+; systemd unit for Laravel Horizon (alternative to Supervisor)
+; Copy to /etc/systemd/system/bncshop-horizon.service and adjust paths.
+;
+;   sudo systemctl daemon-reload
+;   sudo systemctl enable bncshop-horizon
+;   sudo systemctl start bncshop-horizon
+
+[Unit]
+Description=BNC Webshop Laravel Horizon
+After=network.target redis.service
+
+[Service]
+Type=simple
+User=plesk-user
+Group=psacln
+WorkingDirectory=/var/www/vhosts/DOMAIN/bncshop-backend
+ExecStart=/usr/bin/php artisan horizon
+Restart=always
+RestartSec=5
+StopSignal=SIGTERM
+TimeoutStopSec=3600
+
+[Install]
+WantedBy=multi-user.target

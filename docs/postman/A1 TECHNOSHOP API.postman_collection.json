@@ -1,0 +1,2545 @@
+{
+  "info": {
+    "_postman_id": "1d543806-2c92-48d3-af82-e84f0731b02b",
+    "name": "A1 TECHNOSHOP API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "54461694",
+    "_collection_link": "https://go.postman.co/collection/54461694-1d543806-2c92-48d3-af82-e84f0731b02b?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "api",
+      "item": [
+        {
+          "name": "auth",
+          "item": [
+            {
+              "name": "login",
+              "item": [
+                {
+                  "name": "/api/auth/login",
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"password\": \"string\",\n  \"username\": \"string\"\n}",
+                      "options": {
+                        "raw": {
+                          "headerFamily": "json",
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{baseUrl}}/api/auth/login",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "api",
+                        "auth",
+                        "login"
+                      ]
+                    }
+                  },
+                  "response": [
+                    {
+                      "name": "OK",
+                      "originalRequest": {
+                        "method": "POST",
+                        "header": [
+                          {
+                            "key": "Content-Type",
+                            "value": "application/json"
+                          },
+                          {
+                            "key": "Accept",
+                            "value": "application/json"
+                          },
+                          {
+                            "description": "Added as a part of security scheme: bearer",
+                            "key": "Authorization",
+                            "value": "Bearer <token>"
+                          }
+                        ],
+                        "body": {
+                          "mode": "raw",
+                          "raw": "{\n  \"password\": \"string\",\n  \"username\": \"string\"\n}",
+                          "options": {
+                            "raw": {
+                              "headerFamily": "json",
+                              "language": "json"
+                            }
+                          }
+                        },
+                        "url": {
+                          "raw": "{{baseUrl}}/api/auth/login",
+                          "host": [
+                            "{{baseUrl}}"
+                          ],
+                          "path": [
+                            "api",
+                            "auth",
+                            "login"
+                          ]
+                        }
+                      },
+                      "status": "OK",
+                      "code": 200,
+                      "_postman_previewlanguage": "json",
+                      "header": [
+                        {
+                          "key": "Content-Type",
+                          "value": "application/json"
+                        }
+                      ],
+                      "cookie": [],
+                      "body": "{\n  \"access_token\": \"string\",\n  \"refresh_token\": \"string\",\n  \"expires_in\": 1839,\n  \"refresh_expires_in\": 4023,\n  \"token_type\": \"string\",\n  \"user\": {\n    \"sub\": \"string\",\n    \"username\": \"string\",\n    \"name\": \"string\",\n    \"email\": \"string\",\n    \"given_name\": \"string\",\n    \"family_name\": \"string\"\n  }\n}"
+                    },
+                    {
+                      "name": "Unauthorized",
+                      "originalRequest": {
+                        "method": "POST",
+                        "header": [
+                          {
+                            "key": "Content-Type",
+                            "value": "application/json"
+                          },
+                          {
+                            "description": "Added as a part of security scheme: bearer",
+                            "key": "Authorization",
+                            "value": "Bearer <token>"
+                          }
+                        ],
+                        "body": {
+                          "mode": "raw",
+                          "raw": "{\n  \"password\": \"string\",\n  \"username\": \"string\"\n}",
+                          "options": {
+                            "raw": {
+                              "headerFamily": "json",
+                              "language": "json"
+                            }
+                          }
+                        },
+                        "url": {
+                          "raw": "{{baseUrl}}/api/auth/login",
+                          "host": [
+                            "{{baseUrl}}"
+                          ],
+                          "path": [
+                            "api",
+                            "auth",
+                            "login"
+                          ]
+                        }
+                      },
+                      "status": "Unauthorized",
+                      "code": 401,
+                      "_postman_previewlanguage": "text",
+                      "header": [],
+                      "cookie": [],
+                      "body": ""
+                    },
+                    {
+                      "name": "Forbidden",
+                      "originalRequest": {
+                        "method": "POST",
+                        "header": [
+                          {
+                            "key": "Content-Type",
+                            "value": "application/json"
+                          },
+                          {
+                            "description": "Added as a part of security scheme: bearer",
+                            "key": "Authorization",
+                            "value": "Bearer <token>"
+                          }
+                        ],
+                        "body": {
+                          "mode": "raw",
+                          "raw": "{\n  \"password\": \"string\",\n  \"username\": \"string\"\n}",
+                          "options": {
+                            "raw": {
+                              "headerFamily": "json",
+                              "language": "json"
+                            }
+                          }
+                        },
+                        "url": {
+                          "raw": "{{baseUrl}}/api/auth/login",
+                          "host": [
+                            "{{baseUrl}}"
+                          ],
+                          "path": [
+                            "api",
+                            "auth",
+                            "login"
+                          ]
+                        }
+                      },
+                      "status": "Forbidden",
+                      "code": 403,
+                      "_postman_previewlanguage": "text",
+                      "header": [],
+                      "cookie": [],
+                      "body": ""
+                    },
+                    {
+                      "name": "Bad Gateway",
+                      "originalRequest": {
+                        "method": "POST",
+                        "header": [
+                          {
+                            "key": "Content-Type",
+                            "value": "application/json"
+                          },
+                          {
+                            "description": "Added as a part of security scheme: bearer",
+                            "key": "Authorization",
+                            "value": "Bearer <token>"
+                          }
+                        ],
+                        "body": {
+                          "mode": "raw",
+                          "raw": "{\n  \"password\": \"string\",\n  \"username\": \"string\"\n}",
+                          "options": {
+                            "raw": {
+                              "headerFamily": "json",
+                              "language": "json"
+                            }
+                          }
+                        },
+                        "url": {
+                          "raw": "{{baseUrl}}/api/auth/login",
+                          "host": [
+                            "{{baseUrl}}"
+                          ],
+                          "path": [
+                            "api",
+                            "auth",
+                            "login"
+                          ]
+                        }
+                      },
+                      "status": "Bad Gateway",
+                      "code": 502,
+                      "_postman_previewlanguage": "text",
+                      "header": [],
+                      "cookie": [],
+                      "body": ""
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "refresh",
+              "item": [
+                {
+                  "name": "/api/auth/refresh",
+                  "request": {
+                    "method": "POST",
+                    "header": [
+                      {
+                        "key": "Content-Type",
+                        "value": "application/json"
+                      },
+                      {
+                        "key": "Accept",
+                        "value": "application/json"
+                      }
+                    ],
+                    "body": {
+                      "mode": "raw",
+                      "raw": "{\n  \"refresh_token\": \"string\"\n}",
+                      "options": {
+                        "raw": {
+                          "headerFamily": "json",
+                          "language": "json"
+                        }
+                      }
+                    },
+                    "url": {
+                      "raw": "{{baseUrl}}/api/auth/refresh",
+                      "host": [
+                        "{{baseUrl}}"
+                      ],
+                      "path": [
+                        "api",
+                        "auth",
+                        "refresh"
+                      ]
+                    }
+                  },
+                  "response": [
+                    {
+                      "name": "OK",
+                      "originalRequest": {
+                        "method": "POST",
+                        "header": [
+                          {
+                            "key": "Content-Type",
+                            "value": "application/json"
+                          },
+                          {
+                            "key": "Accept",
+                            "value": "application/json"
+                          },
+                          {
+                            "description": "Added as a part of security scheme: bearer",
+                            "key": "Authorization",
+                            "value": "Bearer <token>"
+                          }
+                        ],
+                        "body": {
+                          "mode": "raw",
+                          "raw": "{\n  \"refresh_token\": \"string\"\n}",
+                          "options": {
+                            "raw": {
+                              "headerFamily": "json",
+                              "language": "json"
+                            }
+                          }
+                        },
+                        "url": {
+                          "raw": "{{baseUrl}}/api/auth/refresh",
+                          "host": [
+                            "{{baseUrl}}"
+                          ],
+                          "path": [
+                            "api",
+                            "auth",
+                            "refresh"
+                          ]
+                        }
+                      },
+                      "status": "OK",
+                      "code": 200,
+                      "_postman_previewlanguage": "json",
+                      "header": [
+                        {
+                          "key": "Content-Type",
+                          "value": "application/json"
+                        }
+                      ],
+                      "cookie": [],
+                      "body": "{\n  \"access_token\": \"string\",\n  \"refresh_token\": \"string\",\n  \"expires_in\": 1839,\n  \"refresh_expires_in\": 4023,\n  \"token_type\": \"string\",\n  \"user\": {\n    \"sub\": \"string\",\n    \"username\": \"string\",\n    \"name\": \"string\",\n    \"email\": \"string\",\n    \"given_name\": \"string\",\n    \"family_name\": \"string\"\n  }\n}"
+                    },
+                    {
+                      "name": "Unauthorized",
+                      "originalRequest": {
+                        "method": "POST",
+                        "header": [
+                          {
+                            "key": "Content-Type",
+                            "value": "application/json"
+                          },
+                          {
+                            "description": "Added as a part of security scheme: bearer",
+                            "key": "Authorization",
+                            "value": "Bearer <token>"
+                          }
+                        ],
+                        "body": {
+                          "mode": "raw",
+                          "raw": "{\n  \"refresh_token\": \"string\"\n}",
+                          "options": {
+                            "raw": {
+                              "headerFamily": "json",
+                              "language": "json"
+                            }
+                          }
+                        },
+                        "url": {
+                          "raw": "{{baseUrl}}/api/auth/refresh",
+                          "host": [
+                            "{{baseUrl}}"
+                          ],
+                          "path": [
+                            "api",
+                            "auth",
+                            "refresh"
+                          ]
+                        }
+                      },
+                      "status": "Unauthorized",
+                      "code": 401,
+                      "_postman_previewlanguage": "text",
+                      "header": [],
+                      "cookie": [],
+                      "body": ""
+                    },
+                    {
+                      "name": "Forbidden",
+                      "originalRequest": {
+                        "method": "POST",
+                        "header": [
+                          {
+                            "key": "Content-Type",
+                            "value": "application/json"
+                          },
+                          {
+                            "description": "Added as a part of security scheme: bearer",
+                            "key": "Authorization",
+                            "value": "Bearer <token>"
+                          }
+                        ],
+                        "body": {
+                          "mode": "raw",
+                          "raw": "{\n  \"refresh_token\": \"string\"\n}",
+                          "options": {
+                            "raw": {
+                              "headerFamily": "json",
+                              "language": "json"
+                            }
+                          }
+                        },
+                        "url": {
+                          "raw": "{{baseUrl}}/api/auth/refresh",
+                          "host": [
+                            "{{baseUrl}}"
+                          ],
+                          "path": [
+                            "api",
+                            "auth",
+                            "refresh"
+                          ]
+                        }
+                      },
+                      "status": "Forbidden",
+                      "code": 403,
+                      "_postman_previewlanguage": "text",
+                      "header": [],
+                      "cookie": [],
+                      "body": ""
+                    },
+                    {
+                      "name": "Bad Gateway",
+                      "originalRequest": {
+                        "method": "POST",
+                        "header": [
+                          {
+                            "key": "Content-Type",
+                            "value": "application/json"
+                          },
+                          {
+                            "description": "Added as a part of security scheme: bearer",
+                            "key": "Authorization",
+                            "value": "Bearer <token>"
+                          }
+                        ],
+                        "body": {
+                          "mode": "raw",
+                          "raw": "{\n  \"refresh_token\": \"string\"\n}",
+                          "options": {
+                            "raw": {
+                              "headerFamily": "json",
+                              "language": "json"
+                            }
+                          }
+                        },
+                        "url": {
+                          "raw": "{{baseUrl}}/api/auth/refresh",
+                          "host": [
+                            "{{baseUrl}}"
+                          ],
+                          "path": [
+                            "api",
+                            "auth",
+                            "refresh"
+                          ]
+                        }
+                      },
+                      "status": "Bad Gateway",
+                      "code": 502,
+                      "_postman_previewlanguage": "text",
+                      "header": [],
+                      "cookie": [],
+                      "body": ""
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "integrations",
+          "item": [
+            {
+              "name": "{targetSystemCode}",
+              "item": [
+                {
+                  "name": "attributes",
+                  "item": [
+                    {
+                      "name": "{productAttributeDefinitionId}",
+                      "item": [
+                        {
+                          "name": "/api/integrations/:targetSystemCode/attributes/:productAttributeDefinitionId",
+                          "request": {
+                            "method": "GET",
+                            "header": [
+                              {
+                                "key": "Accept",
+                                "value": "application/json"
+                              }
+                            ],
+                            "url": {
+                              "raw": "{{baseUrl}}/api/integrations/:targetSystemCode/attributes/:productAttributeDefinitionId",
+                              "host": [
+                                "{{baseUrl}}"
+                              ],
+                              "path": [
+                                "api",
+                                "integrations",
+                                ":targetSystemCode",
+                                "attributes",
+                                ":productAttributeDefinitionId"
+                              ],
+                              "variable": [
+                                {
+                                  "key": "targetSystemCode",
+                                  "value": "string"
+                                },
+                                {
+                                  "key": "productAttributeDefinitionId",
+                                  "value": "39155926-7f47-9242-e11f-6c3dafd43a62"
+                                }
+                              ]
+                            }
+                          },
+                          "response": [
+                            {
+                              "name": "OK",
+                              "originalRequest": {
+                                "method": "GET",
+                                "header": [
+                                  {
+                                    "key": "Accept",
+                                    "value": "application/json"
+                                  },
+                                  {
+                                    "description": "Added as a part of security scheme: bearer",
+                                    "key": "Authorization",
+                                    "value": "Bearer <token>"
+                                  }
+                                ],
+                                "url": {
+                                  "raw": "{{baseUrl}}/api/integrations/:targetSystemCode/attributes/:productAttributeDefinitionId",
+                                  "host": [
+                                    "{{baseUrl}}"
+                                  ],
+                                  "path": [
+                                    "api",
+                                    "integrations",
+                                    ":targetSystemCode",
+                                    "attributes",
+                                    ":productAttributeDefinitionId"
+                                  ],
+                                  "variable": [
+                                    {
+                                      "key": "targetSystemCode",
+                                      "value": "string"
+                                    },
+                                    {
+                                      "key": "productAttributeDefinitionId",
+                                      "value": "39155926-7f47-9242-e11f-6c3dafd43a62"
+                                    }
+                                  ]
+                                }
+                              },
+                              "status": "OK",
+                              "code": 200,
+                              "_postman_previewlanguage": "json",
+                              "header": [
+                                {
+                                  "key": "Content-Type",
+                                  "value": "application/json"
+                                }
+                              ],
+                              "cookie": [],
+                              "body": "{\n  \"name\": \"string\",\n  \"productAttributeDefinitionId\": \"8ba88877-8a73-521a-3778-a81cdf272c8f\",\n  \"type\": \"string\",\n  \"olxId\": 3025,\n  \"olxName\": \"string\",\n  \"isPublic\": true,\n  \"isFilter\": true,\n  \"olxRequired\": true,\n  \"optionsJson\": \"string\",\n  \"categories\": [\n    {\n      \"categoryId\": \"c286f557-0773-df37-499f-43636d4996cf\",\n      \"name\": \"string\"\n    },\n    {\n      \"categoryId\": \"46b80c96-504e-eb7a-4560-994713b88d9d\",\n      \"name\": \"string\"\n    }\n  ]\n}"
+                            },
+                            {
+                              "name": "Bad Request",
+                              "originalRequest": {
+                                "method": "GET",
+                                "header": [
+                                  {
+                                    "description": "Added as a part of security scheme: bearer",
+                                    "key": "Authorization",
+                                    "value": "Bearer <token>"
+                                  }
+                                ],
+                                "url": {
+                                  "raw": "{{baseUrl}}/api/integrations/:targetSystemCode/attributes/:productAttributeDefinitionId",
+                                  "host": [
+                                    "{{baseUrl}}"
+                                  ],
+                                  "path": [
+                                    "api",
+                                    "integrations",
+                                    ":targetSystemCode",
+                                    "attributes",
+                                    ":productAttributeDefinitionId"
+                                  ],
+                                  "variable": [
+                                    {
+                                      "key": "targetSystemCode",
+                                      "value": "string"
+                                    },
+                                    {
+                                      "key": "productAttributeDefinitionId",
+                                      "value": "39155926-7f47-9242-e11f-6c3dafd43a62"
+                                    }
+                                  ]
+                                }
+                              },
+                              "status": "Bad Request",
+                              "code": 400,
+                              "_postman_previewlanguage": "text",
+                              "header": [],
+                              "cookie": [],
+                              "body": ""
+                            },
+                            {
+                              "name": "Unauthorized",
+                              "originalRequest": {
+                                "method": "GET",
+                                "header": [
+                                  {
+                                    "description": "Added as a part of security scheme: bearer",
+                                    "key": "Authorization",
+                                    "value": "Bearer <token>"
+                                  }
+                                ],
+                                "url": {
+                                  "raw": "{{baseUrl}}/api/integrations/:targetSystemCode/attributes/:productAttributeDefinitionId",
+                                  "host": [
+                                    "{{baseUrl}}"
+                                  ],
+                                  "path": [
+                                    "api",
+                                    "integrations",
+                                    ":targetSystemCode",
+                                    "attributes",
+                                    ":productAttributeDefinitionId"
+                                  ],
+                                  "variable": [
+                                    {
+                                      "key": "targetSystemCode",
+                                      "value": "string"
+                                    },
+                                    {
+                                      "key": "productAttributeDefinitionId",
+                                      "value": "39155926-7f47-9242-e11f-6c3dafd43a62"
+                                    }
+                                  ]
+                                }
+                              },
+                              "status": "Unauthorized",
+                              "code": 401,
+                              "_postman_previewlanguage": "text",
+                              "header": [],
+                              "cookie": [],
+                              "body": ""
+                            },
+                            {
+                              "name": "Forbidden",
+                              "originalRequest": {
+                                "method": "GET",
+                                "header": [
+                                  {
+                                    "description": "Added as a part of security scheme: bearer",
+                                    "key": "Authorization",
+                                    "value": "Bearer <token>"
+                                  }
+                                ],
+                                "url": {
+                                  "raw": "{{baseUrl}}/api/integrations/:targetSystemCode/attributes/:productAttributeDefinitionId",
+                                  "host": [
+                                    "{{baseUrl}}"
+                                  ],
+                                  "path": [
+                                    "api",
+                                    "integrations",
+                                    ":targetSystemCode",
+                                    "attributes",
+                                    ":productAttributeDefinitionId"
+                                  ],
+                                  "variable": [
+                                    {
+                                      "key": "targetSystemCode",
+                                      "value": "string"
+                                    },
+                                    {
+                                      "key": "productAttributeDefinitionId",
+                                      "value": "39155926-7f47-9242-e11f-6c3dafd43a62"
+                                    }
+                                  ]
+                                }
+                              },
+                              "status": "Forbidden",
+                              "code": 403,
+                              "_postman_previewlanguage": "text",
+                              "header": [],
+                              "cookie": [],
+                              "body": ""
+                            },
+                            {
+                              "name": "Not Found",
+                              "originalRequest": {
+                                "method": "GET",
+                                "header": [
+                                  {
+                                    "description": "Added as a part of security scheme: bearer",
+                                    "key": "Authorization",
+                                    "value": "Bearer <token>"
+                                  }
+                                ],
+                                "url": {
+                                  "raw": "{{baseUrl}}/api/integrations/:targetSystemCode/attributes/:productAttributeDefinitionId",
+                                  "host": [
+                                    "{{baseUrl}}"
+                                  ],
+                                  "path": [
+                                    "api",
+                                    "integrations",
+                                    ":targetSystemCode",
+                                    "attributes",
+                                    ":productAttributeDefinitionId"
+                                  ],
+                                  "variable": [
+                                    {
+                                      "key": "targetSystemCode",
+                                      "value": "string"
+                                    },
+                                    {
+                                      "key": "productAttributeDefinitionId",
+                                      "value": "39155926-7f47-9242-e11f-6c3dafd43a62"
+                                    }
+                                  ]
+                                }
+                              },
+                              "status": "Not Found",
+                              "code": 404,
+                              "_postman_previewlanguage": "text",
+                              "header": [],
+                              "cookie": [],
+                              "body": ""
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "name": "/api/integrations/:targetSystemCode/attributes",
+                      "request": {
+                        "method": "GET",
+                        "header": [
+                          {
+                            "key": "Accept",
+                            "value": "application/json"
+                          }
+                        ],
+                        "url": {
+                          "raw": "{{baseUrl}}/api/integrations/:targetSystemCode/attributes?Q=string&Name=string&Type=string&CategoryId=39155926-7f47-9242-e11f-6c3dafd43a62&Category=string&Page=1104&PageSize=1104",
+                          "host": [
+                            "{{baseUrl}}"
+                          ],
+                          "path": [
+                            "api",
+                            "integrations",
+                            ":targetSystemCode",
+                            "attributes"
+                          ],
+                          "query": [
+                            {
+                              "key": "Q",
+                              "value": "string"
+                            },
+                            {
+                              "key": "Name",
+                              "value": "string"
+                            },
+                            {
+                              "key": "Type",
+                              "value": "string"
+                            },
+                            {
+                              "key": "CategoryId",
+                              "value": "39155926-7f47-9242-e11f-6c3dafd43a62"
+                            },
+                            {
+                              "key": "Category",
+                              "value": "string"
+                            },
+                            {
+                              "key": "Page",
+                              "value": "1104"
+                            },
+                            {
+                              "key": "PageSize",
+                              "value": "1104"
+                            }
+                          ],
+                          "variable": [
+                            {
+                              "key": "targetSystemCode",
+                              "value": "string"
+                            }
+                          ]
+                        }
+                      },
+                      "response": [
+                        {
+                          "name": "OK",
+                          "originalRequest": {
+                            "method": "GET",
+                            "header": [
+                              {
+                                "key": "Accept",
+                                "value": "application/json"
+                              },
+                              {
+                                "description": "Added as a part of security scheme: bearer",
+                                "key": "Authorization",
+                                "value": "Bearer <token>"
+                              }
+                            ],
+                            "url": {
+                              "raw": "{{baseUrl}}/api/integrations/:targetSystemCode/attributes?Q=string&Name=string&Type=string&CategoryId=39155926-7f47-9242-e11f-6c3dafd43a62&Category=string&Page=1104&PageSize=1104",
+                              "host": [
+                                "{{baseUrl}}"
+                              ],
+                              "path": [
+                                "api",
+                                "integrations",
+                                ":targetSystemCode",
+                                "attributes"
+                              ],
+                              "query": [
+                                {
+                                  "key": "Q",
+                                  "value": "string"
+                                },
+                                {
+                                  "key": "Name",
+                                  "value": "string"
+                                },
+                                {
+                                  "key": "Type",
+                                  "value": "string"
+                                },
+                                {
+                                  "key": "CategoryId",
+                                  "value": "39155926-7f47-9242-e11f-6c3dafd43a62"
+                                },
+                                {
+                                  "key": "Category",
+                                  "value": "string"
+                                },
+                                {
+                                  "key": "Page",
+                                  "value": "1104"
+                                },
+                                {
+                                  "key": "PageSize",
+                                  "value": "1104"
+                                }
+                              ],
+                              "variable": [
+                                {
+                                  "key": "targetSystemCode",
+                                  "value": "string"
+                                }
+                              ]
+                            }
+                          },
+                          "status": "OK",
+                          "code": 200,
+                          "_postman_previewlanguage": "json",
+                          "header": [
+                            {
+                              "key": "Content-Type",
+                              "value": "application/json"
+                            }
+                          ],
+                          "cookie": [],
+                          "body": "{\n  \"data\": [\n    {\n      \"name\": \"string\",\n      \"productAttributeDefinitionId\": \"7c5072a6-d34c-b17c-9f3d-9a5c082ed8b6\",\n      \"type\": \"string\",\n      \"olxId\": 858,\n      \"olxName\": \"string\",\n      \"isPublic\": true,\n      \"isFilter\": false,\n      \"olxRequired\": true,\n      \"optionsJson\": \"string\",\n      \"categories\": [\n        {\n          \"categoryId\": \"a591f794-1905-398b-d250-33755405abb8\",\n          \"name\": \"string\"\n        },\n        {\n          \"categoryId\": \"9f7ac204-c5b6-56a4-825c-719ed6a1c458\",\n          \"name\": \"string\"\n        }\n      ]\n    },\n    {\n      \"name\": \"string\",\n      \"productAttributeDefinitionId\": \"ba89ed0f-88e5-3740-188b-5bb16c923b3e\",\n      \"type\": \"string\",\n      \"olxId\": 3684,\n      \"olxName\": \"string\",\n      \"isPublic\": true,\n      \"isFilter\": false,\n      \"olxRequired\": false,\n      \"optionsJson\": \"string\",\n      \"categories\": [\n        {\n          \"categoryId\": \"eb5a69af-6532-4998-6291-f1b869c14f60\",\n          \"name\": \"string\"\n        },\n        {\n          \"categoryId\": \"e67baf59-9ecd-cdf0-08f6-ee2c51431e1b\",\n          \"name\": \"string\"\n        }\n      ]\n    }\n  ],\n  \"pagination\": {\n    \"totalRecords\": 8077,\n    \"totalPages\": 8852,\n    \"currentPage\": 9646,\n    \"pageSize\": 8661,\n    \"nextPage\": 7645,\n    \"previousPage\": 3325\n  }\n}"
+                        },
+                        {
+                          "name": "Bad Request",
+                          "originalRequest": {
+                            "method": "GET",
+                            "header": [
+                              {
+                                "description": "Added as a part of security scheme: bearer",
+                                "key": "Authorization",
+                                "value": "Bearer <token>"
+                              }
+                            ],
+                            "url": {
+                              "raw": "{{baseUrl}}/api/integrations/:targetSystemCode/attributes?Q=string&Name=string&Type=string&CategoryId=39155926-7f47-9242-e11f-6c3dafd43a62&Category=string&Page=1104&PageSize=1104",
+                              "host": [
+                                "{{baseUrl}}"
+                              ],
+                              "path": [
+                                "api",
+                                "integrations",
+                                ":targetSystemCode",
+                                "attributes"
+                              ],
+                              "query": [
+                                {
+                                  "key": "Q",
+                                  "value": "string"
+                                },
+                                {
+                                  "key": "Name",
+                                  "value": "string"
+                                },
+                                {
+                                  "key": "Type",
+                                  "value": "string"
+                                },
+                                {
+                                  "key": "CategoryId",
+                                  "value": "39155926-7f47-9242-e11f-6c3dafd43a62"
+                                },
+                                {
+                                  "key": "Category",
+                                  "value": "string"
+                                },
+                                {
+                                  "key": "Page",
+                                  "value": "1104"
+                                },
+                                {
+                                  "key": "PageSize",
+                                  "value": "1104"
+                                }
+                              ],
+                              "variable": [
+                                {
+                                  "key": "targetSystemCode",
+                                  "value": "string"
+                                }
+                              ]
+                            }
+                          },
+                          "status": "Bad Request",
+                          "code": 400,
+                          "_postman_previewlanguage": "text",
+                          "header": [],
+                          "cookie": [],
+                          "body": ""
+                        },
+                        {
+                          "name": "Unauthorized",
+                          "originalRequest": {
+                            "method": "GET",
+                            "header": [
+                              {
+                                "description": "Added as a part of security scheme: bearer",
+                                "key": "Authorization",
+                                "value": "Bearer <token>"
+                              }
+                            ],
+                            "url": {
+                              "raw": "{{baseUrl}}/api/integrations/:targetSystemCode/attributes?Q=string&Name=string&Type=string&CategoryId=39155926-7f47-9242-e11f-6c3dafd43a62&Category=string&Page=1104&PageSize=1104",
+                              "host": [
+                                "{{baseUrl}}"
+                              ],
+                              "path": [
+                                "api",
+                                "integrations",
+                                ":targetSystemCode",
+                                "attributes"
+                              ],
+                              "query": [
+                                {
+                                  "key": "Q",
+                                  "value": "string"
+                                },
+                                {
+                                  "key": "Name",
+                                  "value": "string"
+                                },
+                                {
+                                  "key": "Type",
+                                  "value": "string"
+                                },
+                                {
+                                  "key": "CategoryId",
+                                  "value": "39155926-7f47-9242-e11f-6c3dafd43a62"
+                                },
+                                {
+                                  "key": "Category",
+                                  "value": "string"
+                                },
+                                {
+                                  "key": "Page",
+                                  "value": "1104"
+                                },
+                                {
+                                  "key": "PageSize",
+                                  "value": "1104"
+                                }
+                              ],
+                              "variable": [
+                                {
+                                  "key": "targetSystemCode",
+                                  "value": "string"
+                                }
+                              ]
+                            }
+                          },
+                          "status": "Unauthorized",
+                          "code": 401,
+                          "_postman_previewlanguage": "text",
+                          "header": [],
+                          "cookie": [],
+                          "body": ""
+                        },
+                        {
+                          "name": "Forbidden",
+                          "originalRequest": {
+                            "method": "GET",
+                            "header": [
+                              {
+                                "description": "Added as a part of security scheme: bearer",
+                                "key": "Authorization",
+                                "value": "Bearer <token>"
+                              }
+                            ],
+                            "url": {
+                              "raw": "{{baseUrl}}/api/integrations/:targetSystemCode/attributes?Q=string&Name=string&Type=string&CategoryId=39155926-7f47-9242-e11f-6c3dafd43a62&Category=string&Page=1104&PageSize=1104",
+                              "host": [
+                                "{{baseUrl}}"
+                              ],
+                              "path": [
+                                "api",
+                                "integrations",
+                                ":targetSystemCode",
+                                "attributes"
+                              ],
+                              "query": [
+                                {
+                                  "key": "Q",
+                                  "value": "string"
+                                },
+                                {
+                                  "key": "Name",
+                                  "value": "string"
+                                },
+                                {
+                                  "key": "Type",
+                                  "value": "string"
+                                },
+                                {
+                                  "key": "CategoryId",
+                                  "value": "39155926-7f47-9242-e11f-6c3dafd43a62"
+                                },
+                                {
+                                  "key": "Category",
+                                  "value": "string"
+                                },
+                                {
+                                  "key": "Page",
+                                  "value": "1104"
+                                },
+                                {
+                                  "key": "PageSize",
+                                  "value": "1104"
+                                }
+                              ],
+                              "variable": [
+                                {
+                                  "key": "targetSystemCode",
+                                  "value": "string"
+                                }
+                              ]
+                            }
+                          },
+                          "status": "Forbidden",
+                          "code": 403,
+                          "_postman_previewlanguage": "text",
+                          "header": [],
+                          "cookie": [],
+                          "body": ""
+                        },
+                        {
+                          "name": "Not Found",
+                          "originalRequest": {
+                            "method": "GET",
+                            "header": [
+                              {
+                                "description": "Added as a part of security scheme: bearer",
+                                "key": "Authorization",
+                                "value": "Bearer <token>"
+                              }
+                            ],
+                            "url": {
+                              "raw": "{{baseUrl}}/api/integrations/:targetSystemCode/attributes?Q=string&Name=string&Type=string&CategoryId=39155926-7f47-9242-e11f-6c3dafd43a62&Category=string&Page=1104&PageSize=1104",
+                              "host": [
+                                "{{baseUrl}}"
+                              ],
+                              "path": [
+                                "api",
+                                "integrations",
+                                ":targetSystemCode",
+                                "attributes"
+                              ],
+                              "query": [
+                                {
+                                  "key": "Q",
+                                  "value": "string"
+                                },
+                                {
+                                  "key": "Name",
+                                  "value": "string"
+                                },
+                                {
+                                  "key": "Type",
+                                  "value": "string"
+                                },
+                                {
+                                  "key": "CategoryId",
+                                  "value": "39155926-7f47-9242-e11f-6c3dafd43a62"
+                                },
+                                {
+                                  "key": "Category",
+                                  "value": "string"
+                                },
+                                {
+                                  "key": "Page",
+                                  "value": "1104"
+                                },
+                                {
+                                  "key": "PageSize",
+                                  "value": "1104"
+                                }
+                              ],
+                              "variable": [
+                                {
+                                  "key": "targetSystemCode",
+                                  "value": "string"
+                                }
+                              ]
+                            }
+                          },
+                          "status": "Not Found",
+                          "code": 404,
+                          "_postman_previewlanguage": "text",
+                          "header": [],
+                          "cookie": [],
+                          "body": ""
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "name": "categories",
+                  "item": [
+                    {
+                      "name": "{categoryId}",
+                      "item": [
+                        {
+                          "name": "/api/integrations/:targetSystemCode/categories/:categoryId",
+                          "request": {
+                            "method": "GET",
+                            "header": [
+                              {
+                                "key": "Accept",
+                                "value": "application/json"
+                              }
+                            ],
+                            "url": {
+                              "raw": "{{baseUrl}}/api/integrations/:targetSystemCode/categories/:categoryId",
+                              "host": [
+                                "{{baseUrl}}"
+                              ],
+                              "path": [
+                                "api",
+                                "integrations",
+                                ":targetSystemCode",
+                                "categories",
+                                ":categoryId"
+                              ],
+                              "variable": [
+                                {
+                                  "key": "targetSystemCode",
+                                  "value": "string"
+                                },
+                                {
+                                  "key": "categoryId",
+                                  "value": "39155926-7f47-9242-e11f-6c3dafd43a62"
+                                }
+                              ]
+                            }
+                          },
+                          "response": [
+                            {
+                              "name": "OK",
+                              "originalRequest": {
+                                "method": "GET",
+                                "header": [
+                                  {
+                                    "key": "Accept",
+                                    "value": "application/json"
+                                  },
+                                  {
+                                    "description": "Added as a part of security scheme: bearer",
+                                    "key": "Authorization",
+                                    "value": "Bearer <token>"
+                                  }
+                                ],
+                                "url": {
+                                  "raw": "{{baseUrl}}/api/integrations/:targetSystemCode/categories/:categoryId",
+                                  "host": [
+                                    "{{baseUrl}}"
+                                  ],
+                                  "path": [
+                                    "api",
+                                    "integrations",
+                                    ":targetSystemCode",
+                                    "categories",
+                                    ":categoryId"
+                                  ],
+                                  "variable": [
+                                    {
+                                      "key": "targetSystemCode",
+                                      "value": "string"
+                                    },
+                                    {
+                                      "key": "categoryId",
+                                      "value": "39155926-7f47-9242-e11f-6c3dafd43a62"
+                                    }
+                                  ]
+                                }
+                              },
+                              "status": "OK",
+                              "code": 200,
+                              "_postman_previewlanguage": "json",
+                              "header": [
+                                {
+                                  "key": "Content-Type",
+                                  "value": "application/json"
+                                }
+                              ],
+                              "cookie": [],
+                              "body": "{\n  \"name\": \"string\",\n  \"slug\": \"string\",\n  \"categoryId\": \"511ff885-113b-78f3-6861-349a4a39af1d\",\n  \"description\": \"string\",\n  \"shortDescription\": \"string\",\n  \"parentId\": \"950f4a44-173a-d935-6d6e-186da9756ca7\",\n  \"parentName\": \"string\",\n  \"marginId\": \"b3db4c37-9b0f-4652-89dc-6fcb5b73222a\",\n  \"marginName\": \"string\",\n  \"marginPercentage\": 8098.256127080863,\n  \"olxId\": 3082,\n  \"olxName\": \"string\",\n  \"system\": false,\n  \"imageId\": \"0f5c0a44-61c2-2fe1-b7b2-2643bd6b54d2\",\n  \"imageUrl\": \"string\",\n  \"iconId\": \"9616c850-826a-97d8-cdac-8002c66486bb\",\n  \"iconUrl\": \"string\",\n  \"metaTitle\": \"string\",\n  \"metaDescription\": \"string\",\n  \"ogImageId\": \"13e84bd9-059a-707c-d80e-05c610adf574\",\n  \"ogImageUrl\": \"string\"\n}"
+                            },
+                            {
+                              "name": "Bad Request",
+                              "originalRequest": {
+                                "method": "GET",
+                                "header": [
+                                  {
+                                    "description": "Added as a part of security scheme: bearer",
+                                    "key": "Authorization",
+                                    "value": "Bearer <token>"
+                                  }
+                                ],
+                                "url": {
+                                  "raw": "{{baseUrl}}/api/integrations/:targetSystemCode/categories/:categoryId",
+                                  "host": [
+                                    "{{baseUrl}}"
+                                  ],
+                                  "path": [
+                                    "api",
+                                    "integrations",
+                                    ":targetSystemCode",
+                                    "categories",
+                                    ":categoryId"
+                                  ],
+                                  "variable": [
+                                    {
+                                      "key": "targetSystemCode",
+                                      "value": "string"
+                                    },
+                                    {
+                                      "key": "categoryId",
+                                      "value": "39155926-7f47-9242-e11f-6c3dafd43a62"
+                                    }
+                                  ]
+                                }
+                              },
+                              "status": "Bad Request",
+                              "code": 400,
+                              "_postman_previewlanguage": "text",
+                              "header": [],
+                              "cookie": [],
+                              "body": ""
+                            },
+                            {
+                              "name": "Unauthorized",
+                              "originalRequest": {
+                                "method": "GET",
+                                "header": [
+                                  {
+                                    "description": "Added as a part of security scheme: bearer",
+                                    "key": "Authorization",
+                                    "value": "Bearer <token>"
+                                  }
+                                ],
+                                "url": {
+                                  "raw": "{{baseUrl}}/api/integrations/:targetSystemCode/categories/:categoryId",
+                                  "host": [
+                                    "{{baseUrl}}"
+                                  ],
+                                  "path": [
+                                    "api",
+                                    "integrations",
+                                    ":targetSystemCode",
+                                    "categories",
+                                    ":categoryId"
+                                  ],
+                                  "variable": [
+                                    {
+                                      "key": "targetSystemCode",
+                                      "value": "string"
+                                    },
+                                    {
+                                      "key": "categoryId",
+                                      "value": "39155926-7f47-9242-e11f-6c3dafd43a62"
+                                    }
+                                  ]
+                                }
+                              },
+                              "status": "Unauthorized",
+                              "code": 401,
+                              "_postman_previewlanguage": "text",
+                              "header": [],
+                              "cookie": [],
+                              "body": ""
+                            },
+                            {
+                              "name": "Forbidden",
+                              "originalRequest": {
+                                "method": "GET",
+                                "header": [
+                                  {
+                                    "description": "Added as a part of security scheme: bearer",
+                                    "key": "Authorization",
+                                    "value": "Bearer <token>"
+                                  }
+                                ],
+                                "url": {
+                                  "raw": "{{baseUrl}}/api/integrations/:targetSystemCode/categories/:categoryId",
+                                  "host": [
+                                    "{{baseUrl}}"
+                                  ],
+                                  "path": [
+                                    "api",
+                                    "integrations",
+                                    ":targetSystemCode",
+                                    "categories",
+                                    ":categoryId"
+                                  ],
+                                  "variable": [
+                                    {
+                                      "key": "targetSystemCode",
+                                      "value": "string"
+                                    },
+                                    {
+                                      "key": "categoryId",
+                                      "value": "39155926-7f47-9242-e11f-6c3dafd43a62"
+                                    }
+                                  ]
+                                }
+                              },
+                              "status": "Forbidden",
+                              "code": 403,
+                              "_postman_previewlanguage": "text",
+                              "header": [],
+                              "cookie": [],
+                              "body": ""
+                            },
+                            {
+                              "name": "Not Found",
+                              "originalRequest": {
+                                "method": "GET",
+                                "header": [
+                                  {
+                                    "description": "Added as a part of security scheme: bearer",
+                                    "key": "Authorization",
+                                    "value": "Bearer <token>"
+                                  }
+                                ],
+                                "url": {
+                                  "raw": "{{baseUrl}}/api/integrations/:targetSystemCode/categories/:categoryId",
+                                  "host": [
+                                    "{{baseUrl}}"
+                                  ],
+                                  "path": [
+                                    "api",
+                                    "integrations",
+                                    ":targetSystemCode",
+                                    "categories",
+                                    ":categoryId"
+                                  ],
+                                  "variable": [
+                                    {
+                                      "key": "targetSystemCode",
+                                      "value": "string"
+                                    },
+                                    {
+                                      "key": "categoryId",
+                                      "value": "39155926-7f47-9242-e11f-6c3dafd43a62"
+                                    }
+                                  ]
+                                }
+                              },
+                              "status": "Not Found",
+                              "code": 404,
+                              "_postman_previewlanguage": "text",
+                              "header": [],
+                              "cookie": [],
+                              "body": ""
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "name": "/api/integrations/:targetSystemCode/categories",
+                      "request": {
+                        "method": "GET",
+                        "header": [
+                          {
+                            "key": "Accept",
+                            "value": "application/json"
+                          }
+                        ],
+                        "url": {
+                          "raw": "{{baseUrl}}/api/integrations/:targetSystemCode/categories?Id=39155926-7f47-9242-e11f-6c3dafd43a62&Name=string&ParentName=string&ParentId=39155926-7f47-9242-e11f-6c3dafd43a62&Page=1104&PageSize=1104",
+                          "host": [
+                            "{{baseUrl}}"
+                          ],
+                          "path": [
+                            "api",
+                            "integrations",
+                            ":targetSystemCode",
+                            "categories"
+                          ],
+                          "query": [
+                            {
+                              "key": "Id",
+                              "value": "39155926-7f47-9242-e11f-6c3dafd43a62"
+                            },
+                            {
+                              "key": "Name",
+                              "value": "string"
+                            },
+                            {
+                              "key": "ParentName",
+                              "value": "string"
+                            },
+                            {
+                              "key": "ParentId",
+                              "value": "39155926-7f47-9242-e11f-6c3dafd43a62"
+                            },
+                            {
+                              "key": "Page",
+                              "value": "1104"
+                            },
+                            {
+                              "key": "PageSize",
+                              "value": "1104"
+                            }
+                          ],
+                          "variable": [
+                            {
+                              "key": "targetSystemCode",
+                              "value": "string"
+                            }
+                          ]
+                        }
+                      },
+                      "response": [
+                        {
+                          "name": "OK",
+                          "originalRequest": {
+                            "method": "GET",
+                            "header": [
+                              {
+                                "key": "Accept",
+                                "value": "application/json"
+                              },
+                              {
+                                "description": "Added as a part of security scheme: bearer",
+                                "key": "Authorization",
+                                "value": "Bearer <token>"
+                              }
+                            ],
+                            "url": {
+                              "raw": "{{baseUrl}}/api/integrations/:targetSystemCode/categories?Id=39155926-7f47-9242-e11f-6c3dafd43a62&Name=string&ParentName=string&ParentId=39155926-7f47-9242-e11f-6c3dafd43a62&Page=1104&PageSize=1104",
+                              "host": [
+                                "{{baseUrl}}"
+                              ],
+                              "path": [
+                                "api",
+                                "integrations",
+                                ":targetSystemCode",
+                                "categories"
+                              ],
+                              "query": [
+                                {
+                                  "key": "Id",
+                                  "value": "39155926-7f47-9242-e11f-6c3dafd43a62"
+                                },
+                                {
+                                  "key": "Name",
+                                  "value": "string"
+                                },
+                                {
+                                  "key": "ParentName",
+                                  "value": "string"
+                                },
+                                {
+                                  "key": "ParentId",
+                                  "value": "39155926-7f47-9242-e11f-6c3dafd43a62"
+                                },
+                                {
+                                  "key": "Page",
+                                  "value": "1104"
+                                },
+                                {
+                                  "key": "PageSize",
+                                  "value": "1104"
+                                }
+                              ],
+                              "variable": [
+                                {
+                                  "key": "targetSystemCode",
+                                  "value": "string"
+                                }
+                              ]
+                            }
+                          },
+                          "status": "OK",
+                          "code": 200,
+                          "_postman_previewlanguage": "json",
+                          "header": [
+                            {
+                              "key": "Content-Type",
+                              "value": "application/json"
+                            }
+                          ],
+                          "cookie": [],
+                          "body": "{\n  \"data\": [\n    {\n      \"name\": \"string\",\n      \"slug\": \"string\",\n      \"categoryId\": \"25b75df4-f436-c997-755b-4a5225d14d1d\",\n      \"description\": \"string\",\n      \"shortDescription\": \"string\",\n      \"parentId\": \"0d9b592d-2f0e-249e-40be-fcb0393bfa7e\",\n      \"parentName\": \"string\",\n      \"marginId\": \"9c12f8cf-c655-1846-2a57-1cafc15d327f\",\n      \"marginName\": \"string\",\n      \"marginPercentage\": 9585.385048007825,\n      \"olxId\": 4214,\n      \"olxName\": \"string\",\n      \"system\": true,\n      \"imageId\": \"14604361-c9ee-1fcf-cb6a-b58f02f6dd7a\",\n      \"imageUrl\": \"string\",\n      \"iconId\": \"e51190fb-219b-1500-d269-d04a4767fe6c\",\n      \"iconUrl\": \"string\",\n      \"metaTitle\": \"string\",\n      \"metaDescription\": \"string\",\n      \"ogImageId\": \"8003a3a8-02ef-5810-c8c3-b460eb01cbb4\",\n      \"ogImageUrl\": \"string\"\n    },\n    {\n      \"name\": \"string\",\n      \"slug\": \"string\",\n      \"categoryId\": \"d621a1a1-e9a2-55fd-e3ab-651edbd624a7\",\n      \"description\": \"string\",\n      \"shortDescription\": \"string\",\n      \"parentId\": \"40045ab9-1903-91cb-627c-6f323c4c547a\",\n      \"parentName\": \"string\",\n      \"marginId\": \"7d47fb3d-5ec4-3707-c3be-7b0a0ffb49a2\",\n      \"marginName\": \"string\",\n      \"marginPercentage\": 739.6096659813445,\n      \"olxId\": 1257,\n      \"olxName\": \"string\",\n      \"system\": false,\n      \"imageId\": \"344c204c-1e2c-0608-9c96-8710e6811e78\",\n      \"imageUrl\": \"string\",\n      \"iconId\": \"d7a206c8-5fc9-dfa1-106d-7563e15fd681\",\n      \"iconUrl\": \"string\",\n      \"metaTitle\": \"string\",\n      \"metaDescription\": \"string\",\n      \"ogImageId\": \"1a860a28-5845-ff65-8b9b-8f28b245766c\",\n      \"ogImageUrl\": \"string\"\n    }\n  ],\n  \"pagination\": {\n    \"totalRecords\": 1836,\n    \"totalPages\": 8978,\n    \"currentPage\": 9289,\n    \"pageSize\": 4141,\n    \"nextPage\": 5979,\n    \"previousPage\": 8014\n  }\n}"
+                        },
+                        {
+                          "name": "Bad Request",
+                          "originalRequest": {
+                            "method": "GET",
+                            "header": [
+                              {
+                                "description": "Added as a part of security scheme: bearer",
+                                "key": "Authorization",
+                                "value": "Bearer <token>"
+                              }
+                            ],
+                            "url": {
+                              "raw": "{{baseUrl}}/api/integrations/:targetSystemCode/categories?Id=39155926-7f47-9242-e11f-6c3dafd43a62&Name=string&ParentName=string&ParentId=39155926-7f47-9242-e11f-6c3dafd43a62&Page=1104&PageSize=1104",
+                              "host": [
+                                "{{baseUrl}}"
+                              ],
+                              "path": [
+                                "api",
+                                "integrations",
+                                ":targetSystemCode",
+                                "categories"
+                              ],
+                              "query": [
+                                {
+                                  "key": "Id",
+                                  "value": "39155926-7f47-9242-e11f-6c3dafd43a62"
+                                },
+                                {
+                                  "key": "Name",
+                                  "value": "string"
+                                },
+                                {
+                                  "key": "ParentName",
+                                  "value": "string"
+                                },
+                                {
+                                  "key": "ParentId",
+                                  "value": "39155926-7f47-9242-e11f-6c3dafd43a62"
+                                },
+                                {
+                                  "key": "Page",
+                                  "value": "1104"
+                                },
+                                {
+                                  "key": "PageSize",
+                                  "value": "1104"
+                                }
+                              ],
+                              "variable": [
+                                {
+                                  "key": "targetSystemCode",
+                                  "value": "string"
+                                }
+                              ]
+                            }
+                          },
+                          "status": "Bad Request",
+                          "code": 400,
+                          "_postman_previewlanguage": "text",
+                          "header": [],
+                          "cookie": [],
+                          "body": ""
+                        },
+                        {
+                          "name": "Unauthorized",
+                          "originalRequest": {
+                            "method": "GET",
+                            "header": [
+                              {
+                                "description": "Added as a part of security scheme: bearer",
+                                "key": "Authorization",
+                                "value": "Bearer <token>"
+                              }
+                            ],
+                            "url": {
+                              "raw": "{{baseUrl}}/api/integrations/:targetSystemCode/categories?Id=39155926-7f47-9242-e11f-6c3dafd43a62&Name=string&ParentName=string&ParentId=39155926-7f47-9242-e11f-6c3dafd43a62&Page=1104&PageSize=1104",
+                              "host": [
+                                "{{baseUrl}}"
+                              ],
+                              "path": [
+                                "api",
+                                "integrations",
+                                ":targetSystemCode",
+                                "categories"
+                              ],
+                              "query": [
+                                {
+                                  "key": "Id",
+                                  "value": "39155926-7f47-9242-e11f-6c3dafd43a62"
+                                },
+                                {
+                                  "key": "Name",
+                                  "value": "string"
+                                },
+                                {
+                                  "key": "ParentName",
+                                  "value": "string"
+                                },
+                                {
+                                  "key": "ParentId",
+                                  "value": "39155926-7f47-9242-e11f-6c3dafd43a62"
+                                },
+                                {
+                                  "key": "Page",
+                                  "value": "1104"
+                                },
+                                {
+                                  "key": "PageSize",
+                                  "value": "1104"
+                                }
+                              ],
+                              "variable": [
+                                {
+                                  "key": "targetSystemCode",
+                                  "value": "string"
+                                }
+                              ]
+                            }
+                          },
+                          "status": "Unauthorized",
+                          "code": 401,
+                          "_postman_previewlanguage": "text",
+                          "header": [],
+                          "cookie": [],
+                          "body": ""
+                        },
+                        {
+                          "name": "Forbidden",
+                          "originalRequest": {
+                            "method": "GET",
+                            "header": [
+                              {
+                                "description": "Added as a part of security scheme: bearer",
+                                "key": "Authorization",
+                                "value": "Bearer <token>"
+                              }
+                            ],
+                            "url": {
+                              "raw": "{{baseUrl}}/api/integrations/:targetSystemCode/categories?Id=39155926-7f47-9242-e11f-6c3dafd43a62&Name=string&ParentName=string&ParentId=39155926-7f47-9242-e11f-6c3dafd43a62&Page=1104&PageSize=1104",
+                              "host": [
+                                "{{baseUrl}}"
+                              ],
+                              "path": [
+                                "api",
+                                "integrations",
+                                ":targetSystemCode",
+                                "categories"
+                              ],
+                              "query": [
+                                {
+                                  "key": "Id",
+                                  "value": "39155926-7f47-9242-e11f-6c3dafd43a62"
+                                },
+                                {
+                                  "key": "Name",
+                                  "value": "string"
+                                },
+                                {
+                                  "key": "ParentName",
+                                  "value": "string"
+                                },
+                                {
+                                  "key": "ParentId",
+                                  "value": "39155926-7f47-9242-e11f-6c3dafd43a62"
+                                },
+                                {
+                                  "key": "Page",
+                                  "value": "1104"
+                                },
+                                {
+                                  "key": "PageSize",
+                                  "value": "1104"
+                                }
+                              ],
+                              "variable": [
+                                {
+                                  "key": "targetSystemCode",
+                                  "value": "string"
+                                }
+                              ]
+                            }
+                          },
+                          "status": "Forbidden",
+                          "code": 403,
+                          "_postman_previewlanguage": "text",
+                          "header": [],
+                          "cookie": [],
+                          "body": ""
+                        },
+                        {
+                          "name": "Not Found",
+                          "originalRequest": {
+                            "method": "GET",
+                            "header": [
+                              {
+                                "description": "Added as a part of security scheme: bearer",
+                                "key": "Authorization",
+                                "value": "Bearer <token>"
+                              }
+                            ],
+                            "url": {
+                              "raw": "{{baseUrl}}/api/integrations/:targetSystemCode/categories?Id=39155926-7f47-9242-e11f-6c3dafd43a62&Name=string&ParentName=string&ParentId=39155926-7f47-9242-e11f-6c3dafd43a62&Page=1104&PageSize=1104",
+                              "host": [
+                                "{{baseUrl}}"
+                              ],
+                              "path": [
+                                "api",
+                                "integrations",
+                                ":targetSystemCode",
+                                "categories"
+                              ],
+                              "query": [
+                                {
+                                  "key": "Id",
+                                  "value": "39155926-7f47-9242-e11f-6c3dafd43a62"
+                                },
+                                {
+                                  "key": "Name",
+                                  "value": "string"
+                                },
+                                {
+                                  "key": "ParentName",
+                                  "value": "string"
+                                },
+                                {
+                                  "key": "ParentId",
+                                  "value": "39155926-7f47-9242-e11f-6c3dafd43a62"
+                                },
+                                {
+                                  "key": "Page",
+                                  "value": "1104"
+                                },
+                                {
+                                  "key": "PageSize",
+                                  "value": "1104"
+                                }
+                              ],
+                              "variable": [
+                                {
+                                  "key": "targetSystemCode",
+                                  "value": "string"
+                                }
+                              ]
+                            }
+                          },
+                          "status": "Not Found",
+                          "code": 404,
+                          "_postman_previewlanguage": "text",
+                          "header": [],
+                          "cookie": [],
+                          "body": ""
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "name": "products",
+                  "item": [
+                    {
+                      "name": "{productId}",
+                      "item": [
+                        {
+                          "name": "/api/integrations/:targetSystemCode/products/:productId",
+                          "request": {
+                            "method": "GET",
+                            "header": [
+                              {
+                                "key": "Accept",
+                                "value": "application/json"
+                              }
+                            ],
+                            "url": {
+                              "raw": "{{baseUrl}}/api/integrations/:targetSystemCode/products/:productId",
+                              "host": [
+                                "{{baseUrl}}"
+                              ],
+                              "path": [
+                                "api",
+                                "integrations",
+                                ":targetSystemCode",
+                                "products",
+                                ":productId"
+                              ],
+                              "variable": [
+                                {
+                                  "key": "targetSystemCode",
+                                  "value": "string"
+                                },
+                                {
+                                  "key": "productId",
+                                  "value": "39155926-7f47-9242-e11f-6c3dafd43a62"
+                                }
+                              ]
+                            }
+                          },
+                          "response": [
+                            {
+                              "name": "OK",
+                              "originalRequest": {
+                                "method": "GET",
+                                "header": [
+                                  {
+                                    "key": "Accept",
+                                    "value": "application/json"
+                                  },
+                                  {
+                                    "description": "Added as a part of security scheme: bearer",
+                                    "key": "Authorization",
+                                    "value": "Bearer <token>"
+                                  }
+                                ],
+                                "url": {
+                                  "raw": "{{baseUrl}}/api/integrations/:targetSystemCode/products/:productId",
+                                  "host": [
+                                    "{{baseUrl}}"
+                                  ],
+                                  "path": [
+                                    "api",
+                                    "integrations",
+                                    ":targetSystemCode",
+                                    "products",
+                                    ":productId"
+                                  ],
+                                  "variable": [
+                                    {
+                                      "key": "targetSystemCode",
+                                      "value": "string"
+                                    },
+                                    {
+                                      "key": "productId",
+                                      "value": "39155926-7f47-9242-e11f-6c3dafd43a62"
+                                    }
+                                  ]
+                                }
+                              },
+                              "status": "OK",
+                              "code": 200,
+                              "_postman_previewlanguage": "json",
+                              "header": [
+                                {
+                                  "key": "Content-Type",
+                                  "value": "application/json"
+                                }
+                              ],
+                              "cookie": [],
+                              "body": "{\n  \"name\": \"string\",\n  \"productId\": \"98ae6bd8-d8d0-d96b-addb-cd8f7c6081ae\",\n  \"slug\": \"string\",\n  \"manufacturer\": {\n    \"manufacturerId\": \"eccfd554-f4f3-fe8a-f4b6-c50f94537d4a\",\n    \"name\": \"string\",\n    \"slug\": \"string\"\n  },\n  \"category\": {\n    \"categoryId\": \"d6593702-08b1-2a74-34ed-399e54bffa1c\",\n    \"name\": \"string\",\n    \"slug\": \"string\",\n    \"description\": \"string\",\n    \"shortDescription\": \"string\",\n    \"parentId\": \"2b5624e1-b144-a4ae-4e0b-5f74a002ba15\",\n    \"parentName\": \"string\",\n    \"marginId\": \"50941b88-9493-b2db-00af-9785f0ec9df9\",\n    \"marginName\": \"string\",\n    \"marginPercentage\": 6115.958435782145,\n    \"olxId\": 5688,\n    \"olxName\": \"string\",\n    \"system\": false,\n    \"imageId\": \"292e24d5-5aea-acff-06a9-0e6ce70e4fed\",\n    \"imageUrl\": \"string\",\n    \"iconId\": \"3c829d72-fb4e-0515-3455-881dd1eac682\",\n    \"iconUrl\": \"string\",\n    \"metaTitle\": \"string\",\n    \"metaDescription\": \"string\",\n    \"ogImageId\": \"2c236fef-2018-fe24-9874-17d8af4248f0\",\n    \"ogImageUrl\": \"string\"\n  },\n  \"isGaming\": true,\n  \"isPublic\": true,\n  \"description\": \"string\",\n  \"shortDescription\": \"string\",\n  \"barcode\": \"string\",\n  \"externalId\": \"string\",\n  \"marginPercentage\": 6409.110522164377,\n  \"isNew\": false,\n  \"price\": 6710.630311184284,\n  \"finalPrice\": 5809.815696382421,\n  \"rebate\": 768.2800765190278,\n  \"rebateValidUntil\": \"1968-04-05T00:50:15.569Z\",\n  \"rebateType\": 0,\n  \"stock\": 5122,\n  \"attributes\": [\n    {\n      \"attributeId\": \"9491755f-4a60-5059-eac7-d4eb6989fe8d\",\n      \"value\": \"string\"\n    },\n    {\n      \"attributeId\": \"91726f21-b66f-234c-12bc-6a67a8938feb\",\n      \"value\": \"string\"\n    }\n  ],\n  \"gallery\": [\n    {\n      \"imageId\": \"07b1f811-3f14-930e-2ac6-26e760a92036\",\n      \"imageUrl\": \"string\"\n    },\n    {\n      \"imageId\": \"04f7c114-544b-ee66-d73b-55986159fd8e\",\n      \"imageUrl\": \"string\"\n    }\n  ],\n  \"defaultImageId\": \"3c647067-0706-03dc-5914-ba0baef88183\",\n  \"defaultImageUrl\": \"string\",\n  \"seoFields\": {\n    \"metaTitle\": \"string\",\n    \"metaDescription\": \"string\",\n    \"ogImageId\": \"d96b19eb-11d1-4a53-268e-c83c7c896c4e\",\n    \"ogImageUrl\": \"string\"\n  },\n  \"supplierOffers\": [\n    {\n      \"supplierId\": \"8ecd5d2a-be31-1844-632e-340412df4bb4\",\n      \"supplierName\": \"string\",\n      \"supplierSku\": \"string\",\n      \"supplierPrice\": 5992.86387475329,\n      \"supplierStock\": 6137,\n      \"isSelectedPriceSource\": false\n    },\n    {\n      \"supplierId\": \"2d0eadc7-5da5-4642-4a7a-9803b606b013\",\n      \"supplierName\": \"string\",\n      \"supplierSku\": \"string\",\n      \"supplierPrice\": 1416.4904081524464,\n      \"supplierStock\": 976,\n      \"isSelectedPriceSource\": false\n    }\n  ]\n}"
+                            },
+                            {
+                              "name": "Bad Request",
+                              "originalRequest": {
+                                "method": "GET",
+                                "header": [
+                                  {
+                                    "description": "Added as a part of security scheme: bearer",
+                                    "key": "Authorization",
+                                    "value": "Bearer <token>"
+                                  }
+                                ],
+                                "url": {
+                                  "raw": "{{baseUrl}}/api/integrations/:targetSystemCode/products/:productId",
+                                  "host": [
+                                    "{{baseUrl}}"
+                                  ],
+                                  "path": [
+                                    "api",
+                                    "integrations",
+                                    ":targetSystemCode",
+                                    "products",
+                                    ":productId"
+                                  ],
+                                  "variable": [
+                                    {
+                                      "key": "targetSystemCode",
+                                      "value": "string"
+                                    },
+                                    {
+                                      "key": "productId",
+                                      "value": "39155926-7f47-9242-e11f-6c3dafd43a62"
+                                    }
+                                  ]
+                                }
+                              },
+                              "status": "Bad Request",
+                              "code": 400,
+                              "_postman_previewlanguage": "text",
+                              "header": [],
+                              "cookie": [],
+                              "body": ""
+                            },
+                            {
+                              "name": "Unauthorized",
+                              "originalRequest": {
+                                "method": "GET",
+                                "header": [
+                                  {
+                                    "description": "Added as a part of security scheme: bearer",
+                                    "key": "Authorization",
+                                    "value": "Bearer <token>"
+                                  }
+                                ],
+                                "url": {
+                                  "raw": "{{baseUrl}}/api/integrations/:targetSystemCode/products/:productId",
+                                  "host": [
+                                    "{{baseUrl}}"
+                                  ],
+                                  "path": [
+                                    "api",
+                                    "integrations",
+                                    ":targetSystemCode",
+                                    "products",
+                                    ":productId"
+                                  ],
+                                  "variable": [
+                                    {
+                                      "key": "targetSystemCode",
+                                      "value": "string"
+                                    },
+                                    {
+                                      "key": "productId",
+                                      "value": "39155926-7f47-9242-e11f-6c3dafd43a62"
+                                    }
+                                  ]
+                                }
+                              },
+                              "status": "Unauthorized",
+                              "code": 401,
+                              "_postman_previewlanguage": "text",
+                              "header": [],
+                              "cookie": [],
+                              "body": ""
+                            },
+                            {
+                              "name": "Forbidden",
+                              "originalRequest": {
+                                "method": "GET",
+                                "header": [
+                                  {
+                                    "description": "Added as a part of security scheme: bearer",
+                                    "key": "Authorization",
+                                    "value": "Bearer <token>"
+                                  }
+                                ],
+                                "url": {
+                                  "raw": "{{baseUrl}}/api/integrations/:targetSystemCode/products/:productId",
+                                  "host": [
+                                    "{{baseUrl}}"
+                                  ],
+                                  "path": [
+                                    "api",
+                                    "integrations",
+                                    ":targetSystemCode",
+                                    "products",
+                                    ":productId"
+                                  ],
+                                  "variable": [
+                                    {
+                                      "key": "targetSystemCode",
+                                      "value": "string"
+                                    },
+                                    {
+                                      "key": "productId",
+                                      "value": "39155926-7f47-9242-e11f-6c3dafd43a62"
+                                    }
+                                  ]
+                                }
+                              },
+                              "status": "Forbidden",
+                              "code": 403,
+                              "_postman_previewlanguage": "text",
+                              "header": [],
+                              "cookie": [],
+                              "body": ""
+                            },
+                            {
+                              "name": "Not Found",
+                              "originalRequest": {
+                                "method": "GET",
+                                "header": [
+                                  {
+                                    "description": "Added as a part of security scheme: bearer",
+                                    "key": "Authorization",
+                                    "value": "Bearer <token>"
+                                  }
+                                ],
+                                "url": {
+                                  "raw": "{{baseUrl}}/api/integrations/:targetSystemCode/products/:productId",
+                                  "host": [
+                                    "{{baseUrl}}"
+                                  ],
+                                  "path": [
+                                    "api",
+                                    "integrations",
+                                    ":targetSystemCode",
+                                    "products",
+                                    ":productId"
+                                  ],
+                                  "variable": [
+                                    {
+                                      "key": "targetSystemCode",
+                                      "value": "string"
+                                    },
+                                    {
+                                      "key": "productId",
+                                      "value": "39155926-7f47-9242-e11f-6c3dafd43a62"
+                                    }
+                                  ]
+                                }
+                              },
+                              "status": "Not Found",
+                              "code": 404,
+                              "_postman_previewlanguage": "text",
+                              "header": [],
+                              "cookie": [],
+                              "body": ""
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "name": "/api/integrations/:targetSystemCode/products",
+                      "request": {
+                        "method": "GET",
+                        "header": [
+                          {
+                            "key": "Accept",
+                            "value": "application/json"
+                          }
+                        ],
+                        "url": {
+                          "raw": "{{baseUrl}}/api/integrations/:targetSystemCode/products?Q=string&Name=string&IsPublic=true&IsGaming=true&CategoryId=39155926-7f47-9242-e11f-6c3dafd43a62&Category=string&ExternalId=string&Page=1104&PageSize=1104",
+                          "host": [
+                            "{{baseUrl}}"
+                          ],
+                          "path": [
+                            "api",
+                            "integrations",
+                            ":targetSystemCode",
+                            "products"
+                          ],
+                          "query": [
+                            {
+                              "key": "Q",
+                              "value": "string"
+                            },
+                            {
+                              "key": "Name",
+                              "value": "string"
+                            },
+                            {
+                              "key": "IsPublic",
+                              "value": "true"
+                            },
+                            {
+                              "key": "IsGaming",
+                              "value": "true"
+                            },
+                            {
+                              "key": "CategoryId",
+                              "value": "39155926-7f47-9242-e11f-6c3dafd43a62"
+                            },
+                            {
+                              "key": "Category",
+                              "value": "string"
+                            },
+                            {
+                              "key": "ExternalId",
+                              "value": "string"
+                            },
+                            {
+                              "key": "Page",
+                              "value": "1104"
+                            },
+                            {
+                              "key": "PageSize",
+                              "value": "1104"
+                            }
+                          ],
+                          "variable": [
+                            {
+                              "key": "targetSystemCode",
+                              "value": "string"
+                            }
+                          ]
+                        }
+                      },
+                      "response": [
+                        {
+                          "name": "OK",
+                          "originalRequest": {
+                            "method": "GET",
+                            "header": [
+                              {
+                                "key": "Accept",
+                                "value": "application/json"
+                              },
+                              {
+                                "description": "Added as a part of security scheme: bearer",
+                                "key": "Authorization",
+                                "value": "Bearer <token>"
+                              }
+                            ],
+                            "url": {
+                              "raw": "{{baseUrl}}/api/integrations/:targetSystemCode/products?Q=string&Name=string&IsPublic=true&IsGaming=true&CategoryId=39155926-7f47-9242-e11f-6c3dafd43a62&Category=string&ExternalId=string&Page=1104&PageSize=1104",
+                              "host": [
+                                "{{baseUrl}}"
+                              ],
+                              "path": [
+                                "api",
+                                "integrations",
+                                ":targetSystemCode",
+                                "products"
+                              ],
+                              "query": [
+                                {
+                                  "key": "Q",
+                                  "value": "string"
+                                },
+                                {
+                                  "key": "Name",
+                                  "value": "string"
+                                },
+                                {
+                                  "key": "IsPublic",
+                                  "value": "true"
+                                },
+                                {
+                                  "key": "IsGaming",
+                                  "value": "true"
+                                },
+                                {
+                                  "key": "CategoryId",
+                                  "value": "39155926-7f47-9242-e11f-6c3dafd43a62"
+                                },
+                                {
+                                  "key": "Category",
+                                  "value": "string"
+                                },
+                                {
+                                  "key": "ExternalId",
+                                  "value": "string"
+                                },
+                                {
+                                  "key": "Page",
+                                  "value": "1104"
+                                },
+                                {
+                                  "key": "PageSize",
+                                  "value": "1104"
+                                }
+                              ],
+                              "variable": [
+                                {
+                                  "key": "targetSystemCode",
+                                  "value": "string"
+                                }
+                              ]
+                            }
+                          },
+                          "status": "OK",
+                          "code": 200,
+                          "_postman_previewlanguage": "json",
+                          "header": [
+                            {
+                              "key": "Content-Type",
+                              "value": "application/json"
+                            }
+                          ],
+                          "cookie": [],
+                          "body": "{\n  \"data\": [\n    {\n      \"name\": \"string\",\n      \"productId\": \"25d90bc9-1e45-0638-086d-6d6082020f1e\",\n      \"slug\": \"string\",\n      \"manufacturer\": {\n        \"manufacturerId\": \"5a2a3fd7-8c5d-b3b2-5a8e-f56511a6506d\",\n        \"name\": \"string\",\n        \"slug\": \"string\"\n      },\n      \"category\": {\n        \"categoryId\": \"324cc558-673d-5bf5-2bb8-b83ed4a22c6e\",\n        \"name\": \"string\",\n        \"slug\": \"string\",\n        \"description\": \"string\",\n        \"shortDescription\": \"string\",\n        \"parentId\": \"7d4a102c-b402-f073-ab8a-7c721eea03c2\",\n        \"parentName\": \"string\",\n        \"marginId\": \"5068ac1e-958a-48f9-0e8f-76a9bfb20f3b\",\n        \"marginName\": \"string\",\n        \"marginPercentage\": 9584.937909745597,\n        \"olxId\": 109,\n        \"olxName\": \"string\",\n        \"system\": true,\n        \"imageId\": \"2b962e8f-3c36-d3b3-32be-7bf4f65802df\",\n        \"imageUrl\": \"string\",\n        \"iconId\": \"a7e20688-d2b4-b001-c5b2-ce96f336b095\",\n        \"iconUrl\": \"string\",\n        \"metaTitle\": \"string\",\n        \"metaDescription\": \"string\",\n        \"ogImageId\": \"9b5c2a2e-fad5-4410-9a01-9caf441d4a12\",\n        \"ogImageUrl\": \"string\"\n      },\n      \"isGaming\": false,\n      \"isPublic\": true,\n      \"description\": \"string\",\n      \"shortDescription\": \"string\",\n      \"barcode\": \"string\",\n      \"externalId\": \"string\",\n      \"marginPercentage\": 3907.38940836215,\n      \"isNew\": true,\n      \"price\": 1928.415728910946,\n      \"finalPrice\": 4435.986130724105,\n      \"rebate\": 1495.1665574354988,\n      \"rebateValidUntil\": \"1960-03-09T05:03:55.168Z\",\n      \"rebateType\": 1,\n      \"stock\": 6064,\n      \"attributes\": [\n        {\n          \"attributeId\": \"e0d2298e-48a4-5cce-3b1a-fb23d5cbf96e\",\n          \"value\": \"string\"\n        },\n        {\n          \"attributeId\": \"318da7b9-ae8e-f672-143a-e48d1dc8f56e\",\n          \"value\": \"string\"\n        }\n      ],\n      \"gallery\": [\n        {\n          \"imageId\": \"19d8e0f4-a63f-b2aa-688f-afab266af25e\",\n          \"imageUrl\": \"string\"\n        },\n        {\n          \"imageId\": \"29f42774-a7fb-d16d-8c42-e0e28df508a5\",\n          \"imageUrl\": \"string\"\n        }\n      ],\n      \"defaultImageId\": \"71997ea5-0047-b843-70a6-fc571c2b2c78\",\n      \"defaultImageUrl\": \"string\",\n      \"seoFields\": {\n        \"metaTitle\": \"string\",\n        \"metaDescription\": \"string\",\n        \"ogImageId\": \"af64cf49-20f2-d078-450f-38d37a41b5a7\",\n        \"ogImageUrl\": \"string\"\n      },\n      \"supplierOffers\": [\n        {\n          \"supplierId\": \"fd7dcc4a-af03-039f-b626-248b06c8c1e5\",\n          \"supplierName\": \"string\",\n          \"supplierSku\": \"string\",\n          \"supplierPrice\": 9199.060544899237,\n          \"supplierStock\": 7556,\n          \"isSelectedPriceSource\": true\n        },\n        {\n          \"supplierId\": \"cc14608c-e2de-b5e9-e14b-fc54a4e45631\",\n          \"supplierName\": \"string\",\n          \"supplierSku\": \"string\",\n          \"supplierPrice\": 4629.070994682427,\n          \"supplierStock\": 6516,\n          \"isSelectedPriceSource\": true\n        }\n      ]\n    },\n    {\n      \"name\": \"string\",\n      \"productId\": \"ad813f22-a32f-3277-87d7-98fc48dd62fd\",\n      \"slug\": \"string\",\n      \"manufacturer\": {\n        \"manufacturerId\": \"88f72170-3d78-41ea-f75e-9f51155b2570\",\n        \"name\": \"string\",\n        \"slug\": \"string\"\n      },\n      \"category\": {\n        \"categoryId\": \"81c31442-68c0-7efa-4404-45c5fc82e28d\",\n        \"name\": \"string\",\n        \"slug\": \"string\",\n        \"description\": \"string\",\n        \"shortDescription\": \"string\",\n        \"parentId\": \"a9b6f63b-ab26-bb81-41c9-9255fb54bc30\",\n        \"parentName\": \"string\",\n        \"marginId\": \"efbaba87-1437-e4c1-cfd7-0a83774ee7ed\",\n        \"marginName\": \"string\",\n        \"marginPercentage\": 1982.1320702315659,\n        \"olxId\": 2943,\n        \"olxName\": \"string\",\n        \"system\": false,\n        \"imageId\": \"5a5fcc8c-39e6-aed9-49c7-bd6155da4a14\",\n        \"imageUrl\": \"string\",\n        \"iconId\": \"eeba8087-975a-0579-3c7c-eca3178f505e\",\n        \"iconUrl\": \"string\",\n        \"metaTitle\": \"string\",\n        \"metaDescription\": \"string\",\n        \"ogImageId\": \"405e952e-992c-b72e-0eaa-a852a751a0c5\",\n        \"ogImageUrl\": \"string\"\n      },\n      \"isGaming\": false,\n      \"isPublic\": false,\n      \"description\": \"string\",\n      \"shortDescription\": \"string\",\n      \"barcode\": \"string\",\n      \"externalId\": \"string\",\n      \"marginPercentage\": 7124.167833258494,\n      \"isNew\": false,\n      \"price\": 8874.345176176954,\n      \"finalPrice\": 1768.0011202102542,\n      \"rebate\": 1842.3634270442956,\n      \"rebateValidUntil\": \"1991-01-17T02:54:18.578Z\",\n      \"rebateType\": 0,\n      \"stock\": 342,\n      \"attributes\": [\n        {\n          \"attributeId\": \"40e8465b-4345-c416-a4a6-4fdec4aedcc0\",\n          \"value\": \"string\"\n        },\n        {\n          \"attributeId\": \"337aa084-1538-a3e3-8551-a82971790844\",\n          \"value\": \"string\"\n        }\n      ],\n      \"gallery\": [\n        {\n          \"imageId\": \"98fd4c7b-f4bc-81be-fc8a-dd49813ae33f\",\n          \"imageUrl\": \"string\"\n        },\n        {\n          \"imageId\": \"a2791826-5435-d3a7-07ef-2ee8b69c964d\",\n          \"imageUrl\": \"string\"\n        }\n      ],\n      \"defaultImageId\": \"3de6cb2b-ecd0-bf08-6293-71738b371563\",\n      \"defaultImageUrl\": \"string\",\n      \"seoFields\": {\n        \"metaTitle\": \"string\",\n        \"metaDescription\": \"string\",\n        \"ogImageId\": \"b448b5ba-3c0f-6830-303c-a591884a1c97\",\n        \"ogImageUrl\": \"string\"\n      },\n      \"supplierOffers\": [\n        {\n          \"supplierId\": \"5af6dabf-29b2-13b2-c26b-f4157b6d99bd\",\n          \"supplierName\": \"string\",\n          \"supplierSku\": \"string\",\n          \"supplierPrice\": 2693.4596315296913,\n          \"supplierStock\": 2553,\n          \"isSelectedPriceSource\": false\n        },\n        {\n          \"supplierId\": \"e5f70e90-383b-ca50-cfd8-a15a7510a309\",\n          \"supplierName\": \"string\",\n          \"supplierSku\": \"string\",\n          \"supplierPrice\": 1336.4752034834405,\n          \"supplierStock\": 8693,\n          \"isSelectedPriceSource\": true\n        }\n      ]\n    }\n  ],\n  \"pagination\": {\n    \"totalRecords\": 3782,\n    \"totalPages\": 8392,\n    \"currentPage\": 3409,\n    \"pageSize\": 3634,\n    \"nextPage\": 2316,\n    \"previousPage\": 935\n  }\n}"
+                        },
+                        {
+                          "name": "Bad Request",
+                          "originalRequest": {
+                            "method": "GET",
+                            "header": [
+                              {
+                                "description": "Added as a part of security scheme: bearer",
+                                "key": "Authorization",
+                                "value": "Bearer <token>"
+                              }
+                            ],
+                            "url": {
+                              "raw": "{{baseUrl}}/api/integrations/:targetSystemCode/products?Q=string&Name=string&IsPublic=true&IsGaming=true&CategoryId=39155926-7f47-9242-e11f-6c3dafd43a62&Category=string&ExternalId=string&Page=1104&PageSize=1104",
+                              "host": [
+                                "{{baseUrl}}"
+                              ],
+                              "path": [
+                                "api",
+                                "integrations",
+                                ":targetSystemCode",
+                                "products"
+                              ],
+                              "query": [
+                                {
+                                  "key": "Q",
+                                  "value": "string"
+                                },
+                                {
+                                  "key": "Name",
+                                  "value": "string"
+                                },
+                                {
+                                  "key": "IsPublic",
+                                  "value": "true"
+                                },
+                                {
+                                  "key": "IsGaming",
+                                  "value": "true"
+                                },
+                                {
+                                  "key": "CategoryId",
+                                  "value": "39155926-7f47-9242-e11f-6c3dafd43a62"
+                                },
+                                {
+                                  "key": "Category",
+                                  "value": "string"
+                                },
+                                {
+                                  "key": "ExternalId",
+                                  "value": "string"
+                                },
+                                {
+                                  "key": "Page",
+                                  "value": "1104"
+                                },
+                                {
+                                  "key": "PageSize",
+                                  "value": "1104"
+                                }
+                              ],
+                              "variable": [
+                                {
+                                  "key": "targetSystemCode",
+                                  "value": "string"
+                                }
+                              ]
+                            }
+                          },
+                          "status": "Bad Request",
+                          "code": 400,
+                          "_postman_previewlanguage": "text",
+                          "header": [],
+                          "cookie": [],
+                          "body": ""
+                        },
+                        {
+                          "name": "Unauthorized",
+                          "originalRequest": {
+                            "method": "GET",
+                            "header": [
+                              {
+                                "description": "Added as a part of security scheme: bearer",
+                                "key": "Authorization",
+                                "value": "Bearer <token>"
+                              }
+                            ],
+                            "url": {
+                              "raw": "{{baseUrl}}/api/integrations/:targetSystemCode/products?Q=string&Name=string&IsPublic=true&IsGaming=true&CategoryId=39155926-7f47-9242-e11f-6c3dafd43a62&Category=string&ExternalId=string&Page=1104&PageSize=1104",
+                              "host": [
+                                "{{baseUrl}}"
+                              ],
+                              "path": [
+                                "api",
+                                "integrations",
+                                ":targetSystemCode",
+                                "products"
+                              ],
+                              "query": [
+                                {
+                                  "key": "Q",
+                                  "value": "string"
+                                },
+                                {
+                                  "key": "Name",
+                                  "value": "string"
+                                },
+                                {
+                                  "key": "IsPublic",
+                                  "value": "true"
+                                },
+                                {
+                                  "key": "IsGaming",
+                                  "value": "true"
+                                },
+                                {
+                                  "key": "CategoryId",
+                                  "value": "39155926-7f47-9242-e11f-6c3dafd43a62"
+                                },
+                                {
+                                  "key": "Category",
+                                  "value": "string"
+                                },
+                                {
+                                  "key": "ExternalId",
+                                  "value": "string"
+                                },
+                                {
+                                  "key": "Page",
+                                  "value": "1104"
+                                },
+                                {
+                                  "key": "PageSize",
+                                  "value": "1104"
+                                }
+                              ],
+                              "variable": [
+                                {
+                                  "key": "targetSystemCode",
+                                  "value": "string"
+                                }
+                              ]
+                            }
+                          },
+                          "status": "Unauthorized",
+                          "code": 401,
+                          "_postman_previewlanguage": "text",
+                          "header": [],
+                          "cookie": [],
+                          "body": ""
+                        },
+                        {
+                          "name": "Forbidden",
+                          "originalRequest": {
+                            "method": "GET",
+                            "header": [
+                              {
+                                "description": "Added as a part of security scheme: bearer",
+                                "key": "Authorization",
+                                "value": "Bearer <token>"
+                              }
+                            ],
+                            "url": {
+                              "raw": "{{baseUrl}}/api/integrations/:targetSystemCode/products?Q=string&Name=string&IsPublic=true&IsGaming=true&CategoryId=39155926-7f47-9242-e11f-6c3dafd43a62&Category=string&ExternalId=string&Page=1104&PageSize=1104",
+                              "host": [
+                                "{{baseUrl}}"
+                              ],
+                              "path": [
+                                "api",
+                                "integrations",
+                                ":targetSystemCode",
+                                "products"
+                              ],
+                              "query": [
+                                {
+                                  "key": "Q",
+                                  "value": "string"
+                                },
+                                {
+                                  "key": "Name",
+                                  "value": "string"
+                                },
+                                {
+                                  "key": "IsPublic",
+                                  "value": "true"
+                                },
+                                {
+                                  "key": "IsGaming",
+                                  "value": "true"
+                                },
+                                {
+                                  "key": "CategoryId",
+                                  "value": "39155926-7f47-9242-e11f-6c3dafd43a62"
+                                },
+                                {
+                                  "key": "Category",
+                                  "value": "string"
+                                },
+                                {
+                                  "key": "ExternalId",
+                                  "value": "string"
+                                },
+                                {
+                                  "key": "Page",
+                                  "value": "1104"
+                                },
+                                {
+                                  "key": "PageSize",
+                                  "value": "1104"
+                                }
+                              ],
+                              "variable": [
+                                {
+                                  "key": "targetSystemCode",
+                                  "value": "string"
+                                }
+                              ]
+                            }
+                          },
+                          "status": "Forbidden",
+                          "code": 403,
+                          "_postman_previewlanguage": "text",
+                          "header": [],
+                          "cookie": [],
+                          "body": ""
+                        },
+                        {
+                          "name": "Not Found",
+                          "originalRequest": {
+                            "method": "GET",
+                            "header": [
+                              {
+                                "description": "Added as a part of security scheme: bearer",
+                                "key": "Authorization",
+                                "value": "Bearer <token>"
+                              }
+                            ],
+                            "url": {
+                              "raw": "{{baseUrl}}/api/integrations/:targetSystemCode/products?Q=string&Name=string&IsPublic=true&IsGaming=true&CategoryId=39155926-7f47-9242-e11f-6c3dafd43a62&Category=string&ExternalId=string&Page=1104&PageSize=1104",
+                              "host": [
+                                "{{baseUrl}}"
+                              ],
+                              "path": [
+                                "api",
+                                "integrations",
+                                ":targetSystemCode",
+                                "products"
+                              ],
+                              "query": [
+                                {
+                                  "key": "Q",
+                                  "value": "string"
+                                },
+                                {
+                                  "key": "Name",
+                                  "value": "string"
+                                },
+                                {
+                                  "key": "IsPublic",
+                                  "value": "true"
+                                },
+                                {
+                                  "key": "IsGaming",
+                                  "value": "true"
+                                },
+                                {
+                                  "key": "CategoryId",
+                                  "value": "39155926-7f47-9242-e11f-6c3dafd43a62"
+                                },
+                                {
+                                  "key": "Category",
+                                  "value": "string"
+                                },
+                                {
+                                  "key": "ExternalId",
+                                  "value": "string"
+                                },
+                                {
+                                  "key": "Page",
+                                  "value": "1104"
+                                },
+                                {
+                                  "key": "PageSize",
+                                  "value": "1104"
+                                }
+                              ],
+                              "variable": [
+                                {
+                                  "key": "targetSystemCode",
+                                  "value": "string"
+                                }
+                              ]
+                            }
+                          },
+                          "status": "Not Found",
+                          "code": 404,
+                          "_postman_previewlanguage": "text",
+                          "header": [],
+                          "cookie": [],
+                          "body": ""
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{bearerToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "/"
+    }
+  ]
+}

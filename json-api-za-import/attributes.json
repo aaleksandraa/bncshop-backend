@@ -1,0 +1,4136 @@
+{
+  "data": [
+    {
+      "productAttributeDefinitionId": "8a8a06a5-7233-4629-9e51-8ba0189b8cb6",
+      "name": "3D",
+      "externalId": null,
+      "olxId": 3108,
+      "olxName": "3D",
+      "type": 2,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "227925eb-0811-41fc-b009-34778f5822c8",
+          "name": "Opcije"
+        },
+        {
+          "categoryId": "7d697b0e-b001-48d0-b230-4dc487c2cf3d",
+          "name": "Projektori"
+        },
+        {
+          "categoryId": "80bf5f05-5931-4e51-a63c-deb9d0f56ac8",
+          "name": "Projektori"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "d136622f-7052-4c81-85d8-dd4b44924a8d",
+      "name": "3D TV",
+      "externalId": null,
+      "olxId": 4962,
+      "olxName": "3D TV",
+      "type": 2,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "abf63476-f788-44a4-9e04-003dbc35d93f",
+          "name": "Digital signage"
+        },
+        {
+          "categoryId": "a08e4ed2-1067-414e-b860-23cad3beb532",
+          "name": "TV"
+        },
+        {
+          "categoryId": "f887503d-2110-4412-a377-113d8ed8e1ec",
+          "name": "TV"
+        },
+        {
+          "categoryId": "028bea97-995b-4f8d-8938-405ab66a68ae",
+          "name": "TV Lcd"
+        },
+        {
+          "categoryId": "226a911e-3aaa-4f00-ba76-74569c573dae",
+          "name": "TV Plazma"
+        },
+        {
+          "categoryId": "d802c32c-ecf1-4f34-b09d-5315dc905f2e",
+          "name": "TV Tuner"
+        },
+        {
+          "categoryId": "9edf3fa6-e5f7-45d8-b12a-2f698d25d579",
+          "name": "TV, audio i video"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "b685afdf-5eca-4baa-a38f-fb65cfaa56ff",
+      "name": "3G",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 2,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "1162525e-02c2-44a1-b6e1-945b80760d7e",
+          "name": "Laptopi"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "a9296c5e-ba92-455f-b97b-b7f74cecb70a",
+      "name": "4G",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 2,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "d874f799-5168-4765-984d-1e0103833073",
+          "name": "Tableti"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "e914c574-9043-46da-ad78-d4291fdf04ae",
+      "name": "A-GPS",
+      "externalId": null,
+      "olxId": 2294,
+      "olxName": "A-GPS",
+      "type": 2,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "07ef9cec-75f9-4b1f-ae5c-635f0c67ba7c",
+          "name": "Opcije"
+        },
+        {
+          "categoryId": "90109698-da59-4eee-9222-f98a98681cfc",
+          "name": "Tableti"
+        },
+        {
+          "categoryId": "d874f799-5168-4765-984d-1e0103833073",
+          "name": "Tableti"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "fb1f559e-83d7-4627-b41e-be6ae03a2e37",
+      "name": "Accounti za igre",
+      "externalId": null,
+      "olxId": 6687,
+      "olxName": "Accounti za igre",
+      "type": 2,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "1cacf50f-9318-45d8-a580-60f02eb54af2",
+          "name": "Igrice"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "1abc8a13-288d-466c-a91e-06b311e26ac2",
+      "name": "ADAPTER _MEMCARD",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 2,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "2cc7c543-56c6-4f44-8cdd-9dd2ce5eefe4",
+          "name": "Memorijske Kartice"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "e3ac54bb-a6bc-48f3-905a-42c16b59e01a",
+      "name": "ADAPTER_SC",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "0ecc3f08-28e8-4742-aabf-52bb11fdb65b",
+          "name": "Skeneri"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "4d1124cd-a3e2-4632-b382-df65796ac4d2",
+      "name": "ADAPTIVE_SYNC",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "2b56dcf8-38ef-49f7-9a00-bc0f193ac3c3",
+          "name": "Monitori"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "ba4ec092-4013-452d-ae57-b74e0e55ed45",
+      "name": "ADD_SMARTBAND",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "662ca63d-d03c-4c30-b046-d28de1b73392",
+          "name": "Pametne Narukvice"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "451981be-3f99-47ea-b802-50130f62ac21",
+      "name": "ADD_SMARTWATCH",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "21be2c96-9fde-4c07-b354-5290a8be96d2",
+          "name": "Pametni Satovi"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "63df4e0e-445a-4d15-9e87-f89f47d75775",
+      "name": "ADD_VACUMCLACC",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "3e90b067-129c-49b3-a991-3400d3b8891e",
+          "name": "Usisivači"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "8f2f9f58-7992-47b8-a1dc-c00dee7835f1",
+      "name": "ADD_WG",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "8329ab4d-133b-40ef-99f5-612b246aec83",
+          "name": "Frižideri"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "04d7f1e2-2cea-4887-9091-42d4578f5eeb",
+      "name": "ADDFEATURES_SCOOEL",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "ad672541-73e4-4481-8a1b-e8a6697f3bb3",
+          "name": "Električni trotineti"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "38fb62b8-d841-4dea-b65e-1036928e62b5",
+      "name": "ADDSPECIFICATIONS",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "ad672541-73e4-4481-8a1b-e8a6697f3bb3",
+          "name": "Električni trotineti"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "e8c3ed7e-4368-4c9f-ac39-ea9e33e75387",
+      "name": "ADDWASH",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 2,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "c8d0b28d-6b62-4469-b9ab-f089733ca4da",
+          "name": "Veš Mašine"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "e3a2d5ed-75e7-4b6a-b80e-0db173eed25c",
+      "name": "ADF",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 2,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "dabd1b8c-a5c8-4219-81b8-ed81e76a0d78",
+          "name": "Ploteri"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "a95ea737-8775-4376-9ea1-f2297409ff33",
+      "name": "AGE_SCOO",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "ad672541-73e4-4481-8a1b-e8a6697f3bb3",
+          "name": "Električni trotineti"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "9de746ea-05bf-4531-b5fd-5f72e76cd447",
+      "name": "AI_UPSCALE",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "a08e4ed2-1067-414e-b860-23cad3beb532",
+          "name": "TV"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "f8120b0d-afc7-4d6f-afd0-f23297f3ea99",
+      "name": "AIR CHANGES_AIR",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "42b83892-1329-44f9-a9ad-4006dfda1998",
+          "name": "Prečišćivači zraka"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "d2cb5a21-5afa-4a4a-a458-a9801995058d",
+      "name": "AIR INLET_AIR",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "42b83892-1329-44f9-a9ad-4006dfda1998",
+          "name": "Prečišćivači zraka"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "dc46c3d5-9d64-4520-b821-98782df85663",
+      "name": "AIR OUTLET_AIR",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "42b83892-1329-44f9-a9ad-4006dfda1998",
+          "name": "Prečišćivači zraka"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "956fd830-ddcf-4d49-ac12-621ac05303c0",
+      "name": "AIR_FEELFUN",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 2,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "02f88ce3-775b-4074-bb26-148607a13e08",
+          "name": "Klime"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "bc000c9c-9edb-42b7-97fe-56ca47365822",
+      "name": "AIR_FLOW_EXT",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 1,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "02f88ce3-775b-4074-bb26-148607a13e08",
+          "name": "Klime"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "5e0d7868-00e0-4986-9964-454024c83661",
+      "name": "AIR_FLOW_INS",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 1,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "02f88ce3-775b-4074-bb26-148607a13e08",
+          "name": "Klime"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "cd8dd505-9905-4a95-8a9f-588cd1354e59",
+      "name": "AIR_IONIZER",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 2,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "02f88ce3-775b-4074-bb26-148607a13e08",
+          "name": "Klime"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "7df2aaab-8f3b-4412-89a5-3e82d24bab02",
+      "name": "AIR_IONIZER FILTER",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 2,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "02f88ce3-775b-4074-bb26-148607a13e08",
+          "name": "Klime"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "af0275c7-f182-4b5d-8beb-cde2c75a0973",
+      "name": "AIRPURIFOP_AIRO",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "42b83892-1329-44f9-a9ad-4006dfda1998",
+          "name": "Prečišćivači zraka"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "2595ae6b-8957-4a47-ada2-b3c66826c84b",
+      "name": "Analogni tuner",
+      "externalId": null,
+      "olxId": 3465,
+      "olxName": "Analogni tuner",
+      "type": 2,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "abf63476-f788-44a4-9e04-003dbc35d93f",
+          "name": "Digital signage"
+        },
+        {
+          "categoryId": "a08e4ed2-1067-414e-b860-23cad3beb532",
+          "name": "TV"
+        },
+        {
+          "categoryId": "f887503d-2110-4412-a377-113d8ed8e1ec",
+          "name": "TV"
+        },
+        {
+          "categoryId": "028bea97-995b-4f8d-8938-405ab66a68ae",
+          "name": "TV Lcd"
+        },
+        {
+          "categoryId": "226a911e-3aaa-4f00-ba76-74569c573dae",
+          "name": "TV Plazma"
+        },
+        {
+          "categoryId": "d802c32c-ecf1-4f34-b09d-5315dc905f2e",
+          "name": "TV Tuner"
+        },
+        {
+          "categoryId": "9edf3fa6-e5f7-45d8-b12a-2f698d25d579",
+          "name": "TV, audio i video"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "8a349fb5-a48a-4086-891e-3ae937409116",
+      "name": "Android",
+      "externalId": null,
+      "olxId": 7438,
+      "olxName": "Android",
+      "type": 2,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "d0f71c6f-1bb0-46bb-b845-617f058c5a56",
+          "name": "Auto audio"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "bca66175-d5b3-4b68-8517-919dbbed79ed",
+      "name": "ANGLE",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "2b56dcf8-38ef-49f7-9a00-bc0f193ac3c3",
+          "name": "Monitori"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "03912a72-685d-452e-aca5-c58ddcc7532d",
+      "name": "ANN_REFR",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "8329ab4d-133b-40ef-99f5-612b246aec83",
+          "name": "Frižideri"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "4f58ab2b-0709-46d3-a061-29c7ceb1e5c5",
+      "name": "ANT_NETWORKRUT",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "c0670f40-0168-4f6b-ab62-8e615ebd0c6b",
+          "name": "Access Point"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "7b90620c-e93f-4ab3-92a8-bd1ee9943a97",
+      "name": "ANTICALC_IRONS",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 2,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "2f3724e3-3952-4a64-892a-96a594bfb156",
+          "name": "Pegla"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "a4298999-2058-4bc9-933d-f1123f3e3817",
+      "name": "AP router",
+      "externalId": null,
+      "olxId": 3410,
+      "olxName": "AP router",
+      "type": 2,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "e37fe9c9-98b3-4dec-984d-a7d14f8b1ee5",
+          "name": "Ruteri"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "35b005ed-c55b-424a-acd9-910104b55123",
+      "name": "APP",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 2,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "a08e4ed2-1067-414e-b860-23cad3beb532",
+          "name": "TV"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "d43fc4f6-c946-40d0-b900-b78fd424bec1",
+      "name": "ATT_HAIRDRYER",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "50f42bac-cfbf-4cbf-9b4c-40bb18a2ff8d",
+          "name": "Fenovi"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "249e291a-c6b1-4e4d-94cf-9b976a1a8b0d",
+      "name": "AUDIO",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 2,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "2b56dcf8-38ef-49f7-9a00-bc0f193ac3c3",
+          "name": "Monitori"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "ae3a7ce6-2a4e-471e-bc25-cc60bec8a857",
+      "name": "AUDIO_MB",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 1,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "a89a96a0-31f8-49a8-9daf-c6fa4f0c4bf0",
+          "name": "Matične Ploče"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "6c2e5a95-2cdd-4086-9a60-4de62d4cb5ee",
+      "name": "AUDIO_PH",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 2,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "310894ea-eb42-459e-8aec-7c08ee19ff9a",
+          "name": "Akcione Kamere"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "843a4bf2-c784-4388-b13e-01f935eefd0f",
+      "name": "AUDIOFORMAT_PH",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "310894ea-eb42-459e-8aec-7c08ee19ff9a",
+          "name": "Akcione Kamere"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "e87ec4c9-4240-492b-bb9f-a32e981fddbb",
+      "name": "AUTO_RESTART",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 2,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "02f88ce3-775b-4074-bb26-148607a13e08",
+          "name": "Klime"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "8c443c23-7a55-4ff3-834f-41fef90b3b36",
+      "name": "Automatsko isključenje",
+      "externalId": null,
+      "olxId": 4939,
+      "olxName": "Automatsko isključenje",
+      "type": 2,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "2f3724e3-3952-4a64-892a-96a594bfb156",
+          "name": "Pegla"
+        },
+        {
+          "categoryId": "f7453f60-b303-4d5f-8f56-9485d34fac9b",
+          "name": "Veš"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "ebbd86f8-5047-4372-9bde-fe9eb051db5f",
+      "name": "AUX input",
+      "externalId": null,
+      "olxId": 2185,
+      "olxName": "AUX input",
+      "type": 2,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "d0f71c6f-1bb0-46bb-b845-617f058c5a56",
+          "name": "Auto audio"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "80a3af04-d522-4b64-8aac-c886f14993f4",
+      "name": "BACKSIDE_PR",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 2,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "dabd1b8c-a5c8-4219-81b8-ed81e76a0d78",
+          "name": "Ploteri"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "7983ea06-2481-4d93-85ea-1aa733c3d528",
+      "name": "BACKSIDE_SC",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 2,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "0ecc3f08-28e8-4742-aabf-52bb11fdb65b",
+          "name": "Skeneri"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "d61681d2-cd78-41b4-bb2a-230e4357da61",
+      "name": "BATCAP_SCOOEL",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 1,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "ad672541-73e4-4481-8a1b-e8a6697f3bb3",
+          "name": "Električni trotineti"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "1e603ad7-8356-43a1-96f3-57b70399c42a",
+      "name": "Baterija",
+      "externalId": null,
+      "olxId": 555,
+      "olxName": "Baterija",
+      "type": 3,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": "[\"Obi\\u010dna\",\"Interna\",\"Ostalo\"]",
+      "categories": [
+        {
+          "categoryId": "8d948334-6c8b-47a7-84c4-b5d3843f27bd",
+          "name": "Digitalne Kamere"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "1646e09b-ed99-493f-baaa-88578e8dc98d",
+      "name": "Baterija (trajanje)",
+      "externalId": null,
+      "olxId": 3973,
+      "olxName": "Baterija (trajanje)",
+      "type": 1,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "fb536960-5cb3-4b42-ab58-2daff293e513",
+          "name": "Diktafoni"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "f83c97ca-dcf8-49af-8e3e-62938f8ca9ff",
+      "name": "Baterija (trajanje)",
+      "externalId": null,
+      "olxId": 272,
+      "olxName": "Baterija (trajanje)",
+      "type": 3,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": "[\"0\",\"do 15 minuta\",\"do 30 minuta\",\"do 45 minuta\",\"do 1h\",\"do 1h 15min\",\"do 1h 30min\",\"do 1h 45min\",\"do 2h\",\"do 2h 15min\",\"do 2h 30min\",\"do 2h 45min\",\"do 3h\",\"do 3h 15min\",\"do 3h 30min\",\"do 3h 45min\",\"do 4h\",\"do 4h 15min\",\"do 4h 30min\",\"do 4h 45min\",\"do 5h\",\"do 5h 15min\",\"do 5h 30min\",\"do 5h 45min\",\"do 6h\",\"do 6h 30min\",\"do 7h\",\"do 7h 30min\",\"do 8h\",\"do 9h\",\"do 10h\",\"do 11h\",\"do 12h\",\"do 13h\",\"do 14h\",\"do 15h\",\"preko 15h\",\"Ostalo\"]",
+      "categories": [
+        {
+          "categoryId": "35ea2176-a3db-4936-b310-231087b97c1f",
+          "name": "Laptop opcije"
+        },
+        {
+          "categoryId": "1162525e-02c2-44a1-b6e1-945b80760d7e",
+          "name": "Laptopi"
+        },
+        {
+          "categoryId": "9c080e0b-69ed-4690-8f27-ca5f5e77cf5e",
+          "name": "Laptopi"
+        },
+        {
+          "categoryId": "132dcb0d-5a94-4568-9679-eb6d99bfcf37",
+          "name": "Netbook"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "a057bc0d-a155-46d2-9e89-e504c78a6ecd",
+      "name": "BATT_PH",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "310894ea-eb42-459e-8aec-7c08ee19ff9a",
+          "name": "Akcione Kamere"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "426fa1dc-b33b-4a5b-9d7c-b991ac94e2f6",
+      "name": "BATT_SMARTBAND",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "662ca63d-d03c-4c30-b046-d28de1b73392",
+          "name": "Pametne Narukvice"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "2e8981c5-da76-4be1-bce8-bcfc24c8e306",
+      "name": "BATTCAP_NB",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "1162525e-02c2-44a1-b6e1-945b80760d7e",
+          "name": "Laptopi"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "e7b346f0-94ed-4c3c-a233-69c769d01899",
+      "name": "BATTCAP_TABL",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 1,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "d874f799-5168-4765-984d-1e0103833073",
+          "name": "Tableti"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "41cba1d3-dcf6-4c32-b070-9ba005b8b9d4",
+      "name": "BATTCEL_NB",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "1162525e-02c2-44a1-b6e1-945b80760d7e",
+          "name": "Laptopi"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "1a2d71c6-7702-4c5b-ab7b-f37d7dfb3492",
+      "name": "BATTIN",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 2,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "3c99e2f5-42d1-4d36-81e5-9bea24abeb2b",
+          "name": "Mobilni Telefoni"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "97897491-5144-4177-a707-81284d227890",
+      "name": "Bez zaleđivanja (No frost)",
+      "externalId": null,
+      "olxId": 3449,
+      "olxName": "Bez zaleđivanja (No frost)",
+      "type": 2,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "8329ab4d-133b-40ef-99f5-612b246aec83",
+          "name": "Frižideri"
+        },
+        {
+          "categoryId": "99ec757c-116d-4db7-874a-b1dc16ad1188",
+          "name": "Frižideri"
+        },
+        {
+          "categoryId": "c09e1ef9-6b1d-4ff4-a980-f9d447117910",
+          "name": "Zamrzivači"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "ec57eb66-f00b-4630-938e-24d397bfef23",
+      "name": "Bežični",
+      "externalId": null,
+      "olxId": 3526,
+      "olxName": "Bežični",
+      "type": 3,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": true,
+      "optionsJson": "[\"Da\",\"Ne\"]",
+      "categories": [
+        {
+          "categoryId": "be87ea34-2074-4211-9566-8ed38d1a1920",
+          "name": "Brijači"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "56c0218d-addb-44e1-bad7-1c5adf4213a8",
+      "name": "Blenda",
+      "externalId": null,
+      "olxId": 7441,
+      "olxName": "Blenda",
+      "type": 2,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "d0f71c6f-1bb0-46bb-b845-617f058c5a56",
+          "name": "Auto audio"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "30468ff5-4fd6-4dd4-a973-f0b61d17dd4c",
+      "name": "Blic/Flash",
+      "externalId": null,
+      "olxId": 2285,
+      "olxName": "Blic/Flash",
+      "type": 3,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": "[\"LED\",\"Dual LED\",\"Xenon\",\"Da\"]",
+      "categories": [
+        {
+          "categoryId": "07ef9cec-75f9-4b1f-ae5c-635f0c67ba7c",
+          "name": "Opcije"
+        },
+        {
+          "categoryId": "90109698-da59-4eee-9222-f98a98681cfc",
+          "name": "Tableti"
+        },
+        {
+          "categoryId": "d874f799-5168-4765-984d-1e0103833073",
+          "name": "Tableti"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "c15d0486-e6e5-4017-a1e9-f97219d424d9",
+      "name": "Blic/Flash",
+      "externalId": null,
+      "olxId": 2269,
+      "olxName": "Blic/Flash",
+      "type": 3,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": "[\"LED\",\"Dual LED\",\"Xenon\",\"Da\"]",
+      "categories": [
+        {
+          "categoryId": "3c99e2f5-42d1-4d36-81e5-9bea24abeb2b",
+          "name": "Mobilni Telefoni"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "4cbea776-d890-47cb-a1a3-207958ae371d",
+      "name": "Bluetooth",
+      "externalId": null,
+      "olxId": 2501,
+      "olxName": "Bluetooth",
+      "type": 2,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "2dd9d55b-470c-4f75-8318-eb72e6e79cff",
+          "name": "Navigacija"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "a981f0d2-8978-46ca-969f-407abb8705a4",
+      "name": "Bluetooth",
+      "externalId": null,
+      "olxId": 274,
+      "olxName": "Bluetooth",
+      "type": 2,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "35ea2176-a3db-4936-b310-231087b97c1f",
+          "name": "Laptop opcije"
+        },
+        {
+          "categoryId": "1162525e-02c2-44a1-b6e1-945b80760d7e",
+          "name": "Laptopi"
+        },
+        {
+          "categoryId": "9c080e0b-69ed-4690-8f27-ca5f5e77cf5e",
+          "name": "Laptopi"
+        },
+        {
+          "categoryId": "132dcb0d-5a94-4568-9679-eb6d99bfcf37",
+          "name": "Netbook"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "ab2569b3-7b18-4000-bd0b-bde7502dd9aa",
+      "name": "Bluetooth",
+      "externalId": null,
+      "olxId": 2186,
+      "olxName": "Bluetooth",
+      "type": 2,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "d0f71c6f-1bb0-46bb-b845-617f058c5a56",
+          "name": "Auto audio"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "fb635330-b586-4f6f-a065-36568bbab9bc",
+      "name": "Bluetooth",
+      "externalId": null,
+      "olxId": 2287,
+      "olxName": "Bluetooth",
+      "type": 2,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "07ef9cec-75f9-4b1f-ae5c-635f0c67ba7c",
+          "name": "Opcije"
+        },
+        {
+          "categoryId": "90109698-da59-4eee-9222-f98a98681cfc",
+          "name": "Tableti"
+        },
+        {
+          "categoryId": "d874f799-5168-4765-984d-1e0103833073",
+          "name": "Tableti"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "0fb1be10-307c-4f0c-a353-da40dfdf70f2",
+      "name": "Boja",
+      "externalId": null,
+      "olxId": 1123,
+      "olxName": "Boja",
+      "type": 3,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": "[\"Bijela\",\"Siva\",\"Crna\",\"Providna\",\"Ostalo\"]",
+      "categories": [
+        {
+          "categoryId": "e4742244-31b3-4fd1-ada8-cbf12e405e46",
+          "name": "Tastature"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "1c81b458-7d6f-483a-90a6-be0cab9e830a",
+      "name": "Boja",
+      "externalId": null,
+      "olxId": 5108,
+      "olxName": "Boja",
+      "type": 3,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": "[\"Be\\u017e\",\"Bijela\",\"Crna\",\"Crvena\",\"Narand\\u017easta\",\"Plava\",\"Roza\",\"Siva\",\"Sme\\u0111a\",\"Srebrena\",\"Zelena\",\"Zlatna\",\"\\u017duta\",\"Ljubi\\u010dasta\",\"Vi\\u0161ebojni\",\"Ostalo\"]",
+      "categories": [
+        {
+          "categoryId": "3c99e2f5-42d1-4d36-81e5-9bea24abeb2b",
+          "name": "Mobilni Telefoni"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "318e3c55-f5fd-4078-8b6e-6ce6db5fc335",
+      "name": "Boja",
+      "externalId": null,
+      "olxId": 4927,
+      "olxName": "Boja",
+      "type": 3,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": "[\"Crna\",\"Crvena\",\"Siva\",\"Plava\",\"\\u017duta\",\"Zelena\",\"Sme\\u0111a\",\"Roza\",\"\\u0160areni\",\"Ostalo\"]",
+      "categories": [
+        {
+          "categoryId": "9f978414-4af0-48e0-9921-94108dd504c6",
+          "name": "Čišćenje"
+        },
+        {
+          "categoryId": "c817c354-802b-4631-ade3-ddbfc800437a",
+          "name": "Paročistači"
+        },
+        {
+          "categoryId": "3e90b067-129c-49b3-a991-3400d3b8891e",
+          "name": "Usisivači"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "6ae4134f-419b-4022-b8fd-a2d964bb7d32",
+      "name": "Boja",
+      "externalId": null,
+      "olxId": 5109,
+      "olxName": "Boja",
+      "type": 3,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": "[\"Be\\u017e\",\"Bijela\",\"Crna\",\"Crvena\",\"Narand\\u017easta\",\"Plava\",\"Roza\",\"Siva\",\"Sme\\u0111a\",\"Srebrena\",\"Zelena\",\"Zlatna\",\"\\u017duta\",\"Vi\\u0161ebojni\",\"Ostalo\"]",
+      "categories": [
+        {
+          "categoryId": "07ef9cec-75f9-4b1f-ae5c-635f0c67ba7c",
+          "name": "Opcije"
+        },
+        {
+          "categoryId": "90109698-da59-4eee-9222-f98a98681cfc",
+          "name": "Tableti"
+        },
+        {
+          "categoryId": "d874f799-5168-4765-984d-1e0103833073",
+          "name": "Tableti"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "aa506072-9884-4077-b168-dcb8eb846ab4",
+      "name": "Boja",
+      "externalId": null,
+      "olxId": 1166,
+      "olxName": "Boja",
+      "type": 3,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": "[\"Crna\",\"Bijela\",\"Siva\",\"Ostalo\"]",
+      "categories": [
+        {
+          "categoryId": "2b56dcf8-38ef-49f7-9a00-bc0f193ac3c3",
+          "name": "Monitori"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "d52b5284-d6c3-41e6-8e08-ef4e322419d1",
+      "name": "Boja",
+      "externalId": null,
+      "olxId": 7948,
+      "olxName": "Boja",
+      "type": 3,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": "[\"Bijela\",\"Crna\",\"Siva\",\"Srebrna\",\"Zlatna\",\"Be\\u017e\",\"Sme\\u0111a\",\"Crvena\",\"Plava\",\"Zelena\",\"\\u017duta\",\"Narand\\u017easta\",\"Ljubi\\u010dasta\",\"Roza\",\"Vi\\u0161ebojna\",\"Ostalo\"]",
+      "categories": [
+        {
+          "categoryId": "35ea2176-a3db-4936-b310-231087b97c1f",
+          "name": "Laptop opcije"
+        },
+        {
+          "categoryId": "1162525e-02c2-44a1-b6e1-945b80760d7e",
+          "name": "Laptopi"
+        },
+        {
+          "categoryId": "9c080e0b-69ed-4690-8f27-ca5f5e77cf5e",
+          "name": "Laptopi"
+        },
+        {
+          "categoryId": "132dcb0d-5a94-4568-9679-eb6d99bfcf37",
+          "name": "Netbook"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "d79197eb-cf8b-4cbc-babc-e3dd2eca79f8",
+      "name": "Boja",
+      "externalId": null,
+      "olxId": 344,
+      "olxName": "Boja",
+      "type": 3,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": "[\"Neutralna\",\"Be\\u017e\",\"Bijela\",\"Crna\",\"Crvena\",\"Ljubi\\u010dasta\",\"Narand\\u017easta\",\"Plava\",\"Siva\",\"Sme\\u0111a\",\"Srebrena\",\"Zelena\",\"Zlatna\",\"\\u017duta\",\"Ostalo\"]",
+      "categories": [
+        {
+          "categoryId": "6da0752e-0621-4a3c-ac75-17409f85119e",
+          "name": "Kućišta"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "e10e9cd7-f085-4c74-a20a-e98a28b73a6c",
+      "name": "Boja",
+      "externalId": null,
+      "olxId": 3460,
+      "olxName": "Boja",
+      "type": 3,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": "[\"Crna\",\"Bijela\",\"Siva\",\"Sme\\u0111a\",\"Ostalo\"]",
+      "categories": [
+        {
+          "categoryId": "abf63476-f788-44a4-9e04-003dbc35d93f",
+          "name": "Digital signage"
+        },
+        {
+          "categoryId": "a08e4ed2-1067-414e-b860-23cad3beb532",
+          "name": "TV"
+        },
+        {
+          "categoryId": "f887503d-2110-4412-a377-113d8ed8e1ec",
+          "name": "TV"
+        },
+        {
+          "categoryId": "028bea97-995b-4f8d-8938-405ab66a68ae",
+          "name": "TV Lcd"
+        },
+        {
+          "categoryId": "226a911e-3aaa-4f00-ba76-74569c573dae",
+          "name": "TV Plazma"
+        },
+        {
+          "categoryId": "d802c32c-ecf1-4f34-b09d-5315dc905f2e",
+          "name": "TV Tuner"
+        },
+        {
+          "categoryId": "9edf3fa6-e5f7-45d8-b12a-2f698d25d579",
+          "name": "TV, audio i video"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "3132c8eb-cdb2-44fb-9be9-bc63b67c7865",
+      "name": "Boja kaiša",
+      "externalId": null,
+      "olxId": 5058,
+      "olxName": "Boja kaiša",
+      "type": 3,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": true,
+      "optionsJson": "[\"Crna\",\"Bijela\",\"Crvena\",\"\\u017duta\",\"Plava\",\"Narand\\u017easta\",\"Zelena\",\"Roza\",\"Ljubi\\u010dasta\",\"Siva\",\"Sme\\u0111a\",\"Srebrena\",\"Zlatna\",\"Vi\\u0161e boja\",\"Ostalo\"]",
+      "categories": [
+        {
+          "categoryId": "662ca63d-d03c-4c30-b046-d28de1b73392",
+          "name": "Pametne Narukvice"
+        },
+        {
+          "categoryId": "21be2c96-9fde-4c07-b354-5290a8be96d2",
+          "name": "Pametni Satovi"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "b919b357-379b-48e5-8269-5eeed147647a",
+      "name": "Boja okvira",
+      "externalId": null,
+      "olxId": 5110,
+      "olxName": "Boja okvira",
+      "type": 3,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": "[\"Be\\u017e\",\"Bijela\",\"Crna\",\"Crvena\",\"Narand\\u017easta\",\"Plava\",\"Roza\",\"Siva\",\"Sme\\u0111a\",\"Srebrena\",\"Zelena\",\"Zlatna\",\"\\u017duta\",\"Vi\\u0161ebojni\",\"Ostalo\"]",
+      "categories": [
+        {
+          "categoryId": "662ca63d-d03c-4c30-b046-d28de1b73392",
+          "name": "Pametne Narukvice"
+        },
+        {
+          "categoryId": "21be2c96-9fde-4c07-b354-5290a8be96d2",
+          "name": "Pametni Satovi"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "009539bc-51ad-42a0-940d-2ee7dae41fe7",
+      "name": "BOWL_KITCHAPP",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "5d19ebb9-29c4-4052-92a6-bc2f8d89ac4d",
+          "name": "Sjeckalice"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "64b5a635-7614-4726-99ed-103e7ee21c7e",
+      "name": "Br. podesivih brzina",
+      "externalId": null,
+      "olxId": 5097,
+      "olxName": "Br. podesivih brzina",
+      "type": 3,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": true,
+      "optionsJson": "[\"1\",\"2\",\"3\",\"4\",\"5\",\"6\",\"7\",\"Ostalo\"]",
+      "categories": [
+        {
+          "categoryId": "50f42bac-cfbf-4cbf-9b4c-40bb18a2ff8d",
+          "name": "Fenovi"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "9b0bd938-a02a-4b5c-9a2f-5a87a5b38ec3",
+      "name": "BRIHTNESS",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "2b56dcf8-38ef-49f7-9a00-bc0f193ac3c3",
+          "name": "Monitori"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "a16d62b7-d8a6-4641-b4f9-280052cbae66",
+      "name": "Broj baterija",
+      "externalId": null,
+      "olxId": 7307,
+      "olxName": "Broj baterija",
+      "type": 3,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": "[\"1\",\"2\",\"3\",\"Vi\\u0161e od 3\"]",
+      "categories": [
+        {
+          "categoryId": "97a39804-8cb2-4f7a-bb0f-7601d8381a73",
+          "name": "Dronovi"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "6a77c163-1110-4f67-9351-de1d0f5f5b58",
+      "name": "Broj cifara/znakova",
+      "externalId": null,
+      "olxId": 5178,
+      "olxName": "Broj cifara/znakova",
+      "type": 3,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": "[\"6\",\"7\",\"8\",\"9\",\"10\",\"11\",\"12\",\"13\",\"14\",\"Ostalo\"]",
+      "categories": [
+        {
+          "categoryId": "7af99986-e27b-4f32-b930-d3a5fc786be5",
+          "name": "Kalkulatori"
+        },
+        {
+          "categoryId": "90e0593f-c6dc-46ad-ad29-e6a82651523f",
+          "name": "Kancelarijska oprema"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "91675d93-c537-434c-ba9f-ceef01d2b2e2",
+      "name": "Broj džojstika",
+      "externalId": null,
+      "olxId": 4835,
+      "olxName": "Broj džojstika",
+      "type": 3,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": true,
+      "optionsJson": "[\"Bez d\\u017eojstika\",\"1\",\"2\",\"3\",\"4\",\"5\",\"6\",\"Ostalo\"]",
+      "categories": [
+        {
+          "categoryId": "e1f8e792-2f48-4fa0-a2ae-9d9744b7a38a",
+          "name": "Gaming"
+        },
+        {
+          "categoryId": "85791bb7-75fd-4def-80a7-dc3e62808a0c",
+          "name": "Konzole"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "18c188b0-ef7e-4935-8179-f3a86846160c",
+      "name": "Broj fizičkih jezgri",
+      "externalId": null,
+      "olxId": 5056,
+      "olxName": "Broj fizičkih jezgri",
+      "type": 3,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": "[\"1\",\"2\",\"4\",\"6\",\"8\",\"10\",\"12\",\"16\",\"Ostalo\"]",
+      "categories": [
+        {
+          "categoryId": "35ea2176-a3db-4936-b310-231087b97c1f",
+          "name": "Laptop opcije"
+        },
+        {
+          "categoryId": "1162525e-02c2-44a1-b6e1-945b80760d7e",
+          "name": "Laptopi"
+        },
+        {
+          "categoryId": "9c080e0b-69ed-4690-8f27-ca5f5e77cf5e",
+          "name": "Laptopi"
+        },
+        {
+          "categoryId": "132dcb0d-5a94-4568-9679-eb6d99bfcf37",
+          "name": "Netbook"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "287e210d-4f1d-4c2f-89ea-941f36a1acfe",
+      "name": "Broj igrica",
+      "externalId": null,
+      "olxId": 4960,
+      "olxName": "Broj igrica",
+      "type": 3,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": "[\"0\",\"1\",\"2\",\"3\",\"4\",\"5\",\"6\",\"7\",\"8\",\"9\",\"10\",\"11\",\"12\",\"13\",\"14\",\"15\",\"16\",\"17\",\"18\",\"19\",\"20\"]",
+      "categories": [
+        {
+          "categoryId": "e1f8e792-2f48-4fa0-a2ae-9d9744b7a38a",
+          "name": "Gaming"
+        },
+        {
+          "categoryId": "85791bb7-75fd-4def-80a7-dc3e62808a0c",
+          "name": "Konzole"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "1f5d8c64-3e25-4ecc-b723-5ef5cfca5a81",
+      "name": "Broj jezgri",
+      "externalId": null,
+      "olxId": 3092,
+      "olxName": "Broj jezgri",
+      "type": 3,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": "[\"64\",\"32\",\"16\",\"12\",\"8\",\"6\",\"4\",\"3\",\"2\",\"1\",\"Ostalo\"]",
+      "categories": [
+        {
+          "categoryId": "dc6ccb28-9728-4544-a50b-4086c4580f68",
+          "name": "Procesori"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "5ce3b6ec-2de0-4d37-b15b-a91dc1852a67",
+      "name": "Broj jezgri procesora",
+      "externalId": null,
+      "olxId": 3439,
+      "olxName": "Broj jezgri procesora",
+      "type": 3,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": "[\"8\",\"6\",\"4\",\"3\",\"2\",\"1\",\"Ostalo\"]",
+      "categories": [
+        {
+          "categoryId": "3c99e2f5-42d1-4d36-81e5-9bea24abeb2b",
+          "name": "Mobilni Telefoni"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "80e36fd8-a965-485d-8f28-1cb21f7c319c",
+      "name": "Broj kamera",
+      "externalId": null,
+      "olxId": 7886,
+      "olxName": "Broj kamera",
+      "type": 3,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": true,
+      "optionsJson": "[\"Prednja\",\"Rikverc\",\"Unutra\\u0161nja\",\"Set Prednja i Rikverc\",\"Ostalo\"]",
+      "categories": [
+        {
+          "categoryId": "8ac35014-6b8b-4fb8-9c41-6f9563a18406",
+          "name": "Auto kamere"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "cdb39071-e693-4594-b6aa-9d160d35a44a",
+      "name": "Broj kamera",
+      "externalId": null,
+      "olxId": 7306,
+      "olxName": "Broj kamera",
+      "type": 3,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": "[\"1\",\"2\",\"3\",\"Vi\\u0161e od 3\"]",
+      "categories": [
+        {
+          "categoryId": "97a39804-8cb2-4f7a-bb0f-7601d8381a73",
+          "name": "Dronovi"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "fc8f6f93-61c5-441e-817e-08e9aacd5cd3",
+      "name": "Broj kamera",
+      "externalId": null,
+      "olxId": 7529,
+      "olxName": "Broj kamera",
+      "type": 3,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": "[\"4 i vi\\u0161e\",\"3\",\"2\",\"1\",\"0\"]",
+      "categories": [
+        {
+          "categoryId": "3c99e2f5-42d1-4d36-81e5-9bea24abeb2b",
+          "name": "Mobilni Telefoni"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "fa309559-3276-4ae3-811d-0c65c5719cd6",
+      "name": "Broj kompleta",
+      "externalId": null,
+      "olxId": 3549,
+      "olxName": "Broj kompleta",
+      "type": 3,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": "[\"Do 5\",\"6\",\"7\",\"8\",\"9\",\"10\",\"11\",\"12\",\"13\",\"14\",\"15 i vi\\u0161e\"]",
+      "categories": [
+        {
+          "categoryId": "225fe5dc-4027-463b-9a08-74cd65a58863",
+          "name": "Sudomašine"
+        },
+        {
+          "categoryId": "6a12a0f0-5593-4145-a6c7-1c124d5fc9e0",
+          "name": "Sudomašine"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "8c9b5429-81bf-4d74-a6e4-418e1f53a9f4",
+      "name": "Broj PCI slotova",
+      "externalId": null,
+      "olxId": 2210,
+      "olxName": "Broj PCI slotova",
+      "type": 3,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": "[\"0\",\"1\",\"2\",\"3\",\"4\",\"5\",\"6\",\"7\",\"8\",\"Vi\\u0161e\"]",
+      "categories": [
+        {
+          "categoryId": "a89a96a0-31f8-49a8-9daf-c6fa4f0c4bf0",
+          "name": "Matične Ploče"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "b72cd142-75af-4f41-9a6b-c5f16151dfee",
+      "name": "Broj pinova",
+      "externalId": null,
+      "olxId": 2310,
+      "olxName": "Broj pinova",
+      "type": 3,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": "[\"1\",\"2\",\"3\",\"4\",\"5\",\"6\",\"7\",\"8\",\"Ostalo\"]",
+      "categories": [
+        {
+          "categoryId": "9dd8581b-e6f3-4ca3-a674-d12b2e830e08",
+          "name": "Hlađenje"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "27d4ab28-588a-444b-84c1-05d39da4548b",
+      "name": "Broj pinova naponskog kabla",
+      "externalId": null,
+      "olxId": 2312,
+      "olxName": "Broj pinova naponskog kabla",
+      "type": 3,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": "[\"2\",\"3\",\"4\",\"5\",\"6\",\"7\",\"8\",\"9\",\"10\",\"Ostalo\"]",
+      "categories": [
+        {
+          "categoryId": "0e5ae808-f7b7-49f3-99be-243a69c55b09",
+          "name": "Grafičke Kartice"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "08a0d27d-71e1-4a17-a951-3ce596a75da2",
+      "name": "Broj portova",
+      "externalId": null,
+      "olxId": 3416,
+      "olxName": "Broj portova",
+      "type": 1,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": true,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "1fa50ded-489c-4a0d-9ecb-94dcc86c6a3b",
+          "name": "Switch"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "5da68f9a-277f-4d06-9e04-6e8a199ec679",
+      "name": "Broj portova",
+      "externalId": null,
+      "olxId": 3408,
+      "olxName": "Broj portova",
+      "type": 3,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": true,
+      "optionsJson": "[\"1\",\"2\",\"3\",\"4\",\"5\",\"6\",\"7\",\"8\",\"9\",\"10\",\"Ostalo\"]",
+      "categories": [
+        {
+          "categoryId": "e37fe9c9-98b3-4dec-984d-a7d14f8b1ee5",
+          "name": "Ruteri"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "1406a266-b220-4c5f-8433-768929639118",
+      "name": "Broj programa",
+      "externalId": null,
+      "olxId": 3550,
+      "olxName": "Broj programa",
+      "type": 3,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": "[\"1\",\"2\",\"3\",\"4\",\"5\",\"6\",\"7\",\"8\",\"9\",\"10 i vi\\u0161e\"]",
+      "categories": [
+        {
+          "categoryId": "225fe5dc-4027-463b-9a08-74cd65a58863",
+          "name": "Sudomašine"
+        },
+        {
+          "categoryId": "6a12a0f0-5593-4145-a6c7-1c124d5fc9e0",
+          "name": "Sudomašine"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "b00917c6-e60f-4641-af9f-22d2a871f480",
+      "name": "Broj programa",
+      "externalId": null,
+      "olxId": 4447,
+      "olxName": "Broj programa",
+      "type": 1,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "a9e3f3a0-7b26-4332-84dd-6f46b7ea98a3",
+          "name": "Pranje i sušenje veša"
+        },
+        {
+          "categoryId": "41a898ad-fb23-437f-8eb8-6730c28ee7ec",
+          "name": "Sušilice"
+        },
+        {
+          "categoryId": "c8d0b28d-6b62-4469-b9ab-f089733ca4da",
+          "name": "Veš Mašine"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "f4d36f95-b4c5-48c0-8845-136ef7f6f365",
+      "name": "Broj RAM slotova",
+      "externalId": null,
+      "olxId": 3074,
+      "olxName": "Broj RAM slotova",
+      "type": 3,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": true,
+      "optionsJson": "[\"1\",\"2\",\"3\",\"4\",\"5\",\"6\",\"7\",\"8\"]",
+      "categories": [
+        {
+          "categoryId": "a89a96a0-31f8-49a8-9daf-c6fa4f0c4bf0",
+          "name": "Matične Ploče"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "a18e72a2-0dbe-450d-9886-b35b4f3dd9ab",
+      "name": "Broj SATA priključaka",
+      "externalId": null,
+      "olxId": 2317,
+      "olxName": "Broj SATA priključaka",
+      "type": 3,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": "[\"1\",\"2\",\"3\",\"4\",\"5\",\"6\",\"7\",\"8\",\"9\",\"10\",\"Vi\\u0161e\"]",
+      "categories": [
+        {
+          "categoryId": "a89a96a0-31f8-49a8-9daf-c6fa4f0c4bf0",
+          "name": "Matične Ploče"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "4fd6527f-8b5f-4905-a0b9-9135a8335237",
+      "name": "Broj Uređaja (Bays)",
+      "externalId": null,
+      "olxId": 7618,
+      "olxName": "Broj Uređaja (Bays)",
+      "type": 3,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": "[\"1\",\"2\",\"4\",\"6\",\"8\",\"12 i vi\\u0161e\"]",
+      "categories": [
+        {
+          "categoryId": "1dd05076-bf53-46fe-b6bc-036d2ba78374",
+          "name": "Serveri"
+        },
+        {
+          "categoryId": "98f33430-6e86-4822-a72a-48508e0cfc3e",
+          "name": "Serveri - opcije"
+        },
+        {
+          "categoryId": "afe89cee-7bb2-4dd0-86ef-e2812969bbb5",
+          "name": "Serveri i storage"
+        },
+        {
+          "categoryId": "7f9a1255-4849-47d5-bdcf-eeffce33e970",
+          "name": "Storage"
+        },
+        {
+          "categoryId": "1192ad9f-5896-4384-b072-a44b20d6c0e7",
+          "name": "Storage - opcije"
+        },
+        {
+          "categoryId": "e1e66717-bb10-4de5-9f75-eeca6672d4a6",
+          "name": "Tape drive"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "22e9609b-59d0-490b-bc0c-103acccb6ef3",
+      "name": "Broj USB portova",
+      "externalId": null,
+      "olxId": 5118,
+      "olxName": "Broj USB portova",
+      "type": 3,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": "[\"Nema\",\"1\",\"2\",\"3\",\"4\",\"5\",\"Ostalo\"]",
+      "categories": [
+        {
+          "categoryId": "c99bb952-b8ba-45f6-8b61-4c049705e8ad",
+          "name": "Set-top box"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "d190031c-3ba8-48d7-aeeb-a7560535ca10",
+      "name": "Broj USB portova",
+      "externalId": null,
+      "olxId": 5201,
+      "olxName": "Broj USB portova",
+      "type": 3,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": "[\"0\",\"1\",\"2\",\"3\",\"4\",\"5\",\"6\"]",
+      "categories": [
+        {
+          "categoryId": "35ea2176-a3db-4936-b310-231087b97c1f",
+          "name": "Laptop opcije"
+        },
+        {
+          "categoryId": "1162525e-02c2-44a1-b6e1-945b80760d7e",
+          "name": "Laptopi"
+        },
+        {
+          "categoryId": "9c080e0b-69ed-4690-8f27-ca5f5e77cf5e",
+          "name": "Laptopi"
+        },
+        {
+          "categoryId": "132dcb0d-5a94-4568-9679-eb6d99bfcf37",
+          "name": "Netbook"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "6e6e0215-b2b5-4f3e-97fe-987e15e7ec7b",
+      "name": "Broj USB priključaka",
+      "externalId": null,
+      "olxId": 3070,
+      "olxName": "Broj USB priključaka",
+      "type": 3,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": "[\"0\",\"1\",\"2\",\"3\",\"4\",\"5\",\"6\",\"7\",\"8\",\"9\",\"10\",\"11\",\"12\",\"13\",\"14\",\"15\",\"Vi\\u0161e\"]",
+      "categories": [
+        {
+          "categoryId": "a89a96a0-31f8-49a8-9daf-c6fa4f0c4bf0",
+          "name": "Matične Ploče"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "baa2a2fb-6aa4-4cb3-8372-4639ba49572a",
+      "name": "Broj vrata",
+      "externalId": null,
+      "olxId": 3451,
+      "olxName": "Broj vrata",
+      "type": 3,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": "[\"1\",\"2\",\"3\",\"4\",\"Ostalo\"]",
+      "categories": [
+        {
+          "categoryId": "8329ab4d-133b-40ef-99f5-612b246aec83",
+          "name": "Frižideri"
+        },
+        {
+          "categoryId": "99ec757c-116d-4db7-874a-b1dc16ad1188",
+          "name": "Frižideri"
+        },
+        {
+          "categoryId": "c09e1ef9-6b1d-4ff4-a980-f9d447117910",
+          "name": "Zamrzivači"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "7b4e3ee3-d778-405b-b33c-d5c335e736e7",
+      "name": "Brzina",
+      "externalId": null,
+      "olxId": 380,
+      "olxName": "Brzina",
+      "type": 1,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "b58e2848-79c8-45b0-bdd4-235a938ed032",
+          "name": "Optički uređaji"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "46b5837f-0171-4f38-96cb-f5ea04245ab9",
+      "name": "Brzina (Ghz)",
+      "externalId": null,
+      "olxId": 403,
+      "olxName": "Brzina (Ghz)",
+      "type": 1,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "dc6ccb28-9728-4544-a50b-4086c4580f68",
+          "name": "Procesori"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "24d86218-287f-4a02-a067-cece76df3eab",
+      "name": "Brzina (Mbps)",
+      "externalId": null,
+      "olxId": 3409,
+      "olxName": "Brzina (Mbps)",
+      "type": 1,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "e37fe9c9-98b3-4dec-984d-a7d14f8b1ee5",
+          "name": "Ruteri"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "e9c48fd1-8951-4547-ae11-e212fe63e7a4",
+      "name": "Brzina (Mbps)",
+      "externalId": null,
+      "olxId": 446,
+      "olxName": "Brzina (Mbps)",
+      "type": 1,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "112c87b7-0afa-47b3-86af-e71814d23a05",
+          "name": "Mrežne kartice"
+        },
+        {
+          "categoryId": "a3d99f7a-1ad1-4ae9-8ef6-a2aaa7a721ce",
+          "name": "Wireless"
+        },
+        {
+          "categoryId": "1be9b129-2e1e-4815-ac2c-bc4faf3b238c",
+          "name": "Wireless Adapteri"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "609ea678-af55-4aaa-84aa-d01fb2ed191d",
+      "name": "Brzina (MHz)",
+      "externalId": null,
+      "olxId": 481,
+      "olxName": "Brzina (MHz)",
+      "type": 1,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "9e2f2712-c702-41f2-9d21-90eda9f26985",
+          "name": "Memorija"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "36110d62-a469-4aeb-a31c-4e8fd3224142",
+      "name": "Brzina (RPM)",
+      "externalId": null,
+      "olxId": 2220,
+      "olxName": "Brzina (RPM)",
+      "type": 3,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": "[\"5400\",\"7200\",\"10000\",\"15000\",\"Ostalo\"]",
+      "categories": [
+        {
+          "categoryId": "d48fe62d-4aac-4c7f-8203-5ac514f33222",
+          "name": "HDD"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "f0de2517-01df-4303-9d47-4776dcadce0e",
+      "name": "Brzina ispisa (str. u minuti)",
+      "externalId": null,
+      "olxId": 2334,
+      "olxName": "Brzina ispisa (str. u minuti)",
+      "type": 1,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "50bc5e2e-b0ba-47ea-a653-969773394850",
+          "name": "Fax aparati"
+        },
+        {
+          "categoryId": "f561e68b-04d3-424e-8808-67e902eab61a",
+          "name": "Fax modemi"
+        },
+        {
+          "categoryId": "5d6e97e3-7fe2-45b4-8ac7-90e16b47aadb",
+          "name": "Fotokopiri"
+        },
+        {
+          "categoryId": "e1baf5f1-a5e1-4d32-a4e8-c874d944b1dd",
+          "name": "Inkjet"
+        },
+        {
+          "categoryId": "27e1c350-844a-422e-84bd-a67ec6cc1b22",
+          "name": "Kolor Laser"
+        },
+        {
+          "categoryId": "c04950b4-6c2f-4e0d-a399-12d1f5ed7ce0",
+          "name": "Laserski"
+        },
+        {
+          "categoryId": "28ac4fb0-21f1-4c07-b54e-52bb57d4ec89",
+          "name": "Matricni"
+        },
+        {
+          "categoryId": "a7b4e372-f6e4-45f2-8712-f99e4fd7bef6",
+          "name": "MFP (inkjet)"
+        },
+        {
+          "categoryId": "75383c3e-5f66-4f9e-a76f-94b470bba0cd",
+          "name": "MFP (kolor laser)"
+        },
+        {
+          "categoryId": "0c0f10d2-21fa-4c02-bbf4-279d1eb3cb46",
+          "name": "MFP (laser)"
+        },
+        {
+          "categoryId": "dabd1b8c-a5c8-4219-81b8-ed81e76a0d78",
+          "name": "Ploteri"
+        },
+        {
+          "categoryId": "167b85b7-c1c3-427e-bcaa-cf0456819d07",
+          "name": "Print i kancelarija"
+        },
+        {
+          "categoryId": "c23c32c1-a384-42be-b0d4-6f18d3d4bdbf",
+          "name": "Printeri"
+        },
+        {
+          "categoryId": "e6809edc-a0e0-4b89-ad3a-433ed9e96985",
+          "name": "Printing Opcije"
+        },
+        {
+          "categoryId": "0ecc3f08-28e8-4742-aabf-52bb11fdb65b",
+          "name": "Skeneri"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "679d72d1-a47e-4e77-9eed-147c58957e00",
+      "name": "Brzina memorije (MHz)",
+      "externalId": null,
+      "olxId": 1742,
+      "olxName": "Brzina memorije (MHz)",
+      "type": 1,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "0e5ae808-f7b7-49f3-99be-243a69c55b09",
+          "name": "Grafičke Kartice"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "17fb297b-1e00-4bc7-8f04-c6b7b65fade7",
+      "name": "Brzina procesora (GHz)",
+      "externalId": null,
+      "olxId": 1159,
+      "olxName": "Brzina procesora (GHz)",
+      "type": 1,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "35ea2176-a3db-4936-b310-231087b97c1f",
+          "name": "Laptop opcije"
+        },
+        {
+          "categoryId": "1162525e-02c2-44a1-b6e1-945b80760d7e",
+          "name": "Laptopi"
+        },
+        {
+          "categoryId": "9c080e0b-69ed-4690-8f27-ca5f5e77cf5e",
+          "name": "Laptopi"
+        },
+        {
+          "categoryId": "132dcb0d-5a94-4568-9679-eb6d99bfcf37",
+          "name": "Netbook"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "bc2f8b54-65a6-4506-907a-a93ee21be46c",
+      "name": "Brzina procesora (GHz)",
+      "externalId": null,
+      "olxId": 1156,
+      "olxName": "Brzina procesora (GHz)",
+      "type": 1,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": true,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "3ca3fe3a-5e35-4e99-9758-4736d628c13e",
+          "name": "Desktop"
+        },
+        {
+          "categoryId": "ede155e9-1eab-4bd4-866c-6719252dc852",
+          "name": "Konfiguracije"
+        },
+        {
+          "categoryId": "a4e21f67-9771-4c30-9c5d-9f01ca1b0582",
+          "name": "Opcije"
+        },
+        {
+          "categoryId": "8d483c81-032f-4202-bac4-20fb2efdb38f",
+          "name": "Računari"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "85664113-b44b-4c96-8917-07db1f664ea8",
+      "name": "BT",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 2,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "1162525e-02c2-44a1-b6e1-945b80760d7e",
+          "name": "Laptopi"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "ae013527-c0c5-4f54-8b41-d3b392c84180",
+      "name": "BT_DANE",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 2,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "a89a96a0-31f8-49a8-9daf-c6fa4f0c4bf0",
+          "name": "Matične Ploče"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "624f6e91-c64f-45c3-8e28-05ff89df4b70",
+      "name": "CABLE_KB",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "e4742244-31b3-4fd1-ada8-cbf12e405e46",
+          "name": "Tastature"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "7f9c4869-00a0-457c-b5ae-4ad0819777b0",
+      "name": "Cache (MB)",
+      "externalId": null,
+      "olxId": 3094,
+      "olxName": "Cache (MB)",
+      "type": 1,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "dc6ccb28-9728-4544-a50b-4086c4580f68",
+          "name": "Procesori"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "cf5f7db6-0ef1-45db-9fe7-93af8eeaa4ef",
+      "name": "Cache (MB)",
+      "externalId": null,
+      "olxId": 3193,
+      "olxName": "Cache (MB)",
+      "type": 1,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "d48fe62d-4aac-4c7f-8203-5ac514f33222",
+          "name": "HDD"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "704bef9f-5b26-4890-9991-88728320c08d",
+      "name": "CADR DUST_AIR",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "42b83892-1329-44f9-a9ad-4006dfda1998",
+          "name": "Prečišćivači zraka"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "0f6f51c0-e4a9-44fb-ae3c-745dd8d75290",
+      "name": "CADR POLLEN_AIR",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "42b83892-1329-44f9-a9ad-4006dfda1998",
+          "name": "Prečišćivači zraka"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "fb6f9753-c770-466b-9316-a8ee2157439a",
+      "name": "CADR SMOKE_AIR",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "42b83892-1329-44f9-a9ad-4006dfda1998",
+          "name": "Prečišćivači zraka"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "55c52931-4360-4588-9c32-2f0683075b62",
+      "name": "CAPACITY_AIRF",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 1,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "7cd84585-fee9-4d06-b1c0-2d95f0728e0b",
+          "name": "Air fryer"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "7b2f66a5-01a6-4ad6-8a44-4adb9cf65c93",
+      "name": "CAPACITY_DRY_WASH",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "c8d0b28d-6b62-4469-b9ab-f089733ca4da",
+          "name": "Veš Mašine"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "ac433d52-6ca1-4de1-900a-a1c85a0d0240",
+      "name": "CAPACITY_KETTLES",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 1,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "4eb1feba-22e4-45bb-8d15-606bd7ffc098",
+          "name": "Ketleri"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "c58c7ae5-6884-4b97-bf42-f1d2a54b2b06",
+      "name": "CAPACITY_MEMCARD",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 1,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "2cc7c543-56c6-4f44-8cdd-9dd2ce5eefe4",
+          "name": "Memorijske Kartice"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "f0fe26cd-53da-4b48-ae00-2de29936c180",
+      "name": "CAPACITY_SUP",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "1c8eeafe-5479-419e-a061-5dff6e594a0f",
+          "name": "Inkjet Plotter"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "728e69b4-39a5-45e0-aa1f-02ad3ea37a47",
+      "name": "CAPACITYADF",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 1,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "0ecc3f08-28e8-4742-aabf-52bb11fdb65b",
+          "name": "Skeneri"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "ece1d788-28aa-44b8-826b-3406cf1af79d",
+      "name": "CAPACITYPGIN",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "dabd1b8c-a5c8-4219-81b8-ed81e76a0d78",
+          "name": "Ploteri"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "1cd7d2f4-75ad-4379-92f5-45f51aabbbd9",
+      "name": "CARD CCLEAN_AIR",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "42b83892-1329-44f9-a9ad-4006dfda1998",
+          "name": "Prečišćivači zraka"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "5a63311b-cfe2-49c8-8cd6-73e124fd5dd1",
+      "name": "Card reader (Čitač kartica)",
+      "externalId": null,
+      "olxId": 5051,
+      "olxName": "Card reader (Čitač kartica)",
+      "type": 2,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "35ea2176-a3db-4936-b310-231087b97c1f",
+          "name": "Laptop opcije"
+        },
+        {
+          "categoryId": "1162525e-02c2-44a1-b6e1-945b80760d7e",
+          "name": "Laptopi"
+        },
+        {
+          "categoryId": "9c080e0b-69ed-4690-8f27-ca5f5e77cf5e",
+          "name": "Laptopi"
+        },
+        {
+          "categoryId": "132dcb0d-5a94-4568-9679-eb6d99bfcf37",
+          "name": "Netbook"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "d7da9e02-56a8-4beb-950f-36360a4fde49",
+      "name": "Card slot",
+      "externalId": null,
+      "olxId": 2299,
+      "olxName": "Card slot",
+      "type": 2,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "07ef9cec-75f9-4b1f-ae5c-635f0c67ba7c",
+          "name": "Opcije"
+        },
+        {
+          "categoryId": "90109698-da59-4eee-9222-f98a98681cfc",
+          "name": "Tableti"
+        },
+        {
+          "categoryId": "d874f799-5168-4765-984d-1e0103833073",
+          "name": "Tableti"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "40531889-b961-4373-b46c-605e002f2ce2",
+      "name": "CARDTYPE_PH",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "310894ea-eb42-459e-8aec-7c08ee19ff9a",
+          "name": "Akcione Kamere"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "3663cf8e-b455-4bd5-8656-fa3be8a029e5",
+      "name": "CARRY_BAG",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "1162525e-02c2-44a1-b6e1-945b80760d7e",
+          "name": "Laptopi"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "1debdead-6cd0-4eba-a2f2-9d1e7f74b4c5",
+      "name": "CASE_AVZV",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "86b73e38-e4bf-4cc7-a7ae-8e3786505775",
+          "name": "Zvučnici"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "0bdc3c2b-4a5e-42e2-915a-b4511f9b4a74",
+      "name": "CASE_BOX",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "c99bb952-b8ba-45f6-8b61-4c049705e8ad",
+          "name": "Set-top box"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "eeed1679-093e-438a-8725-37e76f852762",
+      "name": "CASE_MOUSE",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "d83e0837-dc36-4891-b559-fc9d768721b6",
+          "name": "Miševi"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "978d3722-1094-439e-9c19-10318ece5734",
+      "name": "CASE_NB",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "1162525e-02c2-44a1-b6e1-945b80760d7e",
+          "name": "Laptopi"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "66ad3d71-bd54-4939-aa7c-7b6c2a39ff0d",
+      "name": "CASE_SMARTWATCH",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "21be2c96-9fde-4c07-b354-5290a8be96d2",
+          "name": "Pametni Satovi"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "41872750-1c5a-423d-beab-38028fa28041",
+      "name": "CD - ROM",
+      "externalId": null,
+      "olxId": 248,
+      "olxName": "CD - ROM",
+      "type": 3,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": "[\"Nema\",\"CD ROM\",\"CD R\\/RW\",\"DVD ROM\",\"DVD R\",\"DVD RW\",\"BluRay\",\"Ostalo\"]",
+      "categories": [
+        {
+          "categoryId": "3ca3fe3a-5e35-4e99-9758-4736d628c13e",
+          "name": "Desktop"
+        },
+        {
+          "categoryId": "ede155e9-1eab-4bd4-866c-6719252dc852",
+          "name": "Konfiguracije"
+        },
+        {
+          "categoryId": "a4e21f67-9771-4c30-9c5d-9f01ca1b0582",
+          "name": "Opcije"
+        },
+        {
+          "categoryId": "8d483c81-032f-4202-bac4-20fb2efdb38f",
+          "name": "Računari"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "c03e6962-e16b-4c43-b41d-c568b480429d",
+      "name": "CD - ROM",
+      "externalId": null,
+      "olxId": 268,
+      "olxName": "CD - ROM",
+      "type": 3,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": "[\"Nema\",\"CD ROM\",\"CD R\\/RW\",\"DVD ROM\",\"DVD R\",\"DVD RW\",\"BluRay\",\"Ostalo\"]",
+      "categories": [
+        {
+          "categoryId": "35ea2176-a3db-4936-b310-231087b97c1f",
+          "name": "Laptop opcije"
+        },
+        {
+          "categoryId": "1162525e-02c2-44a1-b6e1-945b80760d7e",
+          "name": "Laptopi"
+        },
+        {
+          "categoryId": "9c080e0b-69ed-4690-8f27-ca5f5e77cf5e",
+          "name": "Laptopi"
+        },
+        {
+          "categoryId": "132dcb0d-5a94-4568-9679-eb6d99bfcf37",
+          "name": "Netbook"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "71cb863d-87e5-4823-be0b-cba36aafecc1",
+      "name": "CD/DVD čitač",
+      "externalId": null,
+      "olxId": 1846,
+      "olxName": "CD/DVD čitač",
+      "type": 2,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "2dd9d55b-470c-4f75-8318-eb72e6e79cff",
+          "name": "Navigacija"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "5470aeb6-77ef-472f-af2b-aa1a8992b663",
+      "name": "CHANNELS_AV",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 1,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "86b73e38-e4bf-4cc7-a7ae-8e3786505775",
+          "name": "Zvučnici"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "b348b723-8a9d-4f06-a046-81266e391c47",
+      "name": "CHIPSET_MB",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "a89a96a0-31f8-49a8-9daf-c6fa4f0c4bf0",
+          "name": "Matične Ploče"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "a6fb9d24-62ee-4afa-94de-5c21fd48f480",
+      "name": "CHIPSET_PC",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "3ca3fe3a-5e35-4e99-9758-4736d628c13e",
+          "name": "Desktop"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "be1f19c1-7d3d-4f4d-ad9a-3858eb241936",
+      "name": "CI",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 2,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "a08e4ed2-1067-414e-b860-23cad3beb532",
+          "name": "TV"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "0e260ab9-a77f-4a63-a756-308dfc8e3198",
+      "name": "Čitač slika",
+      "externalId": null,
+      "olxId": 3478,
+      "olxName": "Čitač slika",
+      "type": 2,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "abf63476-f788-44a4-9e04-003dbc35d93f",
+          "name": "Digital signage"
+        },
+        {
+          "categoryId": "a08e4ed2-1067-414e-b860-23cad3beb532",
+          "name": "TV"
+        },
+        {
+          "categoryId": "f887503d-2110-4412-a377-113d8ed8e1ec",
+          "name": "TV"
+        },
+        {
+          "categoryId": "028bea97-995b-4f8d-8938-405ab66a68ae",
+          "name": "TV Lcd"
+        },
+        {
+          "categoryId": "226a911e-3aaa-4f00-ba76-74569c573dae",
+          "name": "TV Plazma"
+        },
+        {
+          "categoryId": "d802c32c-ecf1-4f34-b09d-5315dc905f2e",
+          "name": "TV Tuner"
+        },
+        {
+          "categoryId": "9edf3fa6-e5f7-45d8-b12a-2f698d25d579",
+          "name": "TV, audio i video"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "1ed1c149-eb29-4b72-8192-7371681cefd2",
+      "name": "CLIMATE CLASS_FRZ",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "c09e1ef9-6b1d-4ff4-a980-f9d447117910",
+          "name": "Zamrzivači"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "ed2d6362-008a-47a2-91fc-399880926b55",
+      "name": "CLIMATE CLASS_REFR",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "8329ab4d-133b-40ef-99f5-612b246aec83",
+          "name": "Frižideri"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "27c4e006-b177-4da5-9751-d47440db3c9a",
+      "name": "Color",
+      "externalId": null,
+      "olxId": 1120,
+      "olxName": "Color",
+      "type": 2,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "50bc5e2e-b0ba-47ea-a653-969773394850",
+          "name": "Fax aparati"
+        },
+        {
+          "categoryId": "f561e68b-04d3-424e-8808-67e902eab61a",
+          "name": "Fax modemi"
+        },
+        {
+          "categoryId": "5d6e97e3-7fe2-45b4-8ac7-90e16b47aadb",
+          "name": "Fotokopiri"
+        },
+        {
+          "categoryId": "e1baf5f1-a5e1-4d32-a4e8-c874d944b1dd",
+          "name": "Inkjet"
+        },
+        {
+          "categoryId": "27e1c350-844a-422e-84bd-a67ec6cc1b22",
+          "name": "Kolor Laser"
+        },
+        {
+          "categoryId": "c04950b4-6c2f-4e0d-a399-12d1f5ed7ce0",
+          "name": "Laserski"
+        },
+        {
+          "categoryId": "28ac4fb0-21f1-4c07-b54e-52bb57d4ec89",
+          "name": "Matricni"
+        },
+        {
+          "categoryId": "a7b4e372-f6e4-45f2-8712-f99e4fd7bef6",
+          "name": "MFP (inkjet)"
+        },
+        {
+          "categoryId": "75383c3e-5f66-4f9e-a76f-94b470bba0cd",
+          "name": "MFP (kolor laser)"
+        },
+        {
+          "categoryId": "0c0f10d2-21fa-4c02-bbf4-279d1eb3cb46",
+          "name": "MFP (laser)"
+        },
+        {
+          "categoryId": "dabd1b8c-a5c8-4219-81b8-ed81e76a0d78",
+          "name": "Ploteri"
+        },
+        {
+          "categoryId": "167b85b7-c1c3-427e-bcaa-cf0456819d07",
+          "name": "Print i kancelarija"
+        },
+        {
+          "categoryId": "c23c32c1-a384-42be-b0d4-6f18d3d4bdbf",
+          "name": "Printeri"
+        },
+        {
+          "categoryId": "e6809edc-a0e0-4b89-ad3a-433ed9e96985",
+          "name": "Printing Opcije"
+        },
+        {
+          "categoryId": "0ecc3f08-28e8-4742-aabf-52bb11fdb65b",
+          "name": "Skeneri"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "901df224-4819-411d-bf4f-349020cf4d94",
+      "name": "Color (u boji)",
+      "externalId": null,
+      "olxId": 1833,
+      "olxName": "Color (u boji)",
+      "type": 2,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "1c8eeafe-5479-419e-a061-5dff6e594a0f",
+          "name": "Inkjet Plotter"
+        },
+        {
+          "categoryId": "f4897289-8e95-4a0c-a505-254b291be555",
+          "name": "Mono Laser"
+        },
+        {
+          "categoryId": "74b4e1eb-bef2-4e11-a783-ec6a48db299b",
+          "name": "Papir Folije"
+        },
+        {
+          "categoryId": "0d91ea84-1d29-4099-aa1b-69f9fae1039b",
+          "name": "Potrošni"
+        },
+        {
+          "categoryId": "af192bbb-4b0c-4ca8-a577-e4879ff40c56",
+          "name": "Pribor"
+        },
+        {
+          "categoryId": "9385aa90-0814-43a0-bcff-5c34607d50df",
+          "name": "Toneri"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "7f47e9d8-87b0-4772-b477-3f6f12bce868",
+      "name": "Color Display",
+      "externalId": null,
+      "olxId": 2289,
+      "olxName": "Color Display",
+      "type": 2,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "07ef9cec-75f9-4b1f-ae5c-635f0c67ba7c",
+          "name": "Opcije"
+        },
+        {
+          "categoryId": "90109698-da59-4eee-9222-f98a98681cfc",
+          "name": "Tableti"
+        },
+        {
+          "categoryId": "d874f799-5168-4765-984d-1e0103833073",
+          "name": "Tableti"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "0ed9d59e-1896-4673-99b3-765539f43f5d",
+      "name": "COLOR_AIRF",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "7cd84585-fee9-4d06-b1c0-2d95f0728e0b",
+          "name": "Air fryer"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "e97c30d2-d6e1-4e13-b690-57e15b9f37e6",
+      "name": "COLOR_AV",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "9b0ef047-17fc-4134-bc53-6805d92789e7",
+          "name": "Audio/Video oprema"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "d0a0ac21-3967-4e7b-8c1e-b7451c40415a",
+      "name": "COLOR_BODY_WASH",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "c8d0b28d-6b62-4469-b9ab-f089733ca4da",
+          "name": "Veš Mašine"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "9d2cc127-387a-4864-a552-46ff0db8ea20",
+      "name": "COLOR_BOX",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "c99bb952-b8ba-45f6-8b61-4c049705e8ad",
+          "name": "Set-top box"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "90440fa8-cdef-4ce1-954e-4c000a1a8a9b",
+      "name": "COLOR_DETAIL_NB",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "1162525e-02c2-44a1-b6e1-945b80760d7e",
+          "name": "Laptopi"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "33cd94b3-3351-4a1a-9b8f-9583a5e75819",
+      "name": "COLOR_DETAIL_SMPH",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "3c99e2f5-42d1-4d36-81e5-9bea24abeb2b",
+          "name": "Mobilni Telefoni"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "e080ac5d-849e-4bb3-96d8-b50e711bfc98",
+      "name": "COLOR_DETAIL_TABL",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "d874f799-5168-4765-984d-1e0103833073",
+          "name": "Tableti"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "9244c9d9-9b7d-4f9b-8a11-31306b8d072e",
+      "name": "COLOR_DOOR_WASH",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "c8d0b28d-6b62-4469-b9ab-f089733ca4da",
+          "name": "Veš Mašine"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "63bea13d-ea53-4aaa-ad08-0eb7a8177f2a",
+      "name": "COLOR_DWS",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "6a12a0f0-5593-4145-a6c7-1c124d5fc9e0",
+          "name": "Sudomašine"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "99ae7048-c44d-43fc-b603-47ce279451dd",
+      "name": "COLOR_FRZ",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "c09e1ef9-6b1d-4ff4-a980-f9d447117910",
+          "name": "Zamrzivači"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "3e7c5205-0f28-48f5-9d20-2630687b2f4c",
+      "name": "COLOR_FS_COOKER",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "5aaeac6d-cfac-4ba5-85fb-6d1ee7f3d286",
+          "name": "Šporeti"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "37e68306-cb17-45e9-af23-60e6da1ba61d",
+      "name": "COLOR_GRILL",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "39379eb4-8c5a-4fd3-afd7-383a7a507b2b",
+          "name": "Grilovi"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "e6d2ac2d-479a-41eb-bce6-895269487516",
+      "name": "COLOR_HOB",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "a0e80eba-1559-4290-a1c0-253c18349966",
+          "name": "Ploče"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "191b32ee-4554-4014-8f64-e8027f3744a9",
+      "name": "COLOR_HOOD",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "f8d8cd81-4cc1-4d8a-b1ff-39d619c46862",
+          "name": "Aspiratori"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "311d2ae3-b41c-4f86-a75e-3f17d7bdab1d",
+      "name": "COLOR_ICMAKER",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "a45c5690-2692-47d3-a494-d88a5f41fd20",
+          "name": "Aparati za sladoled"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "47b0fa90-38e7-42c7-a049-cc3d9234e901",
+      "name": "COLOR_KETTLES",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "4eb1feba-22e4-45bb-8d15-606bd7ffc098",
+          "name": "Ketleri"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "dda7f7a9-a0aa-43f1-989f-c1f0bd3b3078",
+      "name": "COLOR_KITCHAPP",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "71d993d7-600a-4dab-b3db-701a6a64ee80",
+          "name": "Blenderi"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "b7ef631a-e614-4e35-ab25-0b9dd90d582a",
+      "name": "COLOR_MOUSE",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "d83e0837-dc36-4891-b559-fc9d768721b6",
+          "name": "Miševi"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "73cfd8b5-15d5-4de2-af78-22da2e1d16f1",
+      "name": "COLOR_MWAV",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "80272d14-f4a8-4967-8905-c0a7b5fdb3d0",
+          "name": "Mikrotalasne pećnice"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "ccf798ec-b08a-428a-b003-4e5516077ebd",
+      "name": "COLOR_NB",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "1162525e-02c2-44a1-b6e1-945b80760d7e",
+          "name": "Laptopi"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "3da82a23-b12d-4bd1-94f2-7dd990ada9d0",
+      "name": "COLOR_NOTEBTORBA",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "de3af39d-41ab-4bdc-b7ab-8e0a55362ca4",
+          "name": "Torbe"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "15e056c6-3ef8-45d2-a39b-75e8a7296893",
+      "name": "COLOR_OVEN",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "ba64d144-162c-4152-832f-b229388b8a8d",
+          "name": "Rerne"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "1cc91fc3-4717-4f0e-a05d-14aa783c8bc4",
+      "name": "COLOR_REFR",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "8329ab4d-133b-40ef-99f5-612b246aec83",
+          "name": "Frižideri"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "5015ea1d-8bbf-412f-b1d0-c18fca5b49f1",
+      "name": "COLOR_SCOO",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "ad672541-73e4-4481-8a1b-e8a6697f3bb3",
+          "name": "Električni trotineti"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "8a22fd36-8453-4c2a-bac2-f74545e30902",
+      "name": "CONDENS CLASS_WASH",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "c8d0b28d-6b62-4469-b9ab-f089733ca4da",
+          "name": "Veš Mašine"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "bb93d49b-4dae-4c84-abb6-7dce3f9786e1",
+      "name": "CONN_AVZV",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "86b73e38-e4bf-4cc7-a7ae-8e3786505775",
+          "name": "Zvučnici"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "827c0154-12fd-4c65-812d-2264d1879632",
+      "name": "CONN_MOUSE",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "d83e0837-dc36-4891-b559-fc9d768721b6",
+          "name": "Miševi"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "ca2b35da-b3df-4d39-9e82-467cc0b9ed4d",
+      "name": "CORE_SER",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 1,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "1dd05076-bf53-46fe-b6bc-036d2ba78374",
+          "name": "Serveri"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "00395641-858d-463a-92a9-a9840005cfbe",
+      "name": "CORE_TABL",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "d874f799-5168-4765-984d-1e0103833073",
+          "name": "Tableti"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "3e44744d-b1cb-4eb3-b999-24434d55d9d7",
+      "name": "CPU model",
+      "externalId": null,
+      "olxId": 5117,
+      "olxName": "CPU model",
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "c99bb952-b8ba-45f6-8b61-4c049705e8ad",
+          "name": "Set-top box"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "afb18189-b953-428b-bc8f-9f5b3697fd1d",
+      "name": "CPU_INITNO_SER",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 2,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "1dd05076-bf53-46fe-b6bc-036d2ba78374",
+          "name": "Serveri"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "c998ce55-8acb-4a29-ad15-f8cdf580682e",
+      "name": "CPU_MAXNO_SER",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 1,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "1dd05076-bf53-46fe-b6bc-036d2ba78374",
+          "name": "Serveri"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "c573d57b-73e2-4960-b0e8-0590feff1e90",
+      "name": "CPU_NAME_TABL",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "d874f799-5168-4765-984d-1e0103833073",
+          "name": "Tableti"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "49849762-8000-49c9-bb98-8c3177105069",
+      "name": "CPU_NB",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "1162525e-02c2-44a1-b6e1-945b80760d7e",
+          "name": "Laptopi"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "313f8a51-ffa6-4554-9b3a-ec7c06b34e19",
+      "name": "CPU_PC",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "3ca3fe3a-5e35-4e99-9758-4736d628c13e",
+          "name": "Desktop"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "812fc37c-a805-44ae-8299-0f3f95b92073",
+      "name": "CPU_PR",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "dabd1b8c-a5c8-4219-81b8-ed81e76a0d78",
+          "name": "Ploteri"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "ff4ccd1f-7155-4166-adbf-3d872b094029",
+      "name": "CPU_SMPH",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "3c99e2f5-42d1-4d36-81e5-9bea24abeb2b",
+          "name": "Mobilni Telefoni"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "b3716260-5316-42d0-9fa8-c5833252b930",
+      "name": "CPU_TABL",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "d874f799-5168-4765-984d-1e0103833073",
+          "name": "Tableti"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "264bd3e7-df45-4cab-b5b0-023a60ae5b62",
+      "name": "CPU_TV",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "a08e4ed2-1067-414e-b860-23cad3beb532",
+          "name": "TV"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "b1fd0fda-0701-454b-9373-ca8948eac05d",
+      "name": "CPU_TYPE",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "dc6ccb28-9728-4544-a50b-4086c4580f68",
+          "name": "Procesori"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "f42f3570-e92b-469d-af64-6920653cd6ac",
+      "name": "Crni",
+      "externalId": null,
+      "olxId": 3120,
+      "olxName": "Crni",
+      "type": 2,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "1c8eeafe-5479-419e-a061-5dff6e594a0f",
+          "name": "Inkjet Plotter"
+        },
+        {
+          "categoryId": "f4897289-8e95-4a0c-a505-254b291be555",
+          "name": "Mono Laser"
+        },
+        {
+          "categoryId": "74b4e1eb-bef2-4e11-a783-ec6a48db299b",
+          "name": "Papir Folije"
+        },
+        {
+          "categoryId": "0d91ea84-1d29-4099-aa1b-69f9fae1039b",
+          "name": "Potrošni"
+        },
+        {
+          "categoryId": "af192bbb-4b0c-4ca8-a577-e4879ff40c56",
+          "name": "Pribor"
+        },
+        {
+          "categoryId": "9385aa90-0814-43a0-bcff-5c34607d50df",
+          "name": "Toneri"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "2a7b5c8f-67ca-4622-84a5-4e94e21ef81e",
+      "name": "CROSFIRE_SLI",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 0,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "0e5ae808-f7b7-49f3-99be-243a69c55b09",
+          "name": "Grafičke Kartice"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "db1e6071-b7e8-43c7-b963-d5750ee69a1f",
+      "name": "Crossfire",
+      "externalId": null,
+      "olxId": 2212,
+      "olxName": "Crossfire",
+      "type": 2,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "a89a96a0-31f8-49a8-9daf-c6fa4f0c4bf0",
+          "name": "Matične Ploče"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "2eea22a8-e376-41cc-ab5c-4db556de8962",
+      "name": "Crossfire tehnologija",
+      "externalId": null,
+      "olxId": 1838,
+      "olxName": "Crossfire tehnologija",
+      "type": 2,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "0e5ae808-f7b7-49f3-99be-243a69c55b09",
+          "name": "Grafičke Kartice"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "dd32143c-2543-4efb-b6ce-84f3f384bdaf",
+      "name": "CURVE_MON",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 2,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "2b56dcf8-38ef-49f7-9a00-bc0f193ac3c3",
+          "name": "Monitori"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "28403841-ad65-41c6-9afa-85117461c45d",
+      "name": "CYCLONE",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 2,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "3e90b067-129c-49b3-a991-3400d3b8891e",
+          "name": "Usisivači"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "7ae34158-a6f6-4475-b5bb-b9d22fe11426",
+      "name": "DAI",
+      "externalId": null,
+      "olxId": null,
+      "olxName": null,
+      "type": 2,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "a08e4ed2-1067-414e-b860-23cad3beb532",
+          "name": "TV"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "976f8dbb-a910-4e3e-94d3-3df76beaaf08",
+      "name": "Daljinski",
+      "externalId": null,
+      "olxId": 3106,
+      "olxName": "Daljinski",
+      "type": 2,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "227925eb-0811-41fc-b009-34778f5822c8",
+          "name": "Opcije"
+        },
+        {
+          "categoryId": "7d697b0e-b001-48d0-b230-4dc487c2cf3d",
+          "name": "Projektori"
+        },
+        {
+          "categoryId": "80bf5f05-5931-4e51-a63c-deb9d0f56ac8",
+          "name": "Projektori"
+        }
+      ]
+    },
+    {
+      "productAttributeDefinitionId": "a8afc38b-9265-4237-820a-2b29ab13320d",
+      "name": "Daljinski",
+      "externalId": null,
+      "olxId": 2183,
+      "olxName": "Daljinski",
+      "type": 2,
+      "isPublic": true,
+      "isFilter": true,
+      "olxRequired": false,
+      "optionsJson": null,
+      "categories": [
+        {
+          "categoryId": "d0f71c6f-1bb0-46bb-b845-617f058c5a56",
+          "name": "Auto audio"
+        }
+      ]
+    }
+  ],
+  "pagination": {
+    "totalRecords": 1222,
+    "totalPages": 7,
+    "currentPage": 1,
+    "pageSize": 200,
+    "nextPage": 2,
+    "previousPage": null
+  }
+}
