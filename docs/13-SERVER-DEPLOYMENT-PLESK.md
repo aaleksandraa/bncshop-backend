@@ -189,6 +189,18 @@ chmod -R ug+rwx storage bootstrap/cache
 
 **Plesk Laravel extension:** ne kopiraj `.env.example` direktno — sadrži dev varijable (`ADMIN_NAME`, `SELLER_NAME`) koje lome parser ako nisu u navodnicima.
 
+**Ako deploy pada na `unexpected whitespace at [BNC Admin]`:** na serveru već postoji stari `.env` sa `ADMIN_NAME=BNC Admin` (bez navodnika). Plesk **ne prepisuje** `.env` automatski. Prije redeploya:
+
+```bash
+cd /path/to/bncshop-backend
+rm -f .env
+cp .env.production.example .env
+# popuni DB_PASSWORD, MAIL_*, API keys...
+php artisan key:generate
+```
+
+Ili u Plesk File Manager obriši `.env` pa ponovo pokreni deploy.
+
 Koristi produkcijski template:
 
 ```bash
