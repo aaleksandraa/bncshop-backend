@@ -13,14 +13,20 @@ class SystemSettingsSeeder extends Seeder
     {
         $settings = [
             'shop_name' => [
-                'value' => ['name' => 'BNC Webshop'],
+                'value' => ['name' => 'BNC Shop'],
                 'group' => 'shop',
             ],
             'shop_contact' => [
                 'value' => [
-                    'email' => 'info@bncshop.ba',
-                    'phone' => '+387 33 000 000',
-                    'address' => 'Sarajevo, BiH',
+                    'email' => 'prodaja@bnc.ba',
+                    'email_info' => 'info@bnc.ba',
+                    'phone' => '+387 33 265 465',
+                    'mobile' => '+387 61 891 148',
+                    'address' => 'Merhemića trg 2, 71000 Sarajevo, Bosna i Hercegovina',
+                    'website' => 'https://bnc.ba',
+                    'facebook_url' => 'https://www.facebook.com/Racunari.BNC/',
+                    'google_maps_url' => 'https://www.google.com/maps/search/?api=1&query=Merhemi%C4%87a+trg+2,+71000+Sarajevo',
+                    'maps_embed_url' => 'https://maps.google.com/maps?q=Merhemi%C4%87a+trg+2,+71000+Sarajevo,+Bosna+i+Hercegovina&hl=bs&z=17&output=embed',
                 ],
                 'group' => 'shop',
             ],

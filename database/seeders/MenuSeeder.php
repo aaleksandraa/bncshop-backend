@@ -41,7 +41,9 @@ class MenuSeeder extends Seeder
             [
                 'title' => 'O nama',
                 'slug' => 'o-nama',
-                'body' => '<p>BNC Shop je vaš partner za kupovinu IT opreme, elektronike i pratećih proizvoda. Na ovoj stranici možete urediti informacije o kompaniji, misiji i timu.</p>',
+                'body' => null,
+                'meta_title' => 'O nama',
+                'meta_description' => 'BNC d.o.o. Sarajevo — polovna i brandirana informatička oprema, servis, garancija i kupovina online 24/7.',
                 'status' => 'active',
             ],
             [
@@ -53,7 +55,9 @@ class MenuSeeder extends Seeder
             [
                 'title' => 'Kontakt',
                 'slug' => 'kontakt',
-                'body' => '<p>Kontaktirajte BNC Shop putem emaila ili telefona. Rado ćemo vam pomoći oko odabira opreme.</p>',
+                'body' => null,
+                'meta_title' => 'Kontakt',
+                'meta_description' => 'Kontaktirajte BNC d.o.o. Sarajevo — Merhemića trg 2. Telefon, email, mapa i Google recenzije.',
                 'status' => 'active',
             ],
             [
