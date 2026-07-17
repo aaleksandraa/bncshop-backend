@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Auth\Login;
 use App\Filament\Pages\PartnerExportSettingsPage;
 use App\Filament\Widgets\SalesChartWidget;
 use App\Filament\Widgets\StatsOverviewWidget;
@@ -31,10 +32,15 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
-            ->login()
+            ->login(Login::class)
+            ->brandName('BNC Admin')
+            ->brandLogo(asset('bnc-logo.png'))
+            ->brandLogoHeight('2.75rem')
+            ->favicon(asset('bnc-logo.png'))
             ->colors([
-                'primary' => Color::Amber,
+                'primary' => Color::hex('#e30613'),
             ])
+            ->renderHook('panels::head.end', fn () => view('filament.admin.head'))
             ->navigationGroups([
                 NavigationGroup::make('Dashboard'),
                 NavigationGroup::make('Katalog'),
