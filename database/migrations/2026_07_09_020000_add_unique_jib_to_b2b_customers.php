@@ -10,9 +10,10 @@ return new class extends Migration
     public function up(): void
     {
         $duplicates = DB::table('b2b_customers')
-            ->select('jib', DB::raw('COUNT(*) as aggregate'))
+            ->select('jib')
+            ->whereNotNull('jib')
             ->groupBy('jib')
-            ->having('aggregate', '>', 1)
+            ->havingRaw('COUNT(*) > 1')
             ->pluck('jib');
 
         foreach ($duplicates as $jib) {
