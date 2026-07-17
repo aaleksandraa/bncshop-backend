@@ -187,11 +187,35 @@ chmod -R ug+rwx storage bootstrap/cache
 
 ### 3. Environment (`.env`)
 
-Kopirati vrijednosti iz [env.production.example.md](./env.production.example.md).
+**Plesk Laravel extension:** ne kopiraj `.env.example` direktno — sadrži dev varijable (`ADMIN_NAME`, `SELLER_NAME`) koje lome parser ako nisu u navodnicima.
+
+Koristi produkcijski template:
+
+```bash
+cp .env.production.example .env
+php artisan key:generate
+```
+
+Ili kopiraj vrijednosti iz [env.production.example.md](./env.production.example.md).
+
+**Pravilo:** svaka vrijednost sa razmakom mora imati dvostruke navodnike:
+
+```env
+# ISPRAVNO
+APP_NAME="BNC Webshop"
+ADMIN_NAME="BNC Admin"
+
+# POGREŠNO — Laravel dotenv parser pada
+APP_NAME=BNC Webshop
+ADMIN_NAME=BNC Admin
+```
+
+U produkciji **ukloni** dev-only linije ako postoje: `ADMIN_NAME`, `SELLER_NAME`, `ADMIN_PASSWORD`, `SELLER_PASSWORD` (admin kreira se sa `make:filament-user`).
 
 **Obavezno u produkciji:**
 
 ```env
+APP_NAME="BNC Webshop"
 APP_ENV=production
 APP_DEBUG=false
 APP_URL=https://api.bncshop.ba
@@ -455,6 +479,12 @@ Health endpoint (`/api/v1/health`) provjerava PostgreSQL, Redis i Meilisearch.
 
 | Simptom | Uzrok | Rješenje |
 |---------|-------|----------|
+| `Failed to parse dotenv... unexpected whitespace at [BNC Admin]` | `.env` vrijednost sa razmakom bez navodnika | `APP_NAME="BNC Webshop"`, ukloni ili citiraj `ADMIN_NAME` |
+| Plesk "Configuring Laravel" pada odmah | `.env` nevalidan ili nema `APP_KEY` | `cp .env.production.example .env` + `php artisan key:generate` |
+| `Connection refused` Redis | Redis nije pokrenut | Instalirati/pokrenuti Redis prije `SESSION_DRIVER=redis` |
+| `could not connect to server` PostgreSQL | DB servis ili pogrešni DB_* | Provjeri PostgreSQL i credentials |
+| `Class "Redis" not found` | phpredis ekstenzija nedostaje | U Plesk PHP 8.3+ uključiti `redis` ekstenziju |
+| Meilisearch health fail | Servis ne radi ili pogrešan key | `MEILISEARCH_HOST` + `MEILISEARCH_KEY` |
 | Sync jobovi stoje u queue | Horizon ne sluša `sync` red | Provjeri `config/horizon.php` — mora imati `supervisor-sync` |
 | Pretraga prazna / spora | Meilisearch nije indeksiran | `scout:import`, provjeri `MEILISEARCH_HOST` i `MEILISEARCH_KEY` |
 | Cache se ne invalidira | `CACHE_STORE` nije redis | Postavi `CACHE_STORE=redis`, restart PHP-FPM |

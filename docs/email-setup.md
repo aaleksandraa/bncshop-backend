@@ -18,10 +18,10 @@ Postavite lozinke u `.env` (nikad ne commitujte stvarne lozinke):
 ```env
 ADMIN_EMAIL=admin@bncshop.test
 ADMIN_PASSWORD=your-strong-local-password
-ADMIN_NAME=BNC Admin
+ADMIN_NAME="BNC Admin"
 SELLER_EMAIL=prodavac@bncshop.test
 SELLER_PASSWORD=your-strong-local-password
-SELLER_NAME=BNC Prodavac
+SELLER_NAME="BNC Prodavac"
 ```
 
 # Email za narudžbe
