@@ -35,4 +35,17 @@ class PublicStorageUrlTest extends TestCase
             $url,
         );
     }
+
+    public function test_absolute_from_resolved_uses_production_origin_when_app_url_is_localhost(): void
+    {
+        app()['env'] = 'production';
+        config(['app.url' => 'http://localhost:8000']);
+
+        $url = PublicStorageUrl::absoluteFromResolved('/storage/products/demo/image.webp');
+
+        $this->assertSame(
+            'https://api.bncshop.ba/storage/products/demo/image.webp',
+            $url,
+        );
+    }
 }

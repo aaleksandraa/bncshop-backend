@@ -49,7 +49,13 @@ class PublicStorageUrl
         }
 
         if (str_starts_with($url, '/')) {
-            return rtrim((string) config('app.url'), '/').$url;
+            $origin = rtrim((string) config('app.url'), '/');
+
+            if (app()->environment('production') && str_contains($origin, 'localhost')) {
+                $origin = 'https://api.bncshop.ba';
+            }
+
+            return $origin.$url;
         }
 
         return self::absoluteUrl($url);
@@ -66,8 +72,13 @@ class PublicStorageUrl
             && str_starts_with($path, '/storage/')
         ) {
             $query = isset($parts['query']) ? '?'.$parts['query'] : '';
+            $origin = rtrim((string) config('app.url'), '/');
 
-            return rtrim((string) config('app.url'), '/').$path.$query;
+            if (app()->environment('production') && str_contains($origin, 'localhost')) {
+                $origin = 'https://api.bncshop.ba';
+            }
+
+            return $origin.$path.$query;
         }
 
         return $url;
