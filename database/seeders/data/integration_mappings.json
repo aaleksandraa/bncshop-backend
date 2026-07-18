@@ -1,0 +1,1763 @@
+{
+    "version": 1,
+    "exported_at": "2026-07-18T08:15:38+00:00",
+    "eline_category_mappings": [
+        {
+            "eline_category": "Barcode scanneri",
+            "is_enabled": false,
+            "category_external_id": null,
+            "category_full_slug": null,
+            "category_name": null,
+            "product_condition": "refurbished",
+            "margin_percentage": null
+        },
+        {
+            "eline_category": "Baterije",
+            "is_enabled": false,
+            "category_external_id": null,
+            "category_full_slug": null,
+            "category_name": null,
+            "product_condition": "refurbished",
+            "margin_percentage": null
+        },
+        {
+            "eline_category": "Bijela tehnika",
+            "is_enabled": false,
+            "category_external_id": null,
+            "category_full_slug": null,
+            "category_name": null,
+            "product_condition": "refurbished",
+            "margin_percentage": null
+        },
+        {
+            "eline_category": "CD / DVD",
+            "is_enabled": false,
+            "category_external_id": null,
+            "category_full_slug": null,
+            "category_name": null,
+            "product_condition": "refurbished",
+            "margin_percentage": null
+        },
+        {
+            "eline_category": "Dijelovi za laptope",
+            "is_enabled": false,
+            "category_external_id": null,
+            "category_full_slug": null,
+            "category_name": null,
+            "product_condition": "refurbished",
+            "margin_percentage": null
+        },
+        {
+            "eline_category": "Dijelovi za racunar",
+            "is_enabled": false,
+            "category_external_id": null,
+            "category_full_slug": null,
+            "category_name": null,
+            "product_condition": "refurbished",
+            "margin_percentage": null
+        },
+        {
+            "eline_category": "Diskovi",
+            "is_enabled": false,
+            "category_external_id": null,
+            "category_full_slug": null,
+            "category_name": null,
+            "product_condition": "refurbished",
+            "margin_percentage": null
+        },
+        {
+            "eline_category": "Fiksni telefoni",
+            "is_enabled": false,
+            "category_external_id": null,
+            "category_full_slug": null,
+            "category_name": null,
+            "product_condition": "refurbished",
+            "margin_percentage": null
+        },
+        {
+            "eline_category": "Flash memorije",
+            "is_enabled": false,
+            "category_external_id": null,
+            "category_full_slug": null,
+            "category_name": null,
+            "product_condition": "refurbished",
+            "margin_percentage": null
+        },
+        {
+            "eline_category": "Kamera",
+            "is_enabled": false,
+            "category_external_id": null,
+            "category_full_slug": null,
+            "category_name": null,
+            "product_condition": "refurbished",
+            "margin_percentage": null
+        },
+        {
+            "eline_category": "Klime",
+            "is_enabled": false,
+            "category_external_id": null,
+            "category_full_slug": null,
+            "category_name": null,
+            "product_condition": "refurbished",
+            "margin_percentage": null
+        },
+        {
+            "eline_category": "Komponente",
+            "is_enabled": false,
+            "category_external_id": null,
+            "category_full_slug": null,
+            "category_name": null,
+            "product_condition": "refurbished",
+            "margin_percentage": null
+        },
+        {
+            "eline_category": "LED Lampa",
+            "is_enabled": false,
+            "category_external_id": null,
+            "category_full_slug": null,
+            "category_name": null,
+            "product_condition": "refurbished",
+            "margin_percentage": null
+        },
+        {
+            "eline_category": "Mobiteli / Tableti",
+            "is_enabled": false,
+            "category_external_id": null,
+            "category_full_slug": null,
+            "category_name": null,
+            "product_condition": "refurbished",
+            "margin_percentage": null
+        },
+        {
+            "eline_category": "Mrežna oprema",
+            "is_enabled": false,
+            "category_external_id": null,
+            "category_full_slug": null,
+            "category_name": null,
+            "product_condition": "refurbished",
+            "margin_percentage": null
+        },
+        {
+            "eline_category": "Novi laptopi",
+            "is_enabled": false,
+            "category_external_id": null,
+            "category_full_slug": null,
+            "category_name": null,
+            "product_condition": "new",
+            "margin_percentage": null
+        },
+        {
+            "eline_category": "Novi printeri",
+            "is_enabled": false,
+            "category_external_id": null,
+            "category_full_slug": null,
+            "category_name": null,
+            "product_condition": "new",
+            "margin_percentage": null
+        },
+        {
+            "eline_category": "Novi projektori",
+            "is_enabled": false,
+            "category_external_id": null,
+            "category_full_slug": null,
+            "category_name": null,
+            "product_condition": "new",
+            "margin_percentage": null
+        },
+        {
+            "eline_category": "Novi racunari",
+            "is_enabled": false,
+            "category_external_id": null,
+            "category_full_slug": null,
+            "category_name": null,
+            "product_condition": "new",
+            "margin_percentage": null
+        },
+        {
+            "eline_category": "Oprema za laptope",
+            "is_enabled": false,
+            "category_external_id": null,
+            "category_full_slug": null,
+            "category_name": null,
+            "product_condition": "refurbished",
+            "margin_percentage": null
+        },
+        {
+            "eline_category": "Oprema za mobitele",
+            "is_enabled": false,
+            "category_external_id": null,
+            "category_full_slug": null,
+            "category_name": null,
+            "product_condition": "refurbished",
+            "margin_percentage": null
+        },
+        {
+            "eline_category": "Oprema za tablete",
+            "is_enabled": false,
+            "category_external_id": null,
+            "category_full_slug": null,
+            "category_name": null,
+            "product_condition": "refurbished",
+            "margin_percentage": null
+        },
+        {
+            "eline_category": "Periferija",
+            "is_enabled": false,
+            "category_external_id": null,
+            "category_full_slug": null,
+            "category_name": null,
+            "product_condition": "refurbished",
+            "margin_percentage": null
+        },
+        {
+            "eline_category": "Refurbished  laptopi",
+            "is_enabled": false,
+            "category_external_id": null,
+            "category_full_slug": null,
+            "category_name": null,
+            "product_condition": "refurbished",
+            "margin_percentage": null
+        },
+        {
+            "eline_category": "Refurbished printeri",
+            "is_enabled": false,
+            "category_external_id": null,
+            "category_full_slug": null,
+            "category_name": null,
+            "product_condition": "refurbished",
+            "margin_percentage": null
+        },
+        {
+            "eline_category": "Refurbished projektori",
+            "is_enabled": false,
+            "category_external_id": null,
+            "category_full_slug": null,
+            "category_name": null,
+            "product_condition": "refurbished",
+            "margin_percentage": null
+        },
+        {
+            "eline_category": "Refurbished racunari",
+            "is_enabled": false,
+            "category_external_id": null,
+            "category_full_slug": null,
+            "category_name": null,
+            "product_condition": "refurbished",
+            "margin_percentage": null
+        },
+        {
+            "eline_category": "Rezervni dijelovi za laptope",
+            "is_enabled": false,
+            "category_external_id": null,
+            "category_full_slug": null,
+            "category_name": null,
+            "product_condition": "refurbished",
+            "margin_percentage": null
+        },
+        {
+            "eline_category": "Romobili",
+            "is_enabled": false,
+            "category_external_id": null,
+            "category_full_slug": null,
+            "category_name": null,
+            "product_condition": "refurbished",
+            "margin_percentage": null
+        },
+        {
+            "eline_category": "Smart watch",
+            "is_enabled": false,
+            "category_external_id": null,
+            "category_full_slug": null,
+            "category_name": null,
+            "product_condition": "refurbished",
+            "margin_percentage": null
+        },
+        {
+            "eline_category": "Software",
+            "is_enabled": false,
+            "category_external_id": null,
+            "category_full_slug": null,
+            "category_name": null,
+            "product_condition": "refurbished",
+            "margin_percentage": null
+        },
+        {
+            "eline_category": "Televizori",
+            "is_enabled": false,
+            "category_external_id": null,
+            "category_full_slug": null,
+            "category_name": null,
+            "product_condition": "refurbished",
+            "margin_percentage": null
+        },
+        {
+            "eline_category": "Toneri",
+            "is_enabled": false,
+            "category_external_id": null,
+            "category_full_slug": null,
+            "category_name": null,
+            "product_condition": "refurbished",
+            "margin_percentage": null
+        },
+        {
+            "eline_category": "UPS",
+            "is_enabled": false,
+            "category_external_id": null,
+            "category_full_slug": null,
+            "category_name": null,
+            "product_condition": "refurbished",
+            "margin_percentage": null
+        },
+        {
+            "eline_category": "Usluga",
+            "is_enabled": false,
+            "category_external_id": null,
+            "category_full_slug": null,
+            "category_name": null,
+            "product_condition": "refurbished",
+            "margin_percentage": null
+        },
+        {
+            "eline_category": "Video nadzor",
+            "is_enabled": false,
+            "category_external_id": null,
+            "category_full_slug": null,
+            "category_name": null,
+            "product_condition": "refurbished",
+            "margin_percentage": null
+        },
+        {
+            "eline_category": "ostalo",
+            "is_enabled": false,
+            "category_external_id": null,
+            "category_full_slug": null,
+            "category_name": null,
+            "product_condition": "refurbished",
+            "margin_percentage": null
+        },
+        {
+            "eline_category": "Školski pribor",
+            "is_enabled": false,
+            "category_external_id": null,
+            "category_full_slug": null,
+            "category_name": null,
+            "product_condition": "refurbished",
+            "margin_percentage": null
+        },
+        {
+            "eline_category": "Novi monitori",
+            "is_enabled": true,
+            "category_external_id": "2b56dcf8-38ef-49f7-9a00-bc0f193ac3c3",
+            "category_full_slug": "it-oprema/periferija/monitori",
+            "category_name": "Monitori",
+            "product_condition": "new",
+            "margin_percentage": null
+        },
+        {
+            "eline_category": "Refurbished monitori",
+            "is_enabled": true,
+            "category_external_id": "2b56dcf8-38ef-49f7-9a00-bc0f193ac3c3",
+            "category_full_slug": "it-oprema/periferija/monitori",
+            "category_name": "Monitori",
+            "product_condition": "refurbished",
+            "margin_percentage": null
+        }
+    ],
+    "olx_category_mappings": [
+        {
+            "category_external_id": "2b56dcf8-38ef-49f7-9a00-bc0f193ac3c3",
+            "category_full_slug": "it-oprema/periferija/monitori",
+            "category_name": "Monitori",
+            "olx_category_id": 163,
+            "olx_category_path": "Kompjuteri > Kompjuterska oprema > Monitori",
+            "is_enabled": true,
+            "include_descendants": true
+        },
+        {
+            "category_external_id": "8d483c81-032f-4202-bac4-20fb2efdb38f",
+            "category_full_slug": "it-oprema/racunari",
+            "category_name": "Računari",
+            "olx_category_id": 38,
+            "olx_category_path": "Kompjuteri > Desktop Racunari",
+            "is_enabled": true,
+            "include_descendants": true
+        },
+        {
+            "category_external_id": "132dcb0d-5a94-4568-9679-eb6d99bfcf37",
+            "category_full_slug": "it-oprema/laptopi/netbook",
+            "category_name": "Netbook",
+            "olx_category_id": 39,
+            "olx_category_path": "Kompjuteri > Laptopi",
+            "is_enabled": true,
+            "include_descendants": false
+        },
+        {
+            "category_external_id": "9c080e0b-69ed-4690-8f27-ca5f5e77cf5e",
+            "category_full_slug": "it-oprema/laptopi",
+            "category_name": "Laptopi",
+            "olx_category_id": 39,
+            "olx_category_path": "Kompjuteri > Laptopi",
+            "is_enabled": true,
+            "include_descendants": false
+        },
+        {
+            "category_external_id": "1162525e-02c2-44a1-b6e1-945b80760d7e",
+            "category_full_slug": "it-oprema/laptopi/laptopi",
+            "category_name": "Laptopi",
+            "olx_category_id": 39,
+            "olx_category_path": "Kompjuteri > Laptopi",
+            "is_enabled": true,
+            "include_descendants": false
+        },
+        {
+            "category_external_id": "4d995f8d-e46d-49ba-88d7-640b0653ad6b",
+            "category_full_slug": "klima-grijanje",
+            "category_name": "Klima i grijanje",
+            "olx_category_id": 775,
+            "olx_category_path": "Moj dom > Grijanje i hladenje > Klima uredaji",
+            "is_enabled": true,
+            "include_descendants": true
+        },
+        {
+            "category_external_id": "02f88ce3-775b-4074-bb26-148607a13e08",
+            "category_full_slug": "klima-grijanje/klime",
+            "category_name": "Klime",
+            "olx_category_id": 775,
+            "olx_category_path": "Moj dom > Grijanje i hladenje > Klima uredaji",
+            "is_enabled": true,
+            "include_descendants": true
+        },
+        {
+            "category_external_id": "1329c382-6928-4eca-ae4f-e54f034e60c2",
+            "category_full_slug": "klima-grijanje/klime-opcije",
+            "category_name": "Klime Opcije",
+            "olx_category_id": 775,
+            "olx_category_path": "Moj dom > Grijanje i hladenje > Klima uredaji",
+            "is_enabled": true,
+            "include_descendants": true
+        },
+        {
+            "category_external_id": "beb10fb6-db91-43ee-a4fe-1b0bbbd56ce2",
+            "category_full_slug": "klima-grijanje/klime-portabl",
+            "category_name": "Klime Portabl",
+            "olx_category_id": 775,
+            "olx_category_path": "Moj dom > Grijanje i hladenje > Klima uredaji",
+            "is_enabled": true,
+            "include_descendants": true
+        },
+        {
+            "category_external_id": "41ce4020-c995-482b-a675-9fe9f690d9dc",
+            "category_full_slug": "klima-grijanje/klime-sistemi",
+            "category_name": "Klime Sistemi",
+            "olx_category_id": 775,
+            "olx_category_path": "Moj dom > Grijanje i hladenje > Klima uredaji",
+            "is_enabled": true,
+            "include_descendants": true
+        },
+        {
+            "category_external_id": "ad672541-73e4-4481-8a1b-e8a6697f3bb3",
+            "category_full_slug": "auto-mobilnost/trotineti-elektricni",
+            "category_name": "Električni trotineti",
+            "olx_category_id": 2529,
+            "olx_category_path": "Elektricni romobili",
+            "is_enabled": true,
+            "include_descendants": false
+        },
+        {
+            "category_external_id": "2cf03014-1383-48b0-a6c1-4e54d23548b2",
+            "category_full_slug": "print-kancelarija/fiskalni-printeri",
+            "category_name": "Fiskalni printeri",
+            "olx_category_id": 166,
+            "olx_category_path": "Kompjuteri > Kompjuterska oprema > Printer, skener i kopir aparati",
+            "is_enabled": true,
+            "include_descendants": true
+        },
+        {
+            "category_external_id": "c23c32c1-a384-42be-b0d4-6f18d3d4bdbf",
+            "category_full_slug": "print-kancelarija/printeri",
+            "category_name": "Printeri",
+            "olx_category_id": 166,
+            "olx_category_path": "Kompjuteri > Kompjuterska oprema > Printer, skener i kopir aparati",
+            "is_enabled": true,
+            "include_descendants": true
+        },
+        {
+            "category_external_id": "f24ad5e9-d00f-41d8-a233-23840bc8f52e",
+            "category_full_slug": "print-kancelarija/printeri/printeri-za-naljepnice",
+            "category_name": "Printeri za naljepnice",
+            "olx_category_id": 166,
+            "olx_category_path": "Kompjuteri > Kompjuterska oprema > Printer, skener i kopir aparati",
+            "is_enabled": true,
+            "include_descendants": true
+        },
+        {
+            "category_external_id": "32d6504b-a623-447f-928f-c897842fcfc0",
+            "category_full_slug": "print-kancelarija/printeri/termosublimacijski",
+            "category_name": "Termosublimacijski printeri",
+            "olx_category_id": 166,
+            "olx_category_path": "Kompjuteri > Kompjuterska oprema > Printer, skener i kopir aparati",
+            "is_enabled": true,
+            "include_descendants": true
+        },
+        {
+            "category_external_id": "58c03469-c9ca-45c2-bb68-a2b35119ee51",
+            "category_full_slug": "sigurnost-smart-home/video-nadzor",
+            "category_name": "Video Nadzor",
+            "olx_category_id": 816,
+            "olx_category_path": "Moj dom > Sigurnosni uredaji > Video nadzor",
+            "is_enabled": true,
+            "include_descendants": true
+        },
+        {
+            "category_external_id": "0e339909-4aed-4210-97ad-7e6a576e0678",
+            "category_full_slug": "sigurnost-smart-home/video-nadzor/dodatna-oprema",
+            "category_name": "Dodatna oprema za video nadzor",
+            "olx_category_id": 816,
+            "olx_category_path": "Moj dom > Sigurnosni uredaji > Video nadzor",
+            "is_enabled": true,
+            "include_descendants": true
+        },
+        {
+            "category_external_id": "ef684b0a-ae7b-47a1-a015-5a3aa17606e5",
+            "category_full_slug": "sigurnost-smart-home/video-nadzor/rezervni-dijelovi",
+            "category_name": "Rezervni dijelovi za video nadzor",
+            "olx_category_id": 816,
+            "olx_category_path": "Moj dom > Sigurnosni uredaji > Video nadzor",
+            "is_enabled": true,
+            "include_descendants": true
+        },
+        {
+            "category_external_id": "e4742244-31b3-4fd1-ada8-cbf12e405e46",
+            "category_full_slug": "it-oprema/periferija/tastature",
+            "category_name": "Tastature",
+            "olx_category_id": 170,
+            "olx_category_path": "Kompjuteri > Kompjuterska oprema > Tastature",
+            "is_enabled": true,
+            "include_descendants": true
+        },
+        {
+            "category_external_id": "d83e0837-dc36-4891-b559-fc9d768721b6",
+            "category_full_slug": "it-oprema/periferija/misevi",
+            "category_name": "Miševi",
+            "olx_category_id": 162,
+            "olx_category_path": "Kompjuteri > Kompjuterska oprema > Misevi",
+            "is_enabled": true,
+            "include_descendants": true
+        },
+        {
+            "category_external_id": "02ff891c-ce58-41a2-bdc8-351cc9cd645e",
+            "category_full_slug": "tv-audio-video/audio/slusalice",
+            "category_name": "Slušalice",
+            "olx_category_id": 1499,
+            "olx_category_path": "Kompjuteri > Kompjuterska oprema > PC slusalice",
+            "is_enabled": true,
+            "include_descendants": false
+        },
+        {
+            "category_external_id": "80bf5f05-5931-4e51-a63c-deb9d0f56ac8",
+            "category_full_slug": "tv-audio-video/projektori",
+            "category_name": "Projektori",
+            "olx_category_id": 248,
+            "olx_category_path": "Kompjuteri > Kompjuterska oprema > Projektori, prezenteri i platna",
+            "is_enabled": true,
+            "include_descendants": true
+        },
+        {
+            "category_external_id": "7d697b0e-b001-48d0-b230-4dc487c2cf3d",
+            "category_full_slug": "tv-audio-video/projektori/projektori",
+            "category_name": "Projektori",
+            "olx_category_id": 248,
+            "olx_category_path": "Kompjuteri > Kompjuterska oprema > Projektori, prezenteri i platna",
+            "is_enabled": true,
+            "include_descendants": true
+        },
+        {
+            "category_external_id": "028bea97-995b-4f8d-8938-405ab66a68ae",
+            "category_full_slug": "tv-audio-video/tv/tv-lcd",
+            "category_name": "LCD televizori",
+            "olx_category_id": 1748,
+            "olx_category_path": "Tehnika > TV, oprema i dijelovi > Televizori TV",
+            "is_enabled": true,
+            "include_descendants": false
+        },
+        {
+            "category_external_id": "226a911e-3aaa-4f00-ba76-74569c573dae",
+            "category_full_slug": "tv-audio-video/tv/tv-plazma",
+            "category_name": "Plazma televizori",
+            "olx_category_id": 1748,
+            "olx_category_path": "Tehnika > TV, oprema i dijelovi > Televizori TV",
+            "is_enabled": true,
+            "include_descendants": false
+        },
+        {
+            "category_external_id": "a08e4ed2-1067-414e-b860-23cad3beb532",
+            "category_full_slug": "tv-audio-video/tv/televizori",
+            "category_name": "Televizori",
+            "olx_category_id": 1748,
+            "olx_category_path": "Tehnika > TV, oprema i dijelovi > Televizori TV",
+            "is_enabled": true,
+            "include_descendants": false
+        },
+        {
+            "category_external_id": "85fe9811-ef3c-409e-82fd-c54614ec5547",
+            "category_full_slug": "klima-grijanje/ventilatori",
+            "category_name": "Ventilatori",
+            "olx_category_id": 776,
+            "olx_category_path": "Moj dom > Grijanje i hladenje > Ventilatori",
+            "is_enabled": true,
+            "include_descendants": true
+        },
+        {
+            "category_external_id": "21be2c96-9fde-4c07-b354-5290a8be96d2",
+            "category_full_slug": "telefonija/pametni-satovi",
+            "category_name": "Pametni Satovi",
+            "olx_category_id": 2076,
+            "olx_category_path": "Mobilni uredaji > Smartwatch (pametni satovi)",
+            "is_enabled": true,
+            "include_descendants": true
+        },
+        {
+            "category_external_id": "42b83892-1329-44f9-a9ad-4006dfda1998",
+            "category_full_slug": "klima-grijanje/preciscivaci-zraka",
+            "category_name": "Prečišćivači zraka",
+            "olx_category_id": 2464,
+            "olx_category_path": "Moj dom > Grijanje i hladenje > Oprema za grijanje i ventilaciju",
+            "is_enabled": true,
+            "include_descendants": false
+        }
+    ],
+    "olx_attribute_mappings": [
+        {
+            "olx_category_id": 39,
+            "olx_attribute_id": 264,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "RAM",
+                "Memorija RAM",
+                "Memorija",
+                "Kapacitet RAM"
+            ],
+            "parser_pattern": null,
+            "default_value": null,
+            "value_mappings": null,
+            "is_required_for_publish": true
+        },
+        {
+            "olx_category_id": 39,
+            "olx_attribute_id": 4784,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "SSD",
+                "Kapacitet SSD",
+                "SSD (GB)",
+                "SSD kapacitet"
+            ],
+            "parser_pattern": null,
+            "default_value": null,
+            "value_mappings": null,
+            "is_required_for_publish": false
+        },
+        {
+            "olx_category_id": 39,
+            "olx_attribute_id": 2465,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "SSD"
+            ],
+            "parser_pattern": null,
+            "default_value": "Ne",
+            "value_mappings": null,
+            "is_required_for_publish": false
+        },
+        {
+            "olx_category_id": 39,
+            "olx_attribute_id": 262,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "Procesor",
+                "CPU"
+            ],
+            "parser_pattern": null,
+            "default_value": null,
+            "value_mappings": null,
+            "is_required_for_publish": true
+        },
+        {
+            "olx_category_id": 39,
+            "olx_attribute_id": 3872,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "Vrsta graficke",
+                "Grafička kartica tip"
+            ],
+            "parser_pattern": null,
+            "default_value": "Integrisana",
+            "value_mappings": null,
+            "is_required_for_publish": true
+        },
+        {
+            "olx_category_id": 163,
+            "olx_attribute_id": 369,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "Vrsta panela",
+                "Tip panela",
+                "Vrsta ekrana",
+                "Panel"
+            ],
+            "parser_pattern": null,
+            "default_value": "LED",
+            "value_mappings": {
+                "IPS": "LCD",
+                "VA": "LCD",
+                "TN": "LCD",
+                "LED": "LED",
+                "OLED": "OLED",
+                "QLED": "LED"
+            },
+            "is_required_for_publish": true
+        },
+        {
+            "olx_category_id": 163,
+            "olx_attribute_id": 6671,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "Rezolucija",
+                "Maksimalna rezolucija"
+            ],
+            "parser_pattern": null,
+            "default_value": null,
+            "value_mappings": {
+                "1920x1080": "Full HD",
+                "3840x2160": "4K",
+                "2560x1440": "2K"
+            },
+            "is_required_for_publish": false
+        },
+        {
+            "olx_category_id": 163,
+            "olx_attribute_id": 5197,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "Refresh rate",
+                "Osvežavanje",
+                "Frekvencija"
+            ],
+            "parser_pattern": null,
+            "default_value": null,
+            "value_mappings": null,
+            "is_required_for_publish": false
+        },
+        {
+            "olx_category_id": 163,
+            "olx_attribute_id": 5160,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "Garancija",
+                "Jamstvo"
+            ],
+            "parser_pattern": null,
+            "default_value": null,
+            "value_mappings": null,
+            "is_required_for_publish": false
+        },
+        {
+            "olx_category_id": 163,
+            "olx_attribute_id": 2471,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "HDMI",
+                "Broj HDMI"
+            ],
+            "parser_pattern": null,
+            "default_value": null,
+            "value_mappings": null,
+            "is_required_for_publish": false
+        },
+        {
+            "olx_category_id": 163,
+            "olx_attribute_id": 3080,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "HDMI"
+            ],
+            "parser_pattern": null,
+            "default_value": null,
+            "value_mappings": null,
+            "is_required_for_publish": false
+        },
+        {
+            "olx_category_id": 38,
+            "olx_attribute_id": 245,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "Procesor",
+                "CPU"
+            ],
+            "parser_pattern": null,
+            "default_value": null,
+            "value_mappings": null,
+            "is_required_for_publish": true
+        },
+        {
+            "olx_category_id": 38,
+            "olx_attribute_id": 1156,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "Brzina procesora",
+                "Brzina procesora (GHz)",
+                "GHz"
+            ],
+            "parser_pattern": null,
+            "default_value": "2.5",
+            "value_mappings": null,
+            "is_required_for_publish": true
+        },
+        {
+            "olx_category_id": 38,
+            "olx_attribute_id": 246,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "RAM",
+                "Memorija RAM",
+                "Memorija"
+            ],
+            "parser_pattern": null,
+            "default_value": null,
+            "value_mappings": null,
+            "is_required_for_publish": true
+        },
+        {
+            "olx_category_id": 38,
+            "olx_attribute_id": 4785,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "SSD",
+                "Kapacitet SSD",
+                "SSD (GB)"
+            ],
+            "parser_pattern": null,
+            "default_value": null,
+            "value_mappings": null,
+            "is_required_for_publish": false
+        },
+        {
+            "olx_category_id": 38,
+            "olx_attribute_id": 247,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "HDD",
+                "Hard disk",
+                "Kapacitet HDD"
+            ],
+            "parser_pattern": null,
+            "default_value": null,
+            "value_mappings": null,
+            "is_required_for_publish": false
+        },
+        {
+            "olx_category_id": 38,
+            "olx_attribute_id": 5156,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "Garancija",
+                "Jamstvo"
+            ],
+            "parser_pattern": null,
+            "default_value": null,
+            "value_mappings": null,
+            "is_required_for_publish": false
+        },
+        {
+            "olx_category_id": 38,
+            "olx_attribute_id": 5180,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "Model procesora",
+                "CPU model"
+            ],
+            "parser_pattern": null,
+            "default_value": null,
+            "value_mappings": null,
+            "is_required_for_publish": false
+        },
+        {
+            "olx_category_id": 39,
+            "olx_attribute_id": 1159,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "Brzina procesora",
+                "Brzina procesora (GHz)"
+            ],
+            "parser_pattern": null,
+            "default_value": null,
+            "value_mappings": null,
+            "is_required_for_publish": false
+        },
+        {
+            "olx_category_id": 39,
+            "olx_attribute_id": 5054,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "Model procesora",
+                "CPU model"
+            ],
+            "parser_pattern": null,
+            "default_value": null,
+            "value_mappings": null,
+            "is_required_for_publish": false
+        },
+        {
+            "olx_category_id": 39,
+            "olx_attribute_id": 263,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "HDD",
+                "Hard disk"
+            ],
+            "parser_pattern": null,
+            "default_value": null,
+            "value_mappings": null,
+            "is_required_for_publish": false
+        },
+        {
+            "olx_category_id": 39,
+            "olx_attribute_id": 5157,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "Garancija",
+                "Jamstvo"
+            ],
+            "parser_pattern": null,
+            "default_value": null,
+            "value_mappings": null,
+            "is_required_for_publish": false
+        },
+        {
+            "olx_category_id": 39,
+            "olx_attribute_id": 5252,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "Rezolucija",
+                "Rezolucija ekrana"
+            ],
+            "parser_pattern": null,
+            "default_value": null,
+            "value_mappings": null,
+            "is_required_for_publish": false
+        },
+        {
+            "olx_category_id": 39,
+            "olx_attribute_id": 274,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "Bluetooth"
+            ],
+            "parser_pattern": null,
+            "default_value": null,
+            "value_mappings": null,
+            "is_required_for_publish": false
+        },
+        {
+            "olx_category_id": 39,
+            "olx_attribute_id": 273,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "Wi-Fi",
+                "Wireless",
+                "WiFi"
+            ],
+            "parser_pattern": null,
+            "default_value": null,
+            "value_mappings": null,
+            "is_required_for_publish": false
+        },
+        {
+            "olx_category_id": 775,
+            "olx_attribute_id": 7277,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "Tip",
+                "Tip klime",
+                "Inverter"
+            ],
+            "parser_pattern": null,
+            "default_value": "Inverter",
+            "value_mappings": {
+                "Inverter": "Inverter",
+                "On/Off": "On/Off",
+                "On Off": "On/Off"
+            },
+            "is_required_for_publish": true
+        },
+        {
+            "olx_category_id": 775,
+            "olx_attribute_id": 4740,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "Energetska klasa hladenje",
+                "Energetska klasa",
+                "Energ. klasa"
+            ],
+            "parser_pattern": null,
+            "default_value": "A",
+            "value_mappings": null,
+            "is_required_for_publish": true
+        },
+        {
+            "olx_category_id": 775,
+            "olx_attribute_id": 4738,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "Kapacitet hladenja",
+                "Kapacitet hladjenja",
+                "Snaga hladenja",
+                "kW"
+            ],
+            "parser_pattern": null,
+            "default_value": "2.5",
+            "value_mappings": null,
+            "is_required_for_publish": true
+        },
+        {
+            "olx_category_id": 775,
+            "olx_attribute_id": 4744,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "Prostor",
+                "Površina",
+                "Kvadratura",
+                "m2",
+                "m²"
+            ],
+            "parser_pattern": null,
+            "default_value": "25",
+            "value_mappings": null,
+            "is_required_for_publish": true
+        },
+        {
+            "olx_category_id": 775,
+            "olx_attribute_id": 4739,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "Kapacitet grijanja",
+                "Snaga grijanja"
+            ],
+            "parser_pattern": null,
+            "default_value": null,
+            "value_mappings": null,
+            "is_required_for_publish": false
+        },
+        {
+            "olx_category_id": 775,
+            "olx_attribute_id": 4741,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "Energetska klasa grijanje"
+            ],
+            "parser_pattern": null,
+            "default_value": null,
+            "value_mappings": null,
+            "is_required_for_publish": false
+        },
+        {
+            "olx_category_id": 775,
+            "olx_attribute_id": 7164,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": null,
+            "parser_pattern": null,
+            "default_value": "Prodaja",
+            "value_mappings": null,
+            "is_required_for_publish": false
+        },
+        {
+            "olx_category_id": 2529,
+            "olx_attribute_id": 7204,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": null,
+            "parser_pattern": null,
+            "default_value": "Prodaja",
+            "value_mappings": null,
+            "is_required_for_publish": true
+        },
+        {
+            "olx_category_id": 166,
+            "olx_attribute_id": 7522,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "Tip uređaja",
+                "Tip",
+                "Vrsta"
+            ],
+            "parser_pattern": null,
+            "default_value": "Printer",
+            "value_mappings": {
+                "Multifunkcijski": "Printer",
+                "MFP": "Printer",
+                "Skener": "Skener",
+                "Kopir": "Kopir aparat"
+            },
+            "is_required_for_publish": true
+        },
+        {
+            "olx_category_id": 166,
+            "olx_attribute_id": 4788,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "Vrsta printera",
+                "Tehnologija ispisa",
+                "Tip printera"
+            ],
+            "parser_pattern": null,
+            "default_value": null,
+            "value_mappings": null,
+            "is_required_for_publish": false
+        },
+        {
+            "olx_category_id": 166,
+            "olx_attribute_id": 3086,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "Multifunkcijski",
+                "MFP"
+            ],
+            "parser_pattern": null,
+            "default_value": null,
+            "value_mappings": null,
+            "is_required_for_publish": false
+        },
+        {
+            "olx_category_id": 166,
+            "olx_attribute_id": 5159,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "Garancija",
+                "Jamstvo"
+            ],
+            "parser_pattern": null,
+            "default_value": null,
+            "value_mappings": null,
+            "is_required_for_publish": false
+        },
+        {
+            "olx_category_id": 816,
+            "olx_attribute_id": 7445,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "Rezolucija",
+                "Video rezolucija",
+                "Max rezolucija"
+            ],
+            "parser_pattern": null,
+            "default_value": "1080p",
+            "value_mappings": {
+                "Full HD": "1080p",
+                "FHD": "1080p",
+                "HD": "720p",
+                "4K": "4K",
+                "8K": "8K",
+                "1080P": "1080p"
+            },
+            "is_required_for_publish": true
+        },
+        {
+            "olx_category_id": 816,
+            "olx_attribute_id": 7446,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "WiFi",
+                "Wi-Fi",
+                "Wireless"
+            ],
+            "parser_pattern": null,
+            "default_value": null,
+            "value_mappings": null,
+            "is_required_for_publish": false
+        },
+        {
+            "olx_category_id": 816,
+            "olx_attribute_id": 7449,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "PIR",
+                "Senzor pokreta"
+            ],
+            "parser_pattern": null,
+            "default_value": null,
+            "value_mappings": null,
+            "is_required_for_publish": false
+        },
+        {
+            "olx_category_id": 170,
+            "olx_attribute_id": 2170,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "Priključak",
+                "Konekcija",
+                "Interfejs",
+                "Tip priključka"
+            ],
+            "parser_pattern": null,
+            "default_value": "USB",
+            "value_mappings": {
+                "Bežični": "Wireless",
+                "Bezicni": "Wireless",
+                "Bluetooth": "Wireless",
+                "BT": "Wireless"
+            },
+            "is_required_for_publish": true
+        },
+        {
+            "olx_category_id": 170,
+            "olx_attribute_id": 3100,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "Gaming"
+            ],
+            "parser_pattern": null,
+            "default_value": null,
+            "value_mappings": null,
+            "is_required_for_publish": false
+        },
+        {
+            "olx_category_id": 170,
+            "olx_attribute_id": 5269,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "Mehanička",
+                "Tip prekidača"
+            ],
+            "parser_pattern": null,
+            "default_value": null,
+            "value_mappings": null,
+            "is_required_for_publish": false
+        },
+        {
+            "olx_category_id": 170,
+            "olx_attribute_id": 1123,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "Boja"
+            ],
+            "parser_pattern": null,
+            "default_value": null,
+            "value_mappings": null,
+            "is_required_for_publish": false
+        },
+        {
+            "olx_category_id": 162,
+            "olx_attribute_id": 2339,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "Priključak",
+                "Konekcija",
+                "Interfejs"
+            ],
+            "parser_pattern": null,
+            "default_value": "USB",
+            "value_mappings": {
+                "Bežični": "Wireless (bežični)",
+                "Bezicni": "Wireless (bežični)",
+                "Wireless": "Wireless (bežični)",
+                "BT": "Wireless (bežični)",
+                "Bluetooth": "Wireless (bežični)"
+            },
+            "is_required_for_publish": true
+        },
+        {
+            "olx_category_id": 162,
+            "olx_attribute_id": 2321,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "DPI",
+                "Rezolucija"
+            ],
+            "parser_pattern": null,
+            "default_value": null,
+            "value_mappings": null,
+            "is_required_for_publish": false
+        },
+        {
+            "olx_category_id": 162,
+            "olx_attribute_id": 2326,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "Gaming"
+            ],
+            "parser_pattern": null,
+            "default_value": null,
+            "value_mappings": null,
+            "is_required_for_publish": false
+        },
+        {
+            "olx_category_id": 162,
+            "olx_attribute_id": 5161,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "Garancija",
+                "Jamstvo"
+            ],
+            "parser_pattern": null,
+            "default_value": null,
+            "value_mappings": null,
+            "is_required_for_publish": false
+        },
+        {
+            "olx_category_id": 1499,
+            "olx_attribute_id": 3178,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "Tip slušalica",
+                "Vrsta",
+                "Tip"
+            ],
+            "parser_pattern": null,
+            "default_value": "Na uho",
+            "value_mappings": {
+                "Over-ear": "Na uho",
+                "On-ear": "Oko uha",
+                "In-ear": "U uho",
+                "Earbuds": "U uho",
+                "Headset": "Na uho"
+            },
+            "is_required_for_publish": true
+        },
+        {
+            "olx_category_id": 1499,
+            "olx_attribute_id": 3177,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "Mikrofon",
+                "Sa mikrofonom"
+            ],
+            "parser_pattern": null,
+            "default_value": null,
+            "value_mappings": null,
+            "is_required_for_publish": false
+        },
+        {
+            "olx_category_id": 1499,
+            "olx_attribute_id": 3180,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "Wireless",
+                "Wi-Fi",
+                "Bluetooth",
+                "Bežične"
+            ],
+            "parser_pattern": null,
+            "default_value": null,
+            "value_mappings": null,
+            "is_required_for_publish": false
+        },
+        {
+            "olx_category_id": 1499,
+            "olx_attribute_id": 3179,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "Gaming"
+            ],
+            "parser_pattern": null,
+            "default_value": null,
+            "value_mappings": null,
+            "is_required_for_publish": false
+        },
+        {
+            "olx_category_id": 1499,
+            "olx_attribute_id": 7978,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "Boja"
+            ],
+            "parser_pattern": null,
+            "default_value": null,
+            "value_mappings": null,
+            "is_required_for_publish": false
+        },
+        {
+            "olx_category_id": 248,
+            "olx_attribute_id": 7126,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": null,
+            "parser_pattern": null,
+            "default_value": "Prodaja",
+            "value_mappings": null,
+            "is_required_for_publish": true
+        },
+        {
+            "olx_category_id": 248,
+            "olx_attribute_id": 7521,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": null,
+            "parser_pattern": null,
+            "default_value": "Projektori",
+            "value_mappings": null,
+            "is_required_for_publish": false
+        },
+        {
+            "olx_category_id": 248,
+            "olx_attribute_id": 2342,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "Rezolucija",
+                "Native rezolucija"
+            ],
+            "parser_pattern": null,
+            "default_value": null,
+            "value_mappings": null,
+            "is_required_for_publish": false
+        },
+        {
+            "olx_category_id": 248,
+            "olx_attribute_id": 2341,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "Domet",
+                "Distanca"
+            ],
+            "parser_pattern": null,
+            "default_value": null,
+            "value_mappings": null,
+            "is_required_for_publish": false
+        },
+        {
+            "olx_category_id": 248,
+            "olx_attribute_id": 3108,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "3D"
+            ],
+            "parser_pattern": null,
+            "default_value": null,
+            "value_mappings": null,
+            "is_required_for_publish": false
+        },
+        {
+            "olx_category_id": 1748,
+            "olx_attribute_id": 7525,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "Tip panela",
+                "Tehnologija",
+                "Tip ekrana",
+                "Display tehnologija"
+            ],
+            "parser_pattern": null,
+            "default_value": "LED LCD",
+            "value_mappings": {
+                "LED": "LED LCD",
+                "LCD": "LED LCD",
+                "QLED": "QLED",
+                "OLED": "OLED",
+                "Mini LED": "MINI LED"
+            },
+            "is_required_for_publish": true
+        },
+        {
+            "olx_category_id": 1748,
+            "olx_attribute_id": 3459,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "Rezolucija",
+                "Native rezolucija"
+            ],
+            "parser_pattern": null,
+            "default_value": "4K",
+            "value_mappings": {
+                "3840x2160": "4K",
+                "1920x1080": "1080p (full HD)",
+                "1366x768": "768p",
+                "UHD": "4K",
+                "Full HD": "1080p (full HD)",
+                "FHD": "1080p (full HD)"
+            },
+            "is_required_for_publish": true
+        },
+        {
+            "olx_category_id": 1748,
+            "olx_attribute_id": 7526,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "Smart TV",
+                "Smart"
+            ],
+            "parser_pattern": null,
+            "default_value": null,
+            "value_mappings": {
+                "Da": "Smart",
+                "Ne": "Non Smart"
+            },
+            "is_required_for_publish": false
+        },
+        {
+            "olx_category_id": 163,
+            "olx_attribute_id": 1143,
+            "attribute_external_id": "642cd3c9-58bb-4431-9605-9ca9d97ece7d",
+            "bnc_attribute_aliases": [
+                "Dijagonala ekrana",
+                "Dijagonala",
+                "Display",
+                "Ekran",
+                "Veličina ekrana",
+                "Veličina monitora",
+                "Veličina (inch)"
+            ],
+            "parser_pattern": null,
+            "default_value": null,
+            "value_mappings": null,
+            "is_required_for_publish": true
+        },
+        {
+            "olx_category_id": 39,
+            "olx_attribute_id": 265,
+            "attribute_external_id": "642cd3c9-58bb-4431-9605-9ca9d97ece7d",
+            "bnc_attribute_aliases": [
+                "Dijagonala ekrana",
+                "Dijagonala",
+                "Display",
+                "Ekran",
+                "Veličina ekrana",
+                "Veličina (inch)"
+            ],
+            "parser_pattern": null,
+            "default_value": null,
+            "value_mappings": null,
+            "is_required_for_publish": true
+        },
+        {
+            "olx_category_id": 1748,
+            "olx_attribute_id": 5255,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "Operativni sistem",
+                "OS",
+                "Smart platforma"
+            ],
+            "parser_pattern": null,
+            "default_value": null,
+            "value_mappings": {
+                "Android": "Android TV",
+                "Google TV": "Google TV",
+                "WebOS": "WebOS",
+                "Tizen": "Tizen"
+            },
+            "is_required_for_publish": false
+        },
+        {
+            "olx_category_id": 1748,
+            "olx_attribute_id": 3470,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "HDMI",
+                "Broj HDMI"
+            ],
+            "parser_pattern": null,
+            "default_value": null,
+            "value_mappings": null,
+            "is_required_for_publish": false
+        },
+        {
+            "olx_category_id": 1748,
+            "olx_attribute_id": 5152,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "Garancija",
+                "Jamstvo"
+            ],
+            "parser_pattern": null,
+            "default_value": null,
+            "value_mappings": null,
+            "is_required_for_publish": false
+        },
+        {
+            "olx_category_id": 776,
+            "olx_attribute_id": 7167,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": null,
+            "parser_pattern": null,
+            "default_value": "Prodaja",
+            "value_mappings": null,
+            "is_required_for_publish": true
+        },
+        {
+            "olx_category_id": 2076,
+            "olx_attribute_id": 5060,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "Operativni sistem",
+                "OS",
+                "Platforma"
+            ],
+            "parser_pattern": null,
+            "default_value": "Android",
+            "value_mappings": {
+                "watchOS": "iOS",
+                "Apple": "iOS",
+                "iPhone": "iOS"
+            },
+            "is_required_for_publish": true
+        },
+        {
+            "olx_category_id": 2076,
+            "olx_attribute_id": 5058,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "Boja kaiša",
+                "Boja narukvice",
+                "Boja"
+            ],
+            "parser_pattern": null,
+            "default_value": "Crna",
+            "value_mappings": null,
+            "is_required_for_publish": true
+        },
+        {
+            "olx_category_id": 2076,
+            "olx_attribute_id": 5069,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "Kapacitet baterije",
+                "Baterija (mAh)"
+            ],
+            "parser_pattern": null,
+            "default_value": null,
+            "value_mappings": null,
+            "is_required_for_publish": false
+        },
+        {
+            "olx_category_id": 2076,
+            "olx_attribute_id": 5071,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "Vodootporan",
+                "Waterproof",
+                "IP"
+            ],
+            "parser_pattern": null,
+            "default_value": null,
+            "value_mappings": null,
+            "is_required_for_publish": false
+        },
+        {
+            "olx_category_id": 2464,
+            "olx_attribute_id": 6746,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": [
+                "Tip",
+                "Vrsta",
+                "Vrsta uređaja"
+            ],
+            "parser_pattern": null,
+            "default_value": "Cirkulacione pumpe",
+            "value_mappings": null,
+            "is_required_for_publish": true
+        },
+        {
+            "olx_category_id": 2464,
+            "olx_attribute_id": 7153,
+            "attribute_external_id": null,
+            "bnc_attribute_aliases": null,
+            "parser_pattern": null,
+            "default_value": "Prodaja",
+            "value_mappings": null,
+            "is_required_for_publish": false
+        },
+        {
+            "olx_category_id": 1748,
+            "olx_attribute_id": 3457,
+            "attribute_external_id": "70c836eb-305a-4d86-b277-446b42edf2b7",
+            "bnc_attribute_aliases": [
+                "Dijagonala TV-a (inch)",
+                "Dijagonala ekrana",
+                "Dijagonala",
+                "Veličina ekrana",
+                "Display",
+                "Veličina (inch)"
+            ],
+            "parser_pattern": null,
+            "default_value": null,
+            "value_mappings": null,
+            "is_required_for_publish": true
+        },
+        {
+            "olx_category_id": 2076,
+            "olx_attribute_id": 5067,
+            "attribute_external_id": "642cd3c9-58bb-4431-9605-9ca9d97ece7d",
+            "bnc_attribute_aliases": [
+                "Dijagonala ekrana",
+                "Dijagonala",
+                "Display",
+                "Veličina ekrana",
+                "Veličina (inch)"
+            ],
+            "parser_pattern": null,
+            "default_value": null,
+            "value_mappings": null,
+            "is_required_for_publish": false
+        },
+        {
+            "olx_category_id": 38,
+            "olx_attribute_id": 238,
+            "attribute_external_id": "bb403e43-29ce-4626-828e-096243a5ed5b",
+            "bnc_attribute_aliases": [
+                "Operativni sistem",
+                "Operativni Sustav",
+                "Operativni sistem - uređaj",
+                "Operativni Sustavi",
+                "OS"
+            ],
+            "parser_pattern": null,
+            "default_value": null,
+            "value_mappings": {
+                "FreeDOS": "Nema",
+                "DOS": "Nema",
+                "Bez OS-a": "Nema",
+                "Bez OS": "Nema",
+                "Without OS": "Nema",
+                "No OS": "Nema",
+                "Win 11": "Win 11",
+                "Windows 11": "Win 11",
+                "Win 10": "Win 10",
+                "Windows 10": "Win 10",
+                "macOS": "Mac OS",
+                "Mac OS": "Mac OS",
+                "Apple Mac OS": "Mac OS",
+                "Linux": "Linux",
+                "Ostalo": "Nema"
+            },
+            "is_required_for_publish": true
+        },
+        {
+            "olx_category_id": 39,
+            "olx_attribute_id": 261,
+            "attribute_external_id": "bb403e43-29ce-4626-828e-096243a5ed5b",
+            "bnc_attribute_aliases": [
+                "Operativni sistem",
+                "Operativni Sustav",
+                "Operativni sistem - uređaj",
+                "Operativni Sustavi",
+                "OS"
+            ],
+            "parser_pattern": null,
+            "default_value": null,
+            "value_mappings": {
+                "FreeDOS": "Nema",
+                "DOS": "Nema",
+                "Bez OS-a": "Nema",
+                "Bez OS": "Nema",
+                "Without OS": "Nema",
+                "No OS": "Nema",
+                "Win 11": "Win 11",
+                "Windows 11": "Win 11",
+                "Win 10": "Win 10",
+                "Windows 10": "Win 10",
+                "macOS": "Mac OS",
+                "Mac OS": "Mac OS",
+                "Apple Mac OS": "Mac OS",
+                "Linux": "Linux",
+                "Ostalo": "Nema"
+            },
+            "is_required_for_publish": true
+        }
+    ]
+}

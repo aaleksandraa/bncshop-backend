@@ -46,6 +46,28 @@ ELINE_SYNC_INTERVAL_MINUTES=60
 3. **Integracije → API izvori → eLine ERP** → **eLine sync**
 4. Po potrebi u **Proizvodi** filtriraj `Izvor = eLine` i isključi pojedinačne artikle akcijom **Isključi iz eLine**
 
+## Prenos mapiranja (lokal → produkcija)
+
+Mapiranja eLine i OLX kategorija/atributa ne treba ručno ponavljati na serveru. Lokalna konfiguracija se čuva u repou:
+
+`backend/database/seeders/data/integration_mappings.json`
+
+Kategorije se na serveru matchaju preko A1 `external_category_id` (ne po lokalnom `category_id`), pa **prije importa mora postojati A1 full sync kategorija**.
+
+```bash
+# Lokalno — nakon izmjena u admin panelu
+php artisan bnc:export-integration-mappings
+git add database/seeders/data/integration_mappings.json
+git commit -m "chore: sync integration mappings"
+git push
+
+# Produkcija — nakon git pull i A1 sync-a kategorija
+php artisan bnc:import-integration-mappings
+php artisan bnc:sync-eline --full --refresh-categories --sync
+```
+
+Opcija `--only-enabled` importuje samo uključena eLine/OLX mapiranja kategorija (OLX atributi se uvijek uvoze).
+
 ## Artisan komande
 
 ```bash
