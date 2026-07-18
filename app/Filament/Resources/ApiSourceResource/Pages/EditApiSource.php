@@ -3,8 +3,10 @@
 namespace App\Filament\Resources\ApiSourceResource\Pages;
 
 use App\Filament\Resources\ApiSourceResource;
+use App\Services\Eline\ElineSyncOrchestrator;
 use App\Services\Sync\A1SyncSettings;
 use Filament\Actions;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 
 class EditApiSource extends EditRecord
@@ -13,7 +15,34 @@ class EditApiSource extends EditRecord
 
     protected function getHeaderActions(): array
     {
-        return [Actions\DeleteAction::make()];
+        $actions = [];
+
+        if ($this->record?->target_system_code === 'eline'
+            && (auth()->user()?->can('api_sources.update') ?? false)) {
+            $actions[] = Actions\Action::make('testElineConnection')
+                ->label('Test konekcije')
+                ->icon('heroicon-o-signal')
+                ->action(function (): void {
+                    try {
+                        app(ElineSyncOrchestrator::class)->testConnection();
+
+                        Notification::make()
+                            ->title('eLine konekcija uspješna')
+                            ->success()
+                            ->send();
+                    } catch (\Throwable $e) {
+                        Notification::make()
+                            ->title('eLine konekcija neuspješna')
+                            ->body($e->getMessage())
+                            ->danger()
+                            ->send();
+                    }
+                });
+        }
+
+        $actions[] = Actions\DeleteAction::make();
+
+        return $actions;
     }
 
     protected function mutateFormDataBeforeFill(array $data): array

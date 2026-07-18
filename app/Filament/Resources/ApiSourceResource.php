@@ -65,15 +65,36 @@ class ApiSourceResource extends Resource
                     ->label('Base URL')
                     ->url()
                     ->required()
-                    ->maxLength(2048),
+                    ->maxLength(2048)
+                    ->visible(fn (Get $get, ?ApiSource $record): bool => ($record?->target_system_code ?? $get('target_system_code')) !== 'eline'),
                 Forms\Components\TextInput::make('username')
                     ->label('Korisničko ime')
-                    ->required(),
+                    ->required(fn (Get $get, ?ApiSource $record, string $operation): bool => $operation === 'create'
+                        && ($record?->target_system_code ?? $get('target_system_code')) !== 'eline')
+                    ->visible(fn (Get $get, ?ApiSource $record): bool => ($record?->target_system_code ?? $get('target_system_code')) !== 'eline'),
                 Forms\Components\TextInput::make('password')
                     ->label('Lozinka')
                     ->password()
                     ->revealable()
-                    ->required(fn (string $operation): bool => $operation === 'create'),
+                    ->required(fn (Get $get, ?ApiSource $record, string $operation): bool => $operation === 'create'
+                        && ($record?->target_system_code ?? $get('target_system_code')) !== 'eline')
+                    ->visible(fn (Get $get, ?ApiSource $record): bool => ($record?->target_system_code ?? $get('target_system_code')) !== 'eline'),
+                Forms\Components\Placeholder::make('eline_credentials_hint')
+                    ->label('eLine API pristup')
+                    ->content(fn (): HtmlString => new HtmlString(
+                        '<p class="text-sm text-gray-600 dark:text-gray-300">eLine <strong>ne koristi</strong> korisničko ime/lozinku iz ovog ekrana. '
+                        .'Token i shop kod postavite u <code>.env</code> na serveru:</p>'
+                        .'<pre class="mt-2 overflow-x-auto rounded bg-gray-100 p-3 text-xs dark:bg-gray-800">'
+                        ."ELINE_API_BASE_URL=".e(config('bnc.eline_api_base_url'))."\n"
+                        .'ELINE_API_TOKEN=&lt;token od eLine&gt;'."\n"
+                        .'ELINE_API_SHOP_CODE='.e(config('bnc.eline_api_shop_code'))."\n"
+                        .'ELINE_API_VERIFY_SSL=false</pre>'
+                        .'<p class="mt-2 text-sm text-gray-600 dark:text-gray-300">Nakon izmjene: '
+                        .'<code>php artisan config:clear</code> i <code>php artisan config:cache</code>. '
+                        .'Test: <code>php artisan bnc:eline-test-connection</code>.</p>'
+                    ))
+                    ->columnSpanFull()
+                    ->visible(fn (Get $get, ?ApiSource $record): bool => ($record?->target_system_code ?? $get('target_system_code')) === 'eline'),
                 Forms\Components\TextInput::make('page_size')
                     ->label('Veličina stranice')
                     ->numeric()

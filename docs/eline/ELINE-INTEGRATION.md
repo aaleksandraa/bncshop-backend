@@ -13,6 +13,10 @@ Primjer produkcijskog base URL-a: `https://www8.eline.ba/bl/RestWebShop.svc/json
 
 ## Env varijable
 
+eLine se **ne loguje** username/password kao A1. Pristup je preko tokena u URL-u feeda.
+
+Polja *Korisničko ime* / *Lozinka* u adminu (**Integracije → API izvori → eLine**) **se ne koriste** — ostavite prazno. Sve postavite u `.env`:
+
 ```env
 ELINE_API_BASE_URL=https://www8.eline.ba/bl/RestWebShop.svc/json
 ELINE_API_TOKEN=your-token-here
@@ -22,6 +26,15 @@ ELINE_API_RETRIES=3
 ELINE_API_VERIFY_SSL=false
 ELINE_SYNC_INTERVAL_MINUTES=60
 ```
+
+**Test na serveru:**
+
+```bash
+php artisan config:clear && php artisan config:cache
+php artisan bnc:eline-test-connection
+```
+
+U adminu: **Integracije → API izvori** → red *eLine ERP* → **Test konekcije** (na listi ili na edit ekranu gore desno).
 
 ## Mapiranje polja
 
