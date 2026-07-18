@@ -319,6 +319,20 @@ class CheckoutService
             $cart->items()->delete();
             $cart->update(['coupon_code' => null, 'pending_coupon_code' => null, 'loyalty_reward_id' => null]);
 
+            return $order->fresh(['items']);
+        });
+
+        $this->dispatchOrderSideEffects($order, $user, $cart->session_id);
+
+        return [
+            'order' => $order,
+            'registered_user' => $registeredUser,
+        ];
+    }
+
+    private function dispatchOrderSideEffects(Order $order, ?User $user, ?string $sessionId): void
+    {
+        try {
             TrackAnalyticsEventJob::dispatch(
                 'order_created',
                 [
@@ -327,19 +341,14 @@ class CheckoutService
                     'item_count' => $order->items_count,
                 ],
                 $user?->id,
-                $cart->session_id,
+                $sessionId,
             );
 
             $this->sendOrderEmails($order);
             $this->syncMarketingContact($order);
-
-            return $order->fresh(['items']);
-        });
-
-        return [
-            'order' => $order,
-            'registered_user' => $registeredUser,
-        ];
+        } catch (\Throwable $e) {
+            report($e);
+        }
     }
 
     private function resolveCustomer(?User $user): ?Customer
