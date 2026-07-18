@@ -86,7 +86,7 @@ class ApiImportJobResource extends Resource
                             ->columnSpanFull(),
                         Infolists\Components\KeyValueEntry::make('stats')
                             ->label('Statistika')
-                            ->formatStateUsing(fn (?array $state): array => self::flattenStatsForDisplay($state))
+                            ->getStateUsing(fn (ApiImportJob $record): array => self::flattenStatsForDisplay($record->stats))
                             ->columnSpanFull(),
                     ])
                     ->columns(2),
