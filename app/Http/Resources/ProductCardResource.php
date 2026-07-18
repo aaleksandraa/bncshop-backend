@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use App\Models\Product;
 use App\Models\ProductImage;
+use App\Support\PublicStorageUrl;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -58,27 +59,10 @@ class ProductCardResource extends JsonResource
 
         return [
             'id' => $image->id,
-            'url' => $this->absoluteAssetUrl($url),
+            'url' => PublicStorageUrl::absoluteFromResolved($url),
             'width' => $image->width ?? null,
             'height' => $image->height ?? null,
             'is_primary' => $image->is_primary ?? false,
         ];
-    }
-
-    private function absoluteAssetUrl(?string $url): ?string
-    {
-        if (blank($url)) {
-            return null;
-        }
-
-        if (str_starts_with($url, 'http://') || str_starts_with($url, 'https://')) {
-            return $url;
-        }
-
-        if (str_starts_with($url, '/')) {
-            return rtrim((string) config('app.url'), '/').$url;
-        }
-
-        return $url;
     }
 }
