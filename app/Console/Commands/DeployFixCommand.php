@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Services\Catalog\ProductReadCache;
+use App\Support\StorefrontConfig;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
@@ -62,6 +63,37 @@ class DeployFixCommand extends Command
         } else {
             $this->info('APP_URL looks OK.');
         }
+
+        $frontendUrl = StorefrontConfig::frontendUrl();
+        $this->line('FRONTEND_URL: '.($frontendUrl ?? '(missing)'));
+
+        if ($env === 'production' && $frontendUrl === null) {
+            $this->error('FRONTEND_URL missing — cart CORS/Sanctum fallbacks need https://bncshop.ba');
+            $issues++;
+        }
+
+        $sessionDomain = config('session.domain');
+        $this->line('SESSION domain: '.($sessionDomain ?: '(host-only — cart CSRF may fail)'));
+
+        if ($env === 'production' && ! $sessionDomain) {
+            $this->error('SESSION domain is host-only. Set SESSION_DOMAIN=.bncshop.ba or APP_URL=https://api.bncshop.ba');
+            $issues++;
+        } else {
+            $this->info('SESSION domain looks OK.');
+        }
+
+        $corsOrigins = config('cors.allowed_origins');
+        $this->line('CORS origins: '.implode(', ', $corsOrigins));
+
+        if ($env === 'production' && StorefrontConfig::containsOnlyLocalhostOrigins($corsOrigins)) {
+            $this->error('CORS still allows only localhost — set FRONTEND_URL=https://bncshop.ba or CORS_ALLOWED_ORIGINS');
+            $issues++;
+        } else {
+            $this->info('CORS origins look OK.');
+        }
+
+        $statefulDomains = config('sanctum.stateful');
+        $this->line('Sanctum stateful: '.implode(', ', $statefulDomains));
 
         if (config('cache.default') !== 'redis') {
             $this->warn('CACHE_STORE is not redis — tagged cache flush may be incomplete.');

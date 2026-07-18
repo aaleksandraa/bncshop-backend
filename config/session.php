@@ -1,5 +1,6 @@
 <?php
 
+use App\Support\StorefrontConfig;
 use Illuminate\Support\Str;
 
 return [
@@ -156,7 +157,7 @@ return [
     |
     */
 
-    'domain' => env('SESSION_DOMAIN'),
+    'domain' => StorefrontConfig::sessionCookieDomain(),
 
     /*
     |--------------------------------------------------------------------------
