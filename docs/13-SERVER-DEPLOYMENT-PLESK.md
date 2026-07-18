@@ -16,7 +16,7 @@ Kupac / Admin
 │  Plesk VPS                                              │
 │  ┌─────────────────────────┐  ┌─────────────────────┐ │
 │  │ api.bncshop.ba          │  │ bncshop.ba          │ │
-│  │ Laravel (public/)       │  │ Next.js storefront  │ │
+│  │ Laravel (backend/public)│  │ Next.js storefront  │ │
 │  │ /api/v1/*  REST API     │  │ npm run start       │ │
 │  │ /admin     Filament     │  │                     │ │
 │  │ /horizon   queue dash   │  │                     │ │
@@ -35,25 +35,8 @@ Kupac / Admin
 
 | Domena | Svrha | Document root / app |
 |--------|-------|---------------------|
-| `api.bncshop.ba` | Laravel backend: API (`/api/v1`), Filament admin (`/admin`), Horizon (`/horizon`) | `bncshop-backend/public` |
-| `bncshop.ba` | Javni webshop | Plesk Node.js → `bncshop-frontend` |
-
----
-
-## GitHub repozitoriji
-
-Klonirati oba repoa na server (sibling folderi):
-
-```bash
-cd /var/www/vhosts/bncshop.ba
-git clone https://github.com/aaleksandraa/bncshop-backend.git
-git clone https://github.com/aaleksandraa/bncshop-frontend.git
-```
-
-| Repo | URL |
-|------|-----|
-| Backend | https://github.com/aaleksandraa/bncshop-backend |
-| Frontend | https://github.com/aaleksandraa/bncshop-frontend |
+| `api.bncshop.ba` | Laravel backend: API (`/api/v1`), Filament admin (`/admin`), Horizon (`/horizon`) | `{repo}/backend/public` |
+| `bncshop.ba` | Javni webshop | Plesk Node.js → `{repo}/frontend` |
 
 ---
 
@@ -87,7 +70,7 @@ Ovo su **dva odvojena procesa**. Horizon **ne može** zamijeniti cron.
 | **Laravel Scheduler** | Pokreće zakazane Artisan komande | Plesk cron: `* * * * * php artisan schedule:run` |
 | **Horizon** | Obrađuje jobove iz Redis queue redova | Supervisor/systemd: `php artisan horizon` |
 
-### Scheduler komande (`routes/console.php`)
+### Scheduler komande (`backend/routes/console.php`)
 
 | Komanda | Raspored | Tip |
 |---------|----------|-----|
@@ -169,7 +152,7 @@ Backend `.env` ostaje na `127.0.0.1:5432`, `6379`, `7700`.
 ### 1. Kreiranje vhost-a
 
 1. Plesk → Domains → Add Subdomain `api.bncshop.ba`
-2. **Document root:** `{abs_path}/bncshop-backend/public` — **ne** root repoa
+2. **Document root:** `{abs_path}/bncshopweb/backend/public` — **ne** root repoa
 3. PHP handler: 8.3
 4. SSL: Let's Encrypt
 
@@ -180,7 +163,7 @@ Filament admin panel: `https://api.bncshop.ba/admin` (nema odvojene `admin.*` do
 SSH:
 
 ```bash
-cd /var/www/vhosts/bncshop.ba/bncshop-backend
+cd /var/www/vhosts/example.com/bncshopweb/backend
 chown -R <plesk-user>:psacln storage bootstrap/cache
 chmod -R ug+rwx storage bootstrap/cache
 ```
@@ -262,31 +245,89 @@ Tagged product cache **ne radi** bez `CACHE_STORE=redis`.
 ## Plesk — frontend (Next.js)
 
 1. Odvojeni vhost `bncshop.ba`
-2. Plesk → Node.js → Enable Node.js
-3. Application root: `{repo}/frontend`
-4. Application startup file: `node_modules/next/dist/bin/next` ili npm script
-5. Run script: `start` (pokreće `next start` nakon builda)
+2. Plesk → Node.js → **Enable Node.js** (dugme mora nestati; app mora biti aktivan)
+3. **Application root:** `/httpdocs` (root git repoa, npr. `bncshop-frontend`)
+4. **Document root:** `/httpdocs/.next/static` — **samo ako** dodaš nginx rewrite ispod; inače koristi `/httpdocs` (vidi troubleshooting)
+5. **Application startup file:** `start.js` (u rootu repoa — ne `index.html`)
+6. **Application mode:** `production`
+7. **Node.js version:** 20.x
 
-Kreirati `frontend/.env.local`:
+Kreirati `.env.local` u application rootu:
 
 ```env
-NEXT_PUBLIC_API_URL=https://api.bncshop.ba/api/v1
+BACKEND_URL=https://api.bncshop.ba
+NEXT_PUBLIC_API_URL=/backend-api/v1
 NEXT_PUBLIC_SITE_URL=https://bncshop.ba
+NEXT_PUBLIC_TURNSTILE_SITE_KEY=
 ```
 
-Build prije starta:
+`BACKEND_URL` + `/backend-api/v1` omogućava Next.js proxy u produkciji (live pretraga, korpa, CSRF bez CORS problema). U Plesk Node.js panelu dodati `BACKEND_URL` i u **Environment variables**.
+
+Alternativa: `NEXT_PUBLIC_API_URL=https://api.bncshop.ba/api/v1` — tada **mora** raditi `CORS_ALLOWED_ORIGINS` na backendu.
+
+Build prije starta (Plesk → Run Node.js commands ili SSH):
 
 ```bash
-cd frontend
 npm ci
 npm run build
+```
+
+Provjera: folder `.next/` mora postojati nakon builda. Next.js **ne kreira `dist/`**.
+
+Zatim: **Restart App** u Node.js panelu.
+
+### Uobičajeni problemi
+
+| Simptom | Uzrok | Rješenje |
+|---------|-------|----------|
+| 403 Forbidden | Node.js nije enabled ili `start.js` ne postoji | Enable Node.js, `git pull`, Restart App |
+| 403 Forbidden | Document root bez proxy-ja na Node | Startup file = `start.js`, restart |
+| Prazna stranica / API ne radi | Pogrešan `NEXT_PUBLIC_API_URL` / nema `BACKEND_URL` | `BACKEND_URL=https://api.bncshop.ba`, `NEXT_PUBLIC_API_URL=/backend-api/v1`, **rebuild** (BACKEND_URL se ugrađuje u bundle) |
+| Slike/API 404 na `/backend-api/v1/*` | Klijent koristi proxy putanju koja nginx ne prosljeđuje Node-u; slike su na `/storage`, ne `/api/v1/storage` | Postavi `BACKEND_URL=https://api.bncshop.ba`, `npm run build`, restart; ili nginx proxy za `/backend-api` na Node port |
+| `ChunkLoadError`, JS 400/404, MIME `text/html` | Document root `.next/static` bez nginx rewrite-a | Vidi sekciju ispod |
+
+### ChunkLoadError / `_next/static/*.js` vraća HTML (400/404)
+
+Browser traži npr. `/_next/static/chunks/8094-xxx.js`, ali nginx traži fajl na pogrešnoj putanji (`/.next/static/_next/static/...`) i vraća HTML error stranicu umjesto JavaScript-a.
+
+**Opcija A (najjednostavnije):** Document root = **isti kao Application root** (`/httpdocs`). Node.js (`start.js`) servira i stranice i `_next/static`. Restart App.
+
+**Opcija B (brži static):** Document root = `/httpdocs/.next/static` + nginx rewrite u Plesk → **Apache & nginx Settings** → **Additional nginx directives**:
+
+```nginx
+location ^~ /_next/static/ {
+    alias /var/www/vhosts/bncshop.ba/httpdocs/.next/static/;
+}
+
+location ^~ /_next/image {
+    proxy_pass http://127.0.0.1:$plesk_nodejs_port;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+}
+```
+
+(Ako `$plesk_nodejs_port` nije dostupan, koristi Opciju A.)
+
+**Uvijek nakon deploya:**
+
+```bash
+rm -rf .next
+npm run build
+# Plesk → Restart App
+# Browser: hard refresh (Ctrl+Shift+R)
+```
+
+Provjera na serveru da chunk postoji:
+
+```bash
+ls -la .next/static/chunks/8094-*.js
 ```
 
 ---
 
 ## Prvi deploy — tačan redoslijed komandi
 
-SSH u `bncshop-backend/` direktorij. Izvršiti **jednom** pri inicijalnom setupu.
+SSH u `backend/` direktorij. Izvršiti **jednom** pri inicijalnom setupu.
 
 ### Korak 1: Dependencies i baza
 
@@ -317,9 +358,18 @@ php artisan db:seed --class=B2bSeeder
 
 ### Korak 3: Admin korisnik
 
+Na Plesk VPS-u koristi puni PHP path:
+
 ```bash
-php artisan make:filament-user
+cd /var/www/vhosts/bncshop.ba/api.bncshop.ba
+PHP=/opt/plesk/php/8.4/bin/php
+
+$PHP artisan db:seed --class=RolesAndPermissionsSeeder --force
+$PHP artisan make:filament-user
+$PHP artisan bnc:grant-admin aleksandra92d@gmail.com
 ```
+
+`make:filament-user` **ne dodaje ulogu** automatski. Admin panel dozvoljava samo korisnike sa ulogom **Super Admin** ili **Admin** — bez `bnc:grant-admin` login prijavljuje „Neispravna email adresa ili lozinka“ iako je lozinka tačna.
 
 Interaktivno unijeti ime, email i lozinku za Filament admina.
 
@@ -354,6 +404,17 @@ php artisan bnc:sync-diagnose
 
 Import 17k+ proizvoda može trajati satima.
 
+### Korak 6b: Import eLine / OLX mapiranja (iz repoa)
+
+Lokalna mapiranja kategorija i OLX atributa su u `database/seeders/data/integration_mappings.json`. **Pokrenuti nakon A1 sync-a kategorija** (korak 6):
+
+```bash
+php artisan bnc:import-integration-mappings
+php artisan bnc:sync-eline --full --refresh-categories --sync
+```
+
+Ako export lokalno ažurirate: `php artisan bnc:export-integration-mappings` → commit → `git pull` na serveru → ponovo `bnc:import-integration-mappings`.
+
 ### Korak 7: Meilisearch indeks
 
 Nakon što sync završi (ili paralelno ako Scout queue radi):
@@ -362,10 +423,10 @@ Nakon što sync završi (ili paralelno ako Scout queue radi):
 php artisan scout:import "App\Models\Product"
 ```
 
-### Korak 8: Frontend (odvojeni repo)
+### Korak 8: Frontend
 
 ```bash
-cd /var/www/vhosts/bncshop.ba/bncshop-frontend
+cd ../frontend
 npm ci
 npm run build
 # Plesk Node.js pokreće npm run start, ili ručno:
@@ -423,9 +484,9 @@ Plesk → Domains → Scheduled Tasks → Add Task:
 |-------|------------|
 | Task type | Run a command |
 | Run | Every minute |
-| Command | `cd /var/www/vhosts/bncshop.ba/bncshop-backend && /usr/bin/php artisan schedule:run >> /dev/null 2>&1` |
+| Command | `cd /full/path/to/backend && /usr/bin/php artisan schedule:run >> /dev/null 2>&1` |
 
-Zamijeniti putanju stvarnom lokacijom backend repoa na serveru.
+Zamijeniti `/full/path/to/backend` stvarnom putanjom (npr. `/var/www/vhosts/bncshop.ba/bncshopweb/backend`).
 
 ### Provjera schedulera
 
@@ -438,21 +499,13 @@ php artisan schedule:test --name="bnc:sync-scheduled"
 
 ## Svaki naredni deploy (release)
 
-**Backend** (u `bncshop-backend/`):
+Iz root-a repoa:
 
 ```bash
-git pull
 bash scripts/deploy-production.sh
 ```
 
-**Frontend** (u `bncshop-frontend/`):
-
-```bash
-git pull
-bash scripts/deploy-production.sh
-```
-
-Backend skripta radi:
+Skripta ([scripts/deploy-production.sh](../scripts/deploy-production.sh)) radi:
 
 1. `composer install --no-dev`
 2. `php artisan migrate --force`
@@ -460,18 +513,17 @@ Backend skripta radi:
 4. `php artisan config:cache`, `route:cache`, `view:cache`
 5. `php artisan scout:import "App\Models\Product"`
 6. `php artisan horizon:terminate`
-7. Health check na `APP_URL/api/v1/health`
+7. Frontend: `npm ci`, `npm run build`
+8. Health check na `APP_URL/api/v1/health`
 
-Frontend skripta radi: `npm ci`, `npm run build`, health check na `NEXT_PUBLIC_SITE_URL`.
-
-**Skripte ne rade:** seed, full sync, kreiranje admin korisnika.
+**Skripta ne radi:** seed, full sync, kreiranje admin korisnika.
 
 ---
 
 ## Verifikacija nakon deploya
 
 ```bash
-cd bncshop-backend
+cd backend
 
 php artisan bnc:health
 php artisan bnc:sync-diagnose
@@ -502,7 +554,7 @@ Health endpoint (`/api/v1/health`) provjerava PostgreSQL, Redis i Meilisearch.
 | Cache se ne invalidira | `CACHE_STORE` nije redis | Postavi `CACHE_STORE=redis`, restart PHP-FPM |
 | Email ne stiže | Queue ili SMTP | Provjeri Horizon na `default` redu, MAIL_* env, failed jobs u Horizon-u |
 | Session / login ne radi | Cookie domena | `SESSION_DOMAIN=.bncshop.ba`, `SANCTUM_STATEFUL_DOMAINS` |
-| CORS greške | Frontend origin | `CORS_ALLOWED_ORIGINS` mora uključiti frontend URL |
+| CORS greške / live pretraga ne radi | Browser fetch blokiran cross-origin | Postavi `BACKEND_URL=https://api.bncshop.ba`, rebuild (frontend zove `api.bncshop.ba` direktno); ili popravi nginx proxy za `/backend-api` |
 | OLX sync se ne pokreće | Auto sync isključen | Admin → OLX settings + `OLX_*` env varijable |
 | Sync zakasnio | Cron ili worker | Provjeri Plesk Scheduled Task + `bnc:sync-diagnose` |
 | `tags disabled` | Redis cache | `CACHE_STORE=redis`, phpredis ekstenzija |
