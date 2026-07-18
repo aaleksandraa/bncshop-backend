@@ -6,6 +6,7 @@ use App\Models\AttributeCategoryMapping;
 use App\Models\AttributeDefinition;
 use App\Models\Category;
 use App\Models\ProductAttributeValue;
+use App\Services\Catalog\CatalogListingSettings;
 use App\Services\Catalog\CategoryFilterLayoutService;
 use App\Services\Catalog\CategoryScopeResolver;
 use Illuminate\Support\Facades\DB;
@@ -15,6 +16,7 @@ class FilterService
     public function __construct(
         private readonly CategoryScopeResolver $categoryScopeResolver,
         private readonly CategoryFilterLayoutService $categoryFilterLayoutService,
+        private readonly CatalogListingSettings $catalogListingSettings,
     ) {}
 
     /**
@@ -30,6 +32,10 @@ class FilterService
             'is_public = true',
             "status = 'active'",
         ];
+
+        if ($this->catalogListingSettings->hideOutOfStockRefurbishedEline()) {
+            $expressions[] = $this->catalogListingSettings->meilisearchExclusionFilter();
+        }
 
         foreach ($filters as $key => $value) {
             if ($value === null || $value === '') {

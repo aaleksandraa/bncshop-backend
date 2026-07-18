@@ -19,6 +19,7 @@ class ProductListingService
         private readonly ProductReadCache $productReadCache,
         private readonly CategoryScopeResolver $categoryScopeResolver,
         private readonly CategoryListingOrder $categoryListingOrder,
+        private readonly CatalogListingSettings $catalogListingSettings,
     ) {}
 
     public function shouldUseMeilisearch(Request $request): bool
@@ -83,6 +84,16 @@ class ProductListingService
                 })->paginate($perPage, 'page', $page);
             } else {
                 $results = Product::search($query, function ($engine, $searchQuery, $options) use ($sort) {
+                    $filters = [];
+
+                    if ($this->catalogListingSettings->hideOutOfStockRefurbishedEline()) {
+                        $filters[] = $this->catalogListingSettings->meilisearchExclusionFilter();
+                    }
+
+                    if ($filters !== []) {
+                        $options['filter'] = implode(' AND ', $filters);
+                    }
+
                     if ($sort !== null) {
                         $options['sort'] = $sort;
                     }
@@ -122,8 +133,11 @@ class ProductListingService
     {
         $query = Product::query()
             ->public()
-            ->active()
-            ->select([
+            ->active();
+
+        $this->applyOutOfStockRefurbishedElineExclusion($query);
+
+        $query->select([
                 'id',
                 'slug',
                 'name',
@@ -157,6 +171,24 @@ class ProductListingService
             'current_page' => $paginator->currentPage(),
             'last_page' => $paginator->lastPage(),
         ];
+    }
+
+    private function applyOutOfStockRefurbishedElineExclusion(Builder $query): void
+    {
+        if (! $this->catalogListingSettings->hideOutOfStockRefurbishedEline()) {
+            return;
+        }
+
+        $query->where(function (Builder $builder): void {
+            $builder->where('available_stock', '>', 0)
+                ->orWhere(function (Builder $nested): void {
+                    $nested->where('is_refurbished', false)
+                        ->where(function (Builder $sourceQuery): void {
+                            $sourceQuery->whereNull('import_source')
+                                ->orWhere('import_source', '!=', 'eline');
+                        });
+                });
+        });
     }
 
     private function applyDatabaseFilters(\Illuminate\Database\Eloquent\Builder $query, Request $request): void
@@ -256,6 +288,7 @@ class ProductListingService
         return Product::query()
             ->public()
             ->active()
+            ->tap(fn (Builder $query) => $this->applyOutOfStockRefurbishedElineExclusion($query))
             ->select([
                 'id',
                 'slug',

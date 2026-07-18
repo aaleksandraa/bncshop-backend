@@ -43,6 +43,12 @@ class SystemSettingsSeeder extends Seeder
                 ],
                 'group' => 'shop',
             ],
+            'catalog_listing' => [
+                'value' => [
+                    'hide_out_of_stock_refurbished_eline' => true,
+                ],
+                'group' => 'shop',
+            ],
             'checkout' => [
                 'value' => [
                     'payment_methods' => ['pay_on_delivery', 'bank_transfer'],
