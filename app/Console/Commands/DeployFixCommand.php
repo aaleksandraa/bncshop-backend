@@ -92,6 +92,16 @@ class DeployFixCommand extends Command
             $this->info('CORS origins look OK.');
         }
 
+        $recommended = StorefrontConfig::productionEnvRecommendations();
+
+        if ($recommended !== []) {
+            $this->newLine();
+            $this->warn('Recommended .env changes:');
+            foreach ($recommended as $line) {
+                $this->line('  '.$line);
+            }
+        }
+
         $statefulDomains = config('sanctum.stateful');
         $this->line('Sanctum stateful: '.implode(', ', $statefulDomains));
 

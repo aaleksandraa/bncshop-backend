@@ -6,23 +6,29 @@ class StorefrontConfig
 {
     public static function frontendUrl(): ?string
     {
-        $url = trim((string) env('FRONTEND_URL', ''));
+        $url = self::nullableEnv('FRONTEND_URL');
 
-        return $url !== '' ? $url : null;
+        return $url !== null && filter_var($url, FILTER_VALIDATE_URL) ? $url : null;
     }
 
     public static function sessionCookieDomain(): ?string
     {
-        $configured = env('SESSION_DOMAIN');
+        $configured = self::nullableEnv('SESSION_DOMAIN');
 
-        if (is_string($configured) && $configured !== '') {
-            return $configured;
+        if ($configured !== null) {
+            return self::normalizeCookieDomain($configured);
         }
 
-        $host = parse_url((string) config('app.url'), PHP_URL_HOST);
+        $frontendHost = self::frontendHost();
 
-        if (is_string($host) && str_starts_with($host, 'api.')) {
-            return '.'.substr($host, 4);
+        if ($frontendHost !== null) {
+            return self::parentCookieDomain($frontendHost);
+        }
+
+        $appHost = parse_url((string) config('app.url'), PHP_URL_HOST);
+
+        if (is_string($appHost) && str_starts_with($appHost, 'api.')) {
+            return '.'.substr($appHost, 4);
         }
 
         return null;
@@ -33,13 +39,10 @@ class StorefrontConfig
      */
     public static function corsAllowedOrigins(): array
     {
-        $configured = array_values(array_filter(array_map(
-            'trim',
-            explode(',', (string) env('CORS_ALLOWED_ORIGINS', '')),
-        )));
+        $configured = self::parseList((string) env('CORS_ALLOWED_ORIGINS', ''));
 
         if ($configured !== [] && ! self::containsOnlyLocalhostOrigins($configured)) {
-            return $configured;
+            return self::originVariantsForList($configured);
         }
 
         $frontend = self::frontendUrl();
@@ -56,36 +59,58 @@ class StorefrontConfig
      */
     public static function sanctumStatefulDomains(): array
     {
-        $configured = array_values(array_filter(array_map(
-            'trim',
-            explode(',', (string) env('SANCTUM_STATEFUL_DOMAINS', '')),
-        )));
+        $configured = self::sanitizeStatefulDomains(
+            self::parseList((string) env('SANCTUM_STATEFUL_DOMAINS', '')),
+        );
 
         if ($configured !== [] && ! self::containsOnlyLocalhostStatefulDomains($configured)) {
-            return $configured;
+            return self::expandWwwVariant(self::preferProductionStatefulDomains($configured));
         }
 
-        $frontend = self::frontendUrl();
+        $frontendHost = self::frontendHost();
 
-        if ($frontend === null) {
-            return $configured;
+        if ($frontendHost !== null) {
+            $hosts = [$frontendHost];
+
+            if (str_starts_with($frontendHost, 'www.')) {
+                $hosts[] = substr($frontendHost, 4);
+            } else {
+                $hosts[] = 'www.'.$frontendHost;
+            }
+
+            return array_values(array_unique($hosts));
         }
 
-        $host = parse_url($frontend, PHP_URL_HOST);
+        return ['localhost', 'localhost:3000', '127.0.0.1', '127.0.0.1:8000', '::1'];
+    }
 
-        if (! is_string($host) || $host === '') {
-            return $configured;
+    /**
+     * @return array<int, string>
+     */
+    public static function productionEnvRecommendations(): array
+    {
+        $lines = [];
+
+        $appUrl = rtrim((string) config('app.url'), '/');
+        $frontend = self::frontendUrl() ?? 'https://bncshop.ba';
+
+        if ($appUrl !== 'https://api.bncshop.ba') {
+            $lines[] = 'APP_URL=https://api.bncshop.ba';
         }
 
-        $hosts = [$host];
-
-        if (str_starts_with($host, 'www.')) {
-            $hosts[] = substr($host, 4);
-        } else {
-            $hosts[] = 'www.'.$host;
+        if (self::nullableEnv('FRONTEND_URL') === null) {
+            $lines[] = 'FRONTEND_URL='.$frontend;
         }
 
-        return array_values(array_unique(array_filter($hosts)));
+        if (self::nullableEnv('SESSION_DOMAIN') === null || self::nullableEnv('SESSION_DOMAIN') === 'null') {
+            $lines[] = 'SESSION_DOMAIN=.bncshop.ba';
+        }
+
+        $lines[] = 'SESSION_SECURE_COOKIE=true';
+        $lines[] = 'SANCTUM_STATEFUL_DOMAINS=bncshop.ba,www.bncshop.ba';
+        $lines[] = 'CORS_ALLOWED_ORIGINS=https://bncshop.ba,https://www.bncshop.ba';
+
+        return array_values(array_unique($lines));
     }
 
     /**
@@ -106,15 +131,155 @@ class StorefrontConfig
         return true;
     }
 
+    public static function nullableEnv(string $key): ?string
+    {
+        $value = env($key);
+
+        if (! is_string($value)) {
+            return null;
+        }
+
+        $trimmed = trim($value);
+
+        if ($trimmed === '' || strtolower($trimmed) === 'null') {
+            return null;
+        }
+
+        return $trimmed;
+    }
+
+    private static function frontendHost(): ?string
+    {
+        $frontend = self::frontendUrl();
+
+        if ($frontend === null) {
+            return null;
+        }
+
+        $host = parse_url($frontend, PHP_URL_HOST);
+
+        return is_string($host) && $host !== '' ? $host : null;
+    }
+
+    private static function normalizeCookieDomain(string $domain): string
+    {
+        $host = self::normalizeHost($domain) ?? $domain;
+
+        if ($host === null || $host === '') {
+            return $domain;
+        }
+
+        if (str_starts_with($host, '.')) {
+            return $host;
+        }
+
+        return '.'.ltrim($host, '.');
+    }
+
+    private static function parentCookieDomain(string $host): string
+    {
+        $base = str_starts_with($host, 'www.') ? substr($host, 4) : $host;
+
+        return '.'.ltrim($base, '.');
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private static function parseList(string $value): array
+    {
+        return array_values(array_filter(array_map('trim', explode(',', $value))));
+    }
+
+    /**
+     * @param  array<int, string>  $domains
+     * @return array<int, string>
+     */
+    private static function sanitizeStatefulDomains(array $domains): array
+    {
+        $sanitized = [];
+
+        foreach ($domains as $domain) {
+            $host = self::normalizeHost($domain);
+
+            if ($host !== null && $host !== '') {
+                $sanitized[] = $host;
+            }
+        }
+
+        return array_values(array_unique($sanitized));
+    }
+
+    private static function normalizeHost(string $value): ?string
+    {
+        $value = trim($value);
+
+        if ($value === '' || strtolower($value) === 'null') {
+            return null;
+        }
+
+        if (str_contains($value, '://')) {
+            $host = parse_url($value, PHP_URL_HOST);
+
+            return is_string($host) && $host !== '' ? $host : null;
+        }
+
+        $host = explode('/', $value)[0];
+
+        return $host !== '' ? $host : null;
+    }
+
+    /**
+     * @param  array<int, string>  $domains
+     * @return array<int, string>
+     */
+    private static function preferProductionStatefulDomains(array $domains): array
+    {
+        $nonLocal = array_values(array_filter(
+            $domains,
+            fn (string $domain): bool => ! self::isLocalhostStatefulDomain($domain),
+        ));
+
+        return $nonLocal !== [] ? $nonLocal : $domains;
+    }
+
+    /**
+     * @param  array<int, string>  $domains
+     * @return array<int, string>
+     */
+    private static function expandWwwVariant(array $domains): array
+    {
+        $expanded = $domains;
+
+        foreach ($domains as $domain) {
+            if (str_starts_with($domain, 'www.')) {
+                $expanded[] = substr($domain, 4);
+            } elseif (! in_array('www.'.$domain, $domains, true)) {
+                $expanded[] = 'www.'.$domain;
+            }
+        }
+
+        return array_values(array_unique($expanded));
+    }
+
+    private static function isLocalhostStatefulDomain(string $domain): bool
+    {
+        return in_array($domain, ['localhost', '127.0.0.1', '::1'], true)
+            || str_starts_with($domain, 'localhost:')
+            || str_starts_with($domain, '127.0.0.1:');
+    }
+
     /**
      * @param  array<int, string>  $domains
      */
     private static function containsOnlyLocalhostStatefulDomains(array $domains): bool
     {
+        if ($domains === []) {
+            return true;
+        }
+
         foreach ($domains as $domain) {
-            if (! in_array($domain, ['localhost', '127.0.0.1', '::1'], true)
-                && ! str_starts_with($domain, 'localhost:')
-                && ! str_starts_with($domain, '127.0.0.1:')) {
+            if (! self::isLocalhostStatefulDomain($domain)) {
                 return false;
             }
         }
@@ -149,5 +314,26 @@ class StorefrontConfig
         }
 
         return array_values(array_unique($origins));
+    }
+
+    /**
+     * @param  array<int, string>  $origins
+     * @return array<int, string>
+     */
+    private static function originVariantsForList(array $origins): array
+    {
+        $expanded = [];
+
+        foreach ($origins as $origin) {
+            if (str_contains($origin, '://')) {
+                $expanded = [...$expanded, ...self::originVariants($origin)];
+
+                continue;
+            }
+
+            $expanded[] = $origin;
+        }
+
+        return array_values(array_unique($expanded));
     }
 }
