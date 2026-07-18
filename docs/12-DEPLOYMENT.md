@@ -149,6 +149,6 @@ See [13-SERVER-DEPLOYMENT-PLESK.md](./13-SERVER-DEPLOYMENT-PLESK.md) for the ful
 php artisan migrate --force
 php artisan db:seed --class=RolesAndPermissionsSeeder
 php artisan make:filament-user
-php artisan bnc:sync-full --source=1  # first import (requires Horizon on sync queue)
+php artisan bnc:sync-full 1  # first import (requires Horizon on sync queue)
 php artisan scout:import "App\Models\Product"
 ```

@@ -343,7 +343,7 @@ php artisan horizon
 ### Korak 6: Prvi puni import kataloga
 
 ```bash
-php artisan bnc:sync-full --source=1
+php artisan bnc:sync-full 1
 ```
 
 Job ide na `sync` red. Prati Horizon dashboard (`/horizon`) ili:
@@ -516,7 +516,7 @@ Health endpoint (`/api/v1/health`) provjerava PostgreSQL, Redis i Meilisearch.
 | Prva migracija | `php artisan migrate --force` |
 | Produkcijski seed | `php artisan db:seed --class=RolesAndPermissionsSeeder` (+ ostali seeders) |
 | Admin nalog | `php artisan make:filament-user` |
-| Prvi import | `php artisan bnc:sync-full --source=1` |
+| Prvi import | `php artisan bnc:sync-full 1` |
 | Search indeks | `php artisan scout:import "App\Models\Product"` |
 | Deploy release | `bash scripts/deploy-production.sh` |
 | Restart workers | `php artisan horizon:terminate` |
