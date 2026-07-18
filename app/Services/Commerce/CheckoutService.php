@@ -191,6 +191,7 @@ class CheckoutService
 
             $subtotalAfterLoyalty = max(0, round($subtotalAfterCoupon - $loyaltyDiscount, 2));
             $discountTotal = round($discountTotal + $loyaltyDiscount, 2);
+            $rawSubtotal = $this->cartService->subtotalWithoutCoupon($cart);
 
             $shippingResult = $this->shippingCalculator->calculate(
                 $cart,
