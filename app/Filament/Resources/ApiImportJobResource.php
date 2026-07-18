@@ -86,6 +86,7 @@ class ApiImportJobResource extends Resource
                             ->columnSpanFull(),
                         Infolists\Components\KeyValueEntry::make('stats')
                             ->label('Statistika')
+                            ->formatStateUsing(fn (?array $state): array => self::flattenStatsForDisplay($state))
                             ->columnSpanFull(),
                     ])
                     ->columns(2),
@@ -153,5 +154,49 @@ class ApiImportJobResource extends Resource
             'index' => Pages\ListApiImportJobs::route('/'),
             'view' => Pages\ViewApiImportJob::route('/{record}'),
         ];
+    }
+
+    /**
+     * KeyValueEntry accepts only scalar values; sync stats are nested arrays.
+     *
+     * @param  array<string, mixed>|null  $stats
+     * @return array<string, string>
+     */
+    private static function flattenStatsForDisplay(?array $stats, string $prefix = ''): array
+    {
+        if ($stats === null || $stats === []) {
+            return [];
+        }
+
+        $flat = [];
+
+        foreach ($stats as $key => $value) {
+            $label = $prefix === '' ? (string) $key : "{$prefix}.{$key}";
+
+            if (is_array($value)) {
+                if ($value === []) {
+                    $flat[$label] = '0';
+
+                    continue;
+                }
+
+                if (array_is_list($value) && ! is_array($value[0] ?? null)) {
+                    $flat[$label] = implode("\n", array_map(strval(...), $value));
+
+                    continue;
+                }
+
+                $flat = array_merge($flat, self::flattenStatsForDisplay($value, $label));
+
+                continue;
+            }
+
+            $flat[$label] = match (true) {
+                is_bool($value) => $value ? 'true' : 'false',
+                default => (string) $value,
+            };
+        }
+
+        return $flat;
     }
 }
