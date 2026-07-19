@@ -4,16 +4,14 @@ namespace App\Mail\B2b;
 
 use App\Mail\B2b\Concerns\UsesB2bMailIdentity;
 use App\Models\B2bAccessRequest;
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class B2bAccessRejectedMail extends Mailable implements ShouldQueue
+class B2bAccessRejectedMail extends Mailable
 {
-    use Queueable, SerializesModels, UsesB2bMailIdentity;
+    use SerializesModels, UsesB2bMailIdentity;
 
     public function __construct(
         public B2bAccessRequest $accessRequest,

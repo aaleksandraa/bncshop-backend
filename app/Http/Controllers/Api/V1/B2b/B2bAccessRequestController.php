@@ -58,7 +58,7 @@ class B2bAccessRequestController extends Controller
         $accessRequest = B2bAccessRequest::query()->create($validated + ['status' => 'pending']);
 
         Mail::to(B2bSetting::adminNotificationEmail())
-            ->queue(new B2bAccessRequestNotification($accessRequest));
+            ->send(new B2bAccessRequestNotification($accessRequest));
 
         return $this->success([
             'message' => 'Zahtjev je uspješno poslan. Kontaktiraćemo vas nakon odobrenja.',

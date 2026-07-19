@@ -24,7 +24,7 @@ class B2bCustomerProvisioner
             throw new \RuntimeException('Korisnik sa ovim emailom već postoji.');
         }
 
-        return DB::transaction(function () use ($request, $reviewer): B2bCustomer {
+        $customer = DB::transaction(function () use ($request, $reviewer): B2bCustomer {
             $user = User::createAccount([
                 'name' => $request->fullName(),
                 'email' => $request->email,
@@ -53,10 +53,12 @@ class B2bCustomerProvisioner
                 'reviewed_at' => now(),
             ]);
 
-            $this->sendPasswordSetupEmail($user);
-
-            return $customer;
+            return $customer->load('user');
         });
+
+        $this->sendPasswordSetupEmail($customer->user);
+
+        return $customer;
     }
 
     /**
@@ -77,7 +79,7 @@ class B2bCustomerProvisioner
             throw new \RuntimeException('Korisnik sa ovim emailom već postoji.');
         }
 
-        return DB::transaction(function () use ($data, $creator): B2bCustomer {
+        $customer = DB::transaction(function () use ($data, $creator): B2bCustomer {
             $user = User::createAccount([
                 'name' => $data['name'],
                 'email' => $data['email'],
@@ -88,7 +90,7 @@ class B2bCustomerProvisioner
                 'is_b2b_customer' => true,
             ]);
 
-            $customer = B2bCustomer::query()->create([
+            return B2bCustomer::query()->create([
                 'user_id' => $user->id,
                 'company_name' => $data['company_name'],
                 'company_address' => $data['company_address'],
@@ -98,12 +100,12 @@ class B2bCustomerProvisioner
                 'discount_percent' => $data['discount_percent'] ?? null,
                 'is_active' => true,
                 'created_by' => $creator?->id,
-            ]);
-
-            $this->sendPasswordSetupEmail($user);
-
-            return $customer;
+            ])->load('user');
         });
+
+        $this->sendPasswordSetupEmail($customer->user);
+
+        return $customer;
     }
 
     public function sendPasswordSetupEmail(User $user): string
@@ -111,7 +113,7 @@ class B2bCustomerProvisioner
         $plainToken = B2bPasswordSetupToken::createForUser($user);
         $setupUrl = rtrim((string) config('bnc.frontend_url'), '/').'/b2b/postavi-lozinku?token='.$plainToken;
 
-        Mail::to($user->email)->queue(new B2bAccessApprovedMail($user, $setupUrl));
+        Mail::to($user->email)->send(new B2bAccessApprovedMail($user, $setupUrl));
 
         return $plainToken;
     }

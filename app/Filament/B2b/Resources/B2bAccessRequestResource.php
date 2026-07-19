@@ -120,7 +120,7 @@ class B2bAccessRequestResource extends Resource
                             'reviewed_at' => now(),
                         ]);
 
-                        Mail::to($record->email)->queue(new B2bAccessRejectedMail($record));
+                        Mail::to($record->email)->send(new B2bAccessRejectedMail($record));
 
                         Notification::make()->title('Zahtjev odbijen. Email poslan korisniku.')->success()->send();
                     }),
