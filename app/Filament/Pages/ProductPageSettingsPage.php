@@ -55,6 +55,10 @@ class ProductPageSettingsPage extends Page implements HasForms
                             ->label('Prikaži kratki opis')
                             ->helperText('Kratki opis se prikazuje ispod oznaka (Novo, garancija, zaliha) i iznad cijene.')
                             ->default(true),
+                        Toggle::make('show_messaging_order_buttons')
+                            ->label('Viber i WhatsApp pored „Kupi odmah“')
+                            ->helperText('Prikazuje ikonice Viber i WhatsApp pored dugmeta „Kupi odmah“ s porukom „Želim naručiti [proizvod]“ prema mobilnom broju iz kontakt postavki.')
+                            ->default(false),
                     ]),
             ])
             ->statePath('data');

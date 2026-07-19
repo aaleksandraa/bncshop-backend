@@ -40,6 +40,7 @@ class SystemSettingsSeeder extends Seeder
             'product_page' => [
                 'value' => [
                     'show_short_description' => true,
+                    'show_messaging_order_buttons' => false,
                 ],
                 'group' => 'shop',
             ],

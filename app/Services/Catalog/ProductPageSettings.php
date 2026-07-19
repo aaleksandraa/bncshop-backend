@@ -13,6 +13,7 @@ class ProductPageSettings
     {
         return [
             'show_short_description' => true,
+            'show_messaging_order_buttons' => false,
         ];
     }
 
@@ -37,6 +38,11 @@ class ProductPageSettings
         return (bool) ($this->all()['show_short_description'] ?? true);
     }
 
+    public function showMessagingOrderButtons(): bool
+    {
+        return (bool) ($this->all()['show_messaging_order_buttons'] ?? false);
+    }
+
     /**
      * @param  array<string, mixed>  $data
      */
@@ -48,6 +54,7 @@ class ProductPageSettings
                 'group' => 'shop',
                 'value' => [
                     'show_short_description' => (bool) ($data['show_short_description'] ?? true),
+                    'show_messaging_order_buttons' => (bool) ($data['show_messaging_order_buttons'] ?? false),
                 ],
             ],
         );
@@ -60,6 +67,7 @@ class ProductPageSettings
     {
         return [
             'show_short_description' => $this->showShortDescription(),
+            'show_messaging_order_buttons' => $this->showMessagingOrderButtons(),
         ];
     }
 }
