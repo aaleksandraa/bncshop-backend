@@ -147,11 +147,7 @@ class OrderService
 
     private function sendStatusEmail(Order $order, string $oldStatus, string $newStatus): void
     {
-        if (! in_array($newStatus, ['poslano', 'otkazano', 'isporučeno'], true)) {
-            return;
-        }
-
-        if ($order->email) {
+        if (in_array($newStatus, ['poslano', 'otkazano', 'isporučeno'], true) && $order->email) {
             Mail::to($order->email)->queue(new OrderStatusChanged($order, $oldStatus, $newStatus));
         }
 
@@ -161,23 +157,21 @@ class OrderService
             return;
         }
 
+        $statusVariables = [
+            'old_status' => OrderStatus::label($oldStatus),
+            'new_status' => OrderStatus::label($newStatus),
+        ];
+
         $sellerTemplate = match ($newStatus) {
             'poslano' => 'order_shipped_seller',
             'otkazano' => 'order_cancelled_seller',
-            default => null,
+            default => 'order_status_changed_seller',
         };
-
-        if ($sellerTemplate === null) {
-            return;
-        }
 
         Mail::to($sellerEmail)->queue(new TemplatedOrderMail(
             templateSlug: $sellerTemplate,
             order: $order,
-            extraVariables: [
-                'old_status' => OrderStatus::label($oldStatus),
-                'new_status' => OrderStatus::label($newStatus),
-            ],
+            extraVariables: $statusVariables,
         ));
     }
 

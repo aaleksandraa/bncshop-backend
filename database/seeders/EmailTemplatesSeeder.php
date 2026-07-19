@@ -120,6 +120,21 @@ HTML,
                 ),
                 'variables' => $this->statusVariables(),
             ],
+            'order_status_changed_seller' => [
+                'subject' => 'Narudžba {{order_number}} — status: {{new_status}}',
+                'body_html' => EmailTemplateLayouts::wrap(
+                    'Promjena statusa narudžbe',
+                    <<<HTML
+<p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#474747;">
+    Narudžba <strong>{{order_number}}</strong> — status promijenjen sa
+    <strong>{{old_status}}</strong> na <strong>{{new_status}}</strong>.
+</p>
+{$customer}
+{$summary}
+HTML,
+                ),
+                'variables' => $this->statusVariables(),
+            ],
             'order_completed_customer' => [
                 'subject' => 'Narudžba {{order_number}} je uspješno isporučena',
                 'body_html' => EmailTemplateLayouts::wrap(
