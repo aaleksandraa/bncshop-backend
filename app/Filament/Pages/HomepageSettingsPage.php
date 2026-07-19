@@ -4,6 +4,7 @@ namespace App\Filament\Pages;
 
 use App\Models\Product;
 use App\Services\Homepage\HomepageSettings;
+use App\Support\ProductAdminSearch;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -103,45 +104,14 @@ class HomepageSettingsPage extends Page implements HasForms
                             ->multiple()
                             ->searchable()
                             ->searchDebounce(300)
-                            ->getSearchResultsUsing(fn (string $search): array => self::searchProducts($search))
+                            ->getSearchResultsUsing(fn (string $search): array => ProductAdminSearch::optionsForSearch($search))
                             ->getOptionLabelsUsing(fn (array $values): array => self::productLabels($values))
-                            ->helperText('Pretražite po nazivu, SKU-u, barkodu ili ID-u. Redoslijed odabira određuje red prikaza.')
+                            ->helperText('Pretražite po nazivu, brendu, SKU-u, barkodu ili ID-u. Redoslijed odabira određuje red prikaza.')
                             ->columnSpanFull(),
                     ])
                     ->columns(2),
             ])
             ->statePath('data');
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    private static function searchProducts(string $search): array
-    {
-        $search = trim($search);
-
-        if ($search === '') {
-            return [];
-        }
-
-        return Product::query()
-            ->where(function ($query) use ($search): void {
-                $query->where('name', 'like', "%{$search}%")
-                    ->orWhere('sku', 'like', "%{$search}%")
-                    ->orWhere('barcode', 'like', "%{$search}%");
-
-                if (ctype_digit($search)) {
-                    $query->orWhere('id', (int) $search)
-                        ->orWhere('external_product_id', $search);
-                }
-            })
-            ->orderBy('name')
-            ->limit(50)
-            ->get(['id', 'name', 'sku'])
-            ->mapWithKeys(fn (Product $product): array => [
-                (string) $product->id => self::formatProductOption($product),
-            ])
-            ->all();
     }
 
     /**
@@ -158,20 +128,9 @@ class HomepageSettingsPage extends Page implements HasForms
             ->whereIn('id', $values)
             ->get(['id', 'name', 'sku'])
             ->mapWithKeys(fn (Product $product): array => [
-                (string) $product->id => self::formatProductOption($product),
+                (string) $product->id => ProductAdminSearch::formatOptionLabel($product),
             ])
             ->all();
-    }
-
-    private static function formatProductOption(Product $product): string
-    {
-        $label = $product->name;
-
-        if ($product->sku) {
-            $label .= " ({$product->sku})";
-        }
-
-        return $label;
     }
 
     public function save(HomepageSettings $settings): void
