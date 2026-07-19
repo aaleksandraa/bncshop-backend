@@ -116,6 +116,60 @@ MAIL_EHLO_DOMAIN=bncshop.ba
 
 ---
 
+## B2B email identitet (`b2b@bncshop.ba`)
+
+B2B transakcijski mailovi koriste **odvojeni From identitet** od B2C shopa. B2C i dalje koristi `info@bncshop.ba`; B2B koristi `b2b@bncshop.ba`.
+
+| Tip | From | Primatelj (To) |
+|-----|------|----------------|
+| B2B potvrda narudžbe | `b2b@bncshop.ba` | B2B kupac |
+| B2B nova narudžba (admin) | `b2b@bncshop.ba` | `B2B_ADMIN_NOTIFICATION_EMAIL` ili postavka u B2B admin panelu |
+| B2B status / pristup / reset / digest | `b2b@bncshop.ba` | kupac ili admin |
+| B2C narudžbe | `info@bncshop.ba` | `prodaja@bncshop.ba` |
+
+### Korak 1 — Mail nalog u Plesk-u
+
+1. **Plesk → Mail → Create Email Address**
+2. Adresa: `b2b@bncshop.ba`, jaka lozinka
+3. DKIM na domeni `bncshop.ba` pokriva i ovu adresu (provjeri da je uključen)
+4. Opcionalno: forward `b2b@bncshop.ba` → `prodaja@bncshop.ba`
+
+Sendmail transport ostaje isti — **ne treba** poseban SMTP u Laravelu.
+
+### Korak 2 — Laravel `.env`
+
+Dodati uz postojeće B2C varijable:
+
+```env
+B2B_MAIL_FROM_ADDRESS=b2b@bncshop.ba
+B2B_MAIL_FROM_NAME="BNC B2B"
+B2B_ADMIN_NOTIFICATION_EMAIL=b2b@bncshop.ba
+```
+
+**Admin panel** (`/b2b-admin → B2B postavke`) može mijenjati samo **primatelja** obavijesti (`admin_notification_email`). From adresa se konfigurira na serveru.
+
+Primijeni:
+
+```bash
+cd /var/www/vhosts/bncshop.ba/api.bncshop.ba
+php artisan config:cache
+php artisan horizon:terminate
+```
+
+### Korak 3 — Test B2B From adrese
+
+```bash
+php artisan tinker --execute="Illuminate\Support\Facades\Mail::raw('B2B test', fn(\$m)=>\$m->from(config('b2b.mail.from_address'),config('b2b.mail.from_name'))->to('vas@email.com')->subject('B2B From test')); echo 'OK';"
+```
+
+Provjeri:
+- **From:** `BNC B2B <b2b@bncshop.ba>`
+- **Reply-To:** isto
+- Nova B2B narudžba → obavijest stiže na `b2b@bncshop.ba`
+- [mail-tester.com](https://www.mail-tester.com) — cilj **8+/10**
+
+---
+
 ## Obavijesti prodavaču (`prodaja@bncshop.ba`)
 
 Interne obavijesti o narudžbama idu na **`SELLER_EMAIL`** (From i dalje `info@bncshop.ba`):

@@ -2,6 +2,7 @@
 
 namespace App\Mail\B2b;
 
+use App\Mail\B2b\Concerns\UsesB2bMailIdentity;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -12,7 +13,7 @@ use Illuminate\Queue\SerializesModels;
 
 class B2bAccessApprovedMail extends Mailable implements ShouldQueue
 {
-    use Queueable, SerializesModels;
+    use Queueable, SerializesModels, UsesB2bMailIdentity;
 
     public function __construct(
         public User $user,
@@ -21,7 +22,7 @@ class B2bAccessApprovedMail extends Mailable implements ShouldQueue
 
     public function envelope(): Envelope
     {
-        return new Envelope(
+        return $this->b2bEnvelope(
             subject: 'Vaš B2B pristup je odobren — postavite lozinku',
         );
     }

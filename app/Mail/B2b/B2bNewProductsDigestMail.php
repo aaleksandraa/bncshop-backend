@@ -2,6 +2,7 @@
 
 namespace App\Mail\B2b;
 
+use App\Mail\B2b\Concerns\UsesB2bMailIdentity;
 use App\Models\B2bCustomer;
 use App\Models\B2bProduct;
 use App\Services\B2b\B2bPricingService;
@@ -15,7 +16,7 @@ use Illuminate\Queue\SerializesModels;
 
 class B2bNewProductsDigestMail extends Mailable implements ShouldQueue
 {
-    use Queueable, SerializesModels;
+    use Queueable, SerializesModels, UsesB2bMailIdentity;
 
     public string $customerName;
 
@@ -62,9 +63,7 @@ class B2bNewProductsDigestMail extends Mailable implements ShouldQueue
             ? 'Novi proizvod u B2B katalogu'
             : 'Novi proizvodi u B2B katalogu ('.$count.')';
 
-        return new Envelope(
-            subject: $subject,
-        );
+        return $this->b2bEnvelope(subject: $subject);
     }
 
     public function content(): Content

@@ -29,11 +29,20 @@ class B2bSetting extends Model
         static::deleted(fn () => Cache::forget(self::CACHE_KEY));
     }
 
+    public static function defaultAdminNotificationEmail(): string
+    {
+        return (string) (
+            config('b2b.mail.admin_notification_email')
+            ?: config('bnc.admin_notification_email')
+            ?: config('mail.from.address')
+        );
+    }
+
     public static function instance(): self
     {
         return Cache::remember(self::CACHE_KEY, 3600, fn () => static::query()->firstOrCreate([], [
             'default_customer_discount_percent' => 0,
-            'admin_notification_email' => config('bnc.admin_notification_email'),
+            'admin_notification_email' => static::defaultAdminNotificationEmail(),
             'notify_customers_on_new_product' => false,
         ]));
     }
@@ -42,7 +51,8 @@ class B2bSetting extends Model
     {
         $settings = static::instance();
 
-        return $settings->admin_notification_email
-            ?: (string) config('bnc.admin_notification_email');
+        return filled($settings->admin_notification_email)
+            ? (string) $settings->admin_notification_email
+            : static::defaultAdminNotificationEmail();
     }
 }

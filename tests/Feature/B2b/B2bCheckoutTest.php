@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\B2b;
 
+use App\Mail\B2b\B2bOrderConfirmationCustomer;
+use App\Mail\B2b\B2bOrderNotificationAdmin;
 use App\Models\B2bCart;
 use App\Models\B2bCartItem;
 use App\Models\B2bCategory;
@@ -94,6 +96,9 @@ class B2bCheckoutTest extends TestCase
 
         $this->assertSame(3, $product->fresh()->stock_quantity);
         $this->assertDatabaseCount('b2b_cart_items', 0);
+
+        Mail::assertQueued(B2bOrderConfirmationCustomer::class);
+        Mail::assertQueued(B2bOrderNotificationAdmin::class);
     }
 
     public function test_checkout_rejects_insufficient_stock(): void

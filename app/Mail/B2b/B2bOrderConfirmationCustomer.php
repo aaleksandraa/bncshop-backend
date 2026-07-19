@@ -2,6 +2,7 @@
 
 namespace App\Mail\B2b;
 
+use App\Mail\B2b\Concerns\UsesB2bMailIdentity;
 use App\Models\B2bOrder;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -12,7 +13,7 @@ use Illuminate\Queue\SerializesModels;
 
 class B2bOrderConfirmationCustomer extends Mailable implements ShouldQueue
 {
-    use Queueable, SerializesModels;
+    use Queueable, SerializesModels, UsesB2bMailIdentity;
 
     public function __construct(
         public B2bOrder $order,
@@ -20,7 +21,7 @@ class B2bOrderConfirmationCustomer extends Mailable implements ShouldQueue
 
     public function envelope(): Envelope
     {
-        return new Envelope(
+        return $this->b2bEnvelope(
             subject: 'Potvrda B2B narudžbe '.$this->order->order_number,
         );
     }

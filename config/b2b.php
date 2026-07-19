@@ -13,4 +13,10 @@ return [
     'password_reset_hours' => (int) env('B2B_PASSWORD_RESET_HOURS', 24),
 
     'new_product_digest_minutes' => (int) env('B2B_NEW_PRODUCT_DIGEST_MINUTES', 5),
+
+    'mail' => [
+        'from_address' => env('B2B_MAIL_FROM_ADDRESS', env('MAIL_FROM_ADDRESS')),
+        'from_name' => env('B2B_MAIL_FROM_NAME', 'BNC B2B'),
+        'admin_notification_email' => env('B2B_ADMIN_NOTIFICATION_EMAIL'),
+    ],
 ];
