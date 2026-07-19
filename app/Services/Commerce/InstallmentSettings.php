@@ -217,7 +217,7 @@ class InstallmentSettings
                 'Diners card',
                 'American Express',
             ],
-            'contact_phone' => '033 265 465',
+            'contact_phone' => '+387 61 891 148',
             'contact_email' => 'prodaja@bnc.ba',
             'mikrofin_description' => '',
             'card_description' => '',

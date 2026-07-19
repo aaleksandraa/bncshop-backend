@@ -20,7 +20,7 @@ class SystemSettingsSeeder extends Seeder
                 'value' => [
                     'email' => 'prodaja@bnc.ba',
                     'email_info' => 'info@bnc.ba',
-                    'phone' => '+387 33 265 465',
+                    'phone' => '+387 61 891 148',
                     'mobile' => '+387 61 891 148',
                     'address' => 'Merhemića trg 2, 71000 Sarajevo, Bosna i Hercegovina',
                     'website' => 'https://bnc.ba',
