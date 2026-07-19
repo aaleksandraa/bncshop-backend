@@ -2,18 +2,14 @@
 
 namespace App\Services\B2b;
 
-use App\Mail\B2b\B2bOrderConfirmationCustomer;
-use App\Mail\B2b\B2bOrderNotificationAdmin;
 use App\Models\B2bCart;
 use App\Models\B2bCustomer;
 use App\Models\B2bOrder;
 use App\Models\B2bOrderItem;
 use App\Models\B2bOrderStatusHistory;
 use App\Models\B2bProduct;
-use App\Models\B2bSetting;
 use App\Support\B2bOrderStatus;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 
 class B2bCheckoutService
@@ -23,6 +19,7 @@ class B2bCheckoutService
         private readonly B2bOrderNumberGenerator $orderNumberGenerator,
         private readonly B2bShippingCalculator $shippingCalculator,
         private readonly B2bOrderInvoicePdf $invoicePdf,
+        private readonly B2bAccessMailer $mailer,
     ) {}
 
     /**
@@ -30,7 +27,7 @@ class B2bCheckoutService
      */
     public function checkout(B2bCustomer $customer, array $data): B2bOrder
     {
-        return DB::transaction(function () use ($customer, $data): B2bOrder {
+        $order = DB::transaction(function () use ($customer, $data): B2bOrder {
             $cart = B2bCart::query()
                 ->with(['items.product.campaigns', 'items.product.images'])
                 ->where('b2b_customer_id', $customer->id)
@@ -150,10 +147,12 @@ class B2bCheckoutService
 
             $this->invoicePdf->generateAndStore($order);
 
-            Mail::to($user->email)->queue(new B2bOrderConfirmationCustomer($order));
-            Mail::to(B2bSetting::adminNotificationEmail())->queue(new B2bOrderNotificationAdmin($order));
-
             return $order->fresh(['items']);
         });
+
+        $this->mailer->sendOrderConfirmationCustomer($order);
+        $this->mailer->sendOrderNotificationAdmin($order);
+
+        return $order;
     }
 }

@@ -4,7 +4,10 @@ namespace App\Console\Commands;
 
 use App\Mail\B2b\B2bAccessApprovedMail;
 use App\Mail\B2b\B2bAccessRequestNotification;
+use App\Mail\B2b\B2bOrderConfirmationCustomer;
+use App\Mail\B2b\B2bOrderNotificationAdmin;
 use App\Models\B2bAccessRequest;
+use App\Models\B2bOrder;
 use App\Models\B2bSetting;
 use App\Models\User;
 use Illuminate\Console\Command;
@@ -39,7 +42,7 @@ class B2bMailDiagnoseCommand extends Command
         $this->newLine();
 
         if (! $this->option('send')) {
-            $this->comment('Dodaj --send da pošalješ test poruke (admin + odobrenje).');
+            $this->comment('Dodaj --send da pošalješ test poruke (pristup + narudžba).');
 
             return $mailer === 'log' ? self::FAILURE : self::SUCCESS;
         }
@@ -85,6 +88,41 @@ class B2bMailDiagnoseCommand extends Command
             $this->info('[OK] Poslan test: odobren pristup → '.$to);
         } catch (\Throwable $e) {
             $this->error('[FAIL] Customer approval test mail: '.$e->getMessage());
+
+            return self::FAILURE;
+        }
+
+        $order = B2bOrder::query()->latest('id')->with('items')->first() ?? new B2bOrder([
+            'order_number' => 'B2B-TEST-001',
+            'status' => 'nova',
+            'payment_method' => 'invoice',
+            'company_name' => 'Test firma d.o.o.',
+            'company_address' => 'Test adresa 1',
+            'jib' => '1234567890123',
+            'contact_name' => 'Test kupac',
+            'contact_email' => $to,
+            'contact_phone' => '061000000',
+            'shipping_address' => 'Dostava 1',
+            'subtotal' => 100,
+            'discount_total' => 0,
+            'shipping_fee' => 10,
+            'total' => 110,
+        ]);
+
+        try {
+            Mail::to($to)->send(new B2bOrderConfirmationCustomer($order));
+            $this->info('[OK] Poslan test: potvrda B2B narudžbe → '.$to);
+        } catch (\Throwable $e) {
+            $this->error('[FAIL] Order confirmation test mail: '.$e->getMessage());
+
+            return self::FAILURE;
+        }
+
+        try {
+            Mail::to($to)->send(new B2bOrderNotificationAdmin($order));
+            $this->info('[OK] Poslan test: nova B2B narudžba (admin) → '.$to);
+        } catch (\Throwable $e) {
+            $this->error('[FAIL] Order admin test mail: '.$e->getMessage());
 
             return self::FAILURE;
         }

@@ -74,6 +74,8 @@ class B2bCheckoutTest extends TestCase
     {
         Mail::fake();
 
+        config(['b2b.mail.admin_notification_email' => 'b2b@bncshop.ba']);
+
         [$user, $customer, $product] = $this->seedCustomerWithCart(stock: 5, quantity: 2);
 
         $this->postJsonStateful('/api/v1/b2b/auth/login', [
@@ -97,8 +99,14 @@ class B2bCheckoutTest extends TestCase
         $this->assertSame(3, $product->fresh()->stock_quantity);
         $this->assertDatabaseCount('b2b_cart_items', 0);
 
-        Mail::assertQueued(B2bOrderConfirmationCustomer::class);
-        Mail::assertQueued(B2bOrderNotificationAdmin::class);
+        Mail::assertSent(B2bOrderConfirmationCustomer::class, function (B2bOrderConfirmationCustomer $mail) use ($user): bool {
+            return $mail->hasTo($user->email);
+        });
+        Mail::assertSent(B2bOrderNotificationAdmin::class, function (B2bOrderNotificationAdmin $mail): bool {
+            return $mail->hasTo('b2b@bncshop.ba');
+        });
+        Mail::assertNotQueued(B2bOrderConfirmationCustomer::class);
+        Mail::assertNotQueued(B2bOrderNotificationAdmin::class);
     }
 
     public function test_checkout_rejects_insufficient_stock(): void

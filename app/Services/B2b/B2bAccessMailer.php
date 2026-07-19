@@ -5,7 +5,11 @@ namespace App\Services\B2b;
 use App\Mail\B2b\B2bAccessApprovedMail;
 use App\Mail\B2b\B2bAccessRejectedMail;
 use App\Mail\B2b\B2bAccessRequestNotification;
+use App\Mail\B2b\B2bOrderConfirmationCustomer;
+use App\Mail\B2b\B2bOrderNotificationAdmin;
+use App\Mail\B2b\B2bOrderStatusChanged;
 use App\Models\B2bAccessRequest;
+use App\Models\B2bOrder;
 use App\Models\B2bSetting;
 use App\Models\User;
 use Illuminate\Support\Facades\Log;
@@ -60,6 +64,80 @@ class B2bAccessMailer
         );
     }
 
+    public function sendOrderConfirmationCustomer(B2bOrder $order): void
+    {
+        $recipient = $order->contact_email;
+
+        if (! filled($recipient)) {
+            Log::error('B2B order confirmation mail skipped: customer email is empty', [
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+            ]);
+
+            return;
+        }
+
+        $this->send(
+            recipient: $recipient,
+            mailable: new B2bOrderConfirmationCustomer($order),
+            context: [
+                'type' => 'order_confirmation_customer',
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+            ],
+        );
+    }
+
+    public function sendOrderNotificationAdmin(B2bOrder $order): void
+    {
+        $recipient = B2bSetting::adminNotificationEmail();
+
+        if (! filled($recipient)) {
+            Log::error('B2B order admin mail skipped: admin notification email is empty', [
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+            ]);
+
+            return;
+        }
+
+        $this->send(
+            recipient: $recipient,
+            mailable: new B2bOrderNotificationAdmin($order),
+            context: [
+                'type' => 'order_notification_admin',
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+            ],
+        );
+    }
+
+    public function sendOrderStatusChanged(B2bOrder $order, string $previousStatus): void
+    {
+        $recipient = $order->contact_email;
+
+        if (! filled($recipient)) {
+            Log::error('B2B order status mail skipped: customer email is empty', [
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+            ]);
+
+            return;
+        }
+
+        $this->send(
+            recipient: $recipient,
+            mailable: new B2bOrderStatusChanged($order, $previousStatus),
+            context: [
+                'type' => 'order_status_changed_customer',
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+                'previous_status' => $previousStatus,
+                'new_status' => $order->status,
+            ],
+        );
+    }
+
     private function send(string $recipient, object $mailable, array $context): void
     {
         if (config('mail.default') === 'log') {
@@ -71,14 +149,14 @@ class B2bAccessMailer
         try {
             Mail::to($recipient)->send($mailable);
 
-            Log::info('B2B access mail sent', $context + [
+            Log::info('B2B mail sent', $context + [
                 'recipient' => $recipient,
                 'mailer' => config('mail.default'),
                 'from' => config('mail.from.address'),
                 'reply_to' => config('b2b.mail.from_address'),
             ]);
         } catch (\Throwable $exception) {
-            Log::error('B2B access mail failed', $context + [
+            Log::error('B2B mail failed', $context + [
                 'recipient' => $recipient,
                 'mailer' => config('mail.default'),
                 'error' => $exception->getMessage(),

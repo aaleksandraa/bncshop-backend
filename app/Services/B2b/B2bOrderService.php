@@ -2,18 +2,20 @@
 
 namespace App\Services\B2b;
 
-use App\Mail\B2b\B2bOrderStatusChanged;
 use App\Models\B2bOrder;
 use App\Models\B2bOrderStatusHistory;
 use App\Models\B2bProduct;
 use App\Models\User;
 use App\Support\B2bOrderStatus;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 
 class B2bOrderService
 {
+    public function __construct(
+        private readonly B2bAccessMailer $mailer,
+    ) {}
+
     public function updateStatus(B2bOrder $order, string $newStatus, ?User $changedBy = null, ?string $note = null): B2bOrder
     {
         if (! in_array($newStatus, B2bOrderStatus::all(), true)) {
@@ -26,8 +28,9 @@ class B2bOrderService
             return $order;
         }
 
-        return DB::transaction(function () use ($order, $newStatus, $changedBy, $note): B2bOrder {
-            $oldStatus = $order->status;
+        $oldStatus = $order->status;
+
+        $order = DB::transaction(function () use ($order, $newStatus, $changedBy, $note, $oldStatus): B2bOrder {
 
             if ($newStatus === B2bOrderStatus::OTKAZANA && $oldStatus !== B2bOrderStatus::OTKAZANA) {
                 $this->restoreStock($order);
@@ -45,12 +48,14 @@ class B2bOrderService
 
             $order->load('customer.user');
 
-            if ($order->customer?->user) {
-                Mail::to($order->customer->user->email)->queue(new B2bOrderStatusChanged($order, $oldStatus));
-            }
-
             return $order->fresh(['items', 'customer.user']);
         });
+
+        if ($order->customer?->user) {
+            $this->mailer->sendOrderStatusChanged($order, $oldStatus);
+        }
+
+        return $order;
     }
 
     private function restoreStock(B2bOrder $order): void

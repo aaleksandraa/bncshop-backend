@@ -5,16 +5,14 @@ namespace App\Mail\B2b;
 use App\Mail\B2b\Concerns\UsesB2bMailIdentity;
 use App\Models\B2bOrder;
 use App\Support\B2bOrderStatus;
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class B2bOrderStatusChanged extends Mailable implements ShouldQueue
+class B2bOrderStatusChanged extends Mailable
 {
-    use Queueable, SerializesModels, UsesB2bMailIdentity;
+    use SerializesModels, UsesB2bMailIdentity;
 
     public function __construct(
         public B2bOrder $order,
