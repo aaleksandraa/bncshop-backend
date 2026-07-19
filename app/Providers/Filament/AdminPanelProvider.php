@@ -40,6 +40,7 @@ class AdminPanelProvider extends PanelProvider
             ->colors([
                 'primary' => Color::hex('#e30613'),
             ])
+            ->darkMode(false)
             ->renderHook('panels::head.end', fn () => view('filament.admin.head'))
             ->navigationGroups([
                 NavigationGroup::make('Dashboard'),
