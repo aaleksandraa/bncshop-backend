@@ -60,7 +60,7 @@ class TrackingSettingsPage extends Page implements HasForms
                             ->rows(4),
                         TextInput::make('privacy_page_slug')
                             ->label('Slug stranice privatnosti')
-                            ->helperText('Npr. privatnost → /stranica/privatnost')
+                            ->helperText('Npr. privatnost → /privatnost')
                             ->maxLength(120),
                         Toggle::make('load_scripts_only_with_consent')
                             ->label('Učitaj GA/Pixel tek nakon prihvatanja')

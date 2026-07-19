@@ -56,7 +56,7 @@ class CmsPageResource extends Resource
                             ->required()
                             ->maxLength(255)
                             ->unique(ignoreRecord: true)
-                            ->helperText('URL: /stranica/{slug}'),
+                            ->helperText('URL: /{slug}'),
                         Forms\Components\Select::make('status')
                             ->label('Status')
                             ->options([

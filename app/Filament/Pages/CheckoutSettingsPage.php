@@ -62,12 +62,12 @@ class CheckoutSettingsPage extends Page implements HasForms
                     ->schema([
                         TextInput::make('terms_page_slug')
                             ->label('Slug stranice uslova')
-                            ->helperText('Npr. uslovi → /stranica/uslovi')
+                            ->helperText('Npr. uslovi → /uslovi')
                             ->required()
                             ->maxLength(120),
                         TextInput::make('privacy_page_slug')
                             ->label('Slug stranice privatnosti')
-                            ->helperText('Npr. privatnost → /stranica/privatnost')
+                            ->helperText('Npr. privatnost → /privatnost')
                             ->required()
                             ->maxLength(120),
                         Toggle::make('terms_default_checked')

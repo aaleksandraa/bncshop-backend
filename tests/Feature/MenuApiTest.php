@@ -60,6 +60,6 @@ class MenuApiTest extends TestCase
             ->assertJsonPath('data.items.0.label', 'Laptopi')
             ->assertJsonPath('data.items.0.url', '/kategorija/laptopi')
             ->assertJsonPath('data.items.0.children.0.label', 'Kontakt')
-            ->assertJsonPath('data.items.0.children.0.url', '/stranica/kontakt');
+            ->assertJsonPath('data.items.0.children.0.url', '/kontakt');
     }
 }
