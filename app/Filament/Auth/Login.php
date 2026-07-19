@@ -2,12 +2,12 @@
 
 namespace App\Filament\Auth;
 
+use App\Filament\Auth\Concerns\HasAdminAuthProtectionFields;
 use App\Services\Security\AdminLoginProtection;
 use DanHarrin\LivewireRateLimiting\Exceptions\TooManyRequestsException;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\Component;
-use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\View;
 use Filament\Http\Responses\Auth\Contracts\LoginResponse;
@@ -19,6 +19,8 @@ use Illuminate\Validation\ValidationException;
 
 class Login extends BaseLogin
 {
+    use HasAdminAuthProtectionFields;
+
     public function getTitle(): string|Htmlable
     {
         return 'Prijava';
@@ -67,9 +69,16 @@ class Login extends BaseLogin
 
     protected function getPasswordFormComponent(): Component
     {
-        return parent::getPasswordFormComponent()
-            ->label('Lozinka')
-            ->hint(null);
+        $component = parent::getPasswordFormComponent()
+            ->label('Lozinka');
+
+        if (filament()->hasPasswordReset()) {
+            $component->hint(new HtmlString(
+                '<a href="'.e(filament()->getRequestPasswordResetUrl()).'" class="fi-link text-sm font-medium text-primary-600 hover:underline" tabindex="3">Zaboravili ste lozinku?</a>'
+            ));
+        }
+
+        return $component;
     }
 
     protected function getSecurityCodeFormComponent(): Component
@@ -85,43 +94,11 @@ class Login extends BaseLogin
             ->extraInputAttributes(['tabindex' => 3]);
     }
 
-    protected function getHoneypotFormComponent(): Component
-    {
-        return TextInput::make('website')
-            ->label('')
-            ->extraAttributes([
-                'class' => 'bnc-admin-honeypot',
-                'tabindex' => '-1',
-                'autocomplete' => 'off',
-                'aria-hidden' => 'true',
-            ])
-            ->dehydrated();
-    }
-
-    protected function getSecondaryHoneypotFormComponent(): Component
-    {
-        return TextInput::make('company')
-            ->label('Company')
-            ->extraAttributes([
-                'class' => 'bnc-admin-honeypot',
-                'tabindex' => '-1',
-                'autocomplete' => 'off',
-                'aria-hidden' => 'true',
-            ])
-            ->dehydrated();
-    }
-
     protected function getTurnstileFormComponent(): Component
     {
         return View::make('filament.admin.turnstile-widget')
             ->visible(fn (): bool => (bool) config('turnstile.enabled'))
             ->columnSpanFull();
-    }
-
-    protected function getTurnstileTokenFormComponent(): Component
-    {
-        return Hidden::make('turnstile_token')
-            ->dehydrated();
     }
 
     protected function getRememberFormComponent(): Component

@@ -118,14 +118,22 @@
         margin-top: 0.5rem;
     }
 
-    .bnc-admin-honeypot {
+    .bnc-admin-honeypot-wrap {
         position: absolute !important;
-        left: -9999px !important;
         width: 1px !important;
         height: 1px !important;
+        overflow: hidden !important;
+        clip: rect(0 0 0 0) !important;
+        clip-path: inset(50%) !important;
+        white-space: nowrap !important;
+        border: 0 !important;
+        padding: 0 !important;
+        margin: -1px !important;
+    }
+
+    .bnc-admin-honeypot {
         opacity: 0 !important;
         pointer-events: none !important;
-        overflow: hidden !important;
     }
 
     .bnc-admin-turnstile {

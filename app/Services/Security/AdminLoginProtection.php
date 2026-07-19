@@ -53,9 +53,12 @@ class AdminLoginProtection
 
     /**
      * @param  array<string, mixed>  $data
+     * @param  array{security_code?: bool}  $options
      */
-    public function validateBotProtection(array $data): void
+    public function validateBotProtection(array $data, array $options = []): void
     {
+        $checkSecurityCode = $options['security_code'] ?? true;
+
         if (! $this->isHoneypotEmpty($data['website'] ?? null)) {
             Log::notice('Admin login honeypot triggered', [
                 'ip' => request()->ip(),
@@ -78,7 +81,7 @@ class AdminLoginProtection
             ]);
         }
 
-        if (! $this->isSecurityCodeValid($data['security_code'] ?? null)) {
+        if ($checkSecurityCode && ! $this->isSecurityCodeValid($data['security_code'] ?? null)) {
             $this->recordFailedAttempt(is_string($data['email'] ?? null) ? $data['email'] : null);
 
             throw ValidationException::withMessages([

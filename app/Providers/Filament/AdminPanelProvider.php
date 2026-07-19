@@ -3,6 +3,8 @@
 namespace App\Providers\Filament;
 
 use App\Filament\Auth\Login;
+use App\Filament\Auth\RequestPasswordReset;
+use App\Filament\Auth\ResetPassword;
 use App\Filament\Pages\PartnerExportSettingsPage;
 use App\Filament\Widgets\SalesChartWidget;
 use App\Filament\Widgets\StatsOverviewWidget;
@@ -33,6 +35,7 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login(Login::class)
+            ->passwordReset(RequestPasswordReset::class, ResetPassword::class)
             ->brandName('BNC Admin')
             ->brandLogo(asset('bnc-logo.png'))
             ->brandLogoHeight('2.75rem')
