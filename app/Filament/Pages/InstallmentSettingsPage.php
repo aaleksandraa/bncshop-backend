@@ -226,7 +226,8 @@ class InstallmentSettingsPage extends Page implements HasForms
                             })
                             ->columnSpanFull(),
                     ]),
-            ]);
+            ])
+            ->statePath('data');
     }
 
     public function save(InstallmentSettings $settings): void
