@@ -45,4 +45,58 @@ class ProductCategoryOptionsTest extends TestCase
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0', 'refurbished/monitori');
     }
+
+    public function test_category_options_returns_categories_with_new_products(): void
+    {
+        $category = Category::factory()->create([
+            'full_slug' => 'it-oprema/laptopi',
+        ]);
+
+        Product::factory()->create([
+            'category_id' => $category->id,
+            'import_source' => 'a1',
+            'is_new' => true,
+            'is_refurbished' => false,
+            'is_public' => true,
+            'status' => 'active',
+        ]);
+
+        $response = $this->getJson('/api/v1/products/category-options?is_new=1');
+
+        $response
+            ->assertOk()
+            ->assertJsonFragment(['it-oprema/laptopi']);
+    }
+
+    public function test_category_options_returns_all_categories_with_products(): void
+    {
+        $category = Category::factory()->create([
+            'full_slug' => 'print-kancelarija/printeri',
+        ]);
+
+        Product::factory()->create([
+            'category_id' => $category->id,
+            'import_source' => 'a1',
+            'is_public' => true,
+            'status' => 'active',
+        ]);
+
+        $emptyCategory = Category::factory()->create([
+            'full_slug' => 'prazna-kategorija',
+        ]);
+
+        Product::factory()->create([
+            'category_id' => $emptyCategory->id,
+            'import_source' => 'a1',
+            'is_public' => true,
+            'status' => 'inactive',
+        ]);
+
+        $response = $this->getJson('/api/v1/products/category-options');
+
+        $response
+            ->assertOk()
+            ->assertJsonFragment(['print-kancelarija/printeri'])
+            ->assertJsonMissing(['prazna-kategorija']);
+    }
 }
