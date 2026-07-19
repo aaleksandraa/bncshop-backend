@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\Concerns\RespondsWithJson;
 use App\Models\Category;
 use App\Services\Catalog\ProductListingService;
 use App\Services\Catalog\ProductReadCache;
+use App\Services\Search\CategorySearchService;
 use App\Services\Search\FilterService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -19,6 +20,7 @@ class SearchController extends Controller
         private readonly FilterService $filterService,
         private readonly ProductReadCache $productReadCache,
         private readonly ProductListingService $productListingService,
+        private readonly CategorySearchService $categorySearchService,
     ) {}
 
     public function search(Request $request): JsonResponse
@@ -36,6 +38,8 @@ class SearchController extends Controller
             return $this->productListingService->listWithFallback($request, $perPage);
         });
 
+        $categoryLimit = min(max((int) $request->integer('category_limit', 5), 1), 12);
+
         return $this->success($payload['items'], [
             'pagination' => [
                 'current_page' => $payload['current_page'],
@@ -43,6 +47,7 @@ class SearchController extends Controller
                 'total' => $payload['total'],
                 'last_page' => $payload['last_page'],
             ],
+            'categories' => $this->categorySearchService->search($query, $categoryLimit),
         ]);
     }
 
