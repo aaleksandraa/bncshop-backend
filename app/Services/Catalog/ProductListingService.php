@@ -193,6 +193,9 @@ class ProductListingService
 
         /** @var array<int, int> $directCategoryIds */
         $directCategoryIds = $query
+            ->clone()
+            ->select('category_id')
+            ->reorder()
             ->distinct()
             ->pluck('category_id')
             ->filter()
