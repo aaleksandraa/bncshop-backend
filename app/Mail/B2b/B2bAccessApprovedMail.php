@@ -28,7 +28,7 @@ class B2bAccessApprovedMail extends Mailable
     public function content(): Content
     {
         return new Content(
-            markdown: 'mail.b2b.access-approved',
+            text: 'mail.b2b.access-approved-text',
         );
     }
 }

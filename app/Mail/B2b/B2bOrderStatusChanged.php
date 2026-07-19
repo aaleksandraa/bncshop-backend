@@ -29,7 +29,7 @@ class B2bOrderStatusChanged extends Mailable
     public function content(): Content
     {
         return new Content(
-            markdown: 'mail.b2b.order-status-changed',
+            text: 'mail.b2b.order-status-changed-text',
         );
     }
 }

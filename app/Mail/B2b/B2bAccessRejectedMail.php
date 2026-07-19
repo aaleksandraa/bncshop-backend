@@ -27,7 +27,7 @@ class B2bAccessRejectedMail extends Mailable
     public function content(): Content
     {
         return new Content(
-            markdown: 'mail.b2b.access-rejected',
+            text: 'mail.b2b.access-rejected-text',
         );
     }
 }

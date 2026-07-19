@@ -27,7 +27,7 @@ class B2bOrderNotificationAdmin extends Mailable
     public function content(): Content
     {
         return new Content(
-            markdown: 'mail.b2b.order-notification-admin',
+            text: 'mail.b2b.order-notification-admin-text',
         );
     }
 }

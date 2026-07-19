@@ -13,7 +13,7 @@ class B2bMailIdentityTest extends TestCase
     use CreatesB2bCustomers;
     use RefreshDatabase;
 
-    public function test_b2b_mailable_uses_global_from_and_b2b_reply_to(): void
+    public function test_b2b_mailable_uses_global_from_and_matching_reply_to(): void
     {
         config([
             'mail.from.address' => 'info@bncshop.ba',
@@ -47,8 +47,36 @@ class B2bMailIdentityTest extends TestCase
 
         $this->assertSame('info@bncshop.ba', $envelope->from->address);
         $this->assertSame('BNC B2B', $envelope->from->name);
-        $this->assertSame('b2b@bncshop.ba', $envelope->replyTo[0]->address);
+        $this->assertSame('info@bncshop.ba', $envelope->replyTo[0]->address);
         $this->assertSame('BNC B2B', $envelope->replyTo[0]->name);
+    }
+
+    public function test_b2b_order_confirmation_uses_plain_text_template(): void
+    {
+        [, $customer] = $this->createB2bUser();
+
+        $order = B2bOrder::query()->create([
+            'order_number' => 'B2B-TEST-002',
+            'b2b_customer_id' => $customer->id,
+            'status' => 'nova',
+            'payment_method' => 'invoice',
+            'company_name' => 'Test d.o.o.',
+            'company_address' => 'Adresa 1',
+            'jib' => '1234567890123',
+            'contact_name' => 'Kupac',
+            'contact_email' => 'kupac@test.test',
+            'contact_phone' => '061111111',
+            'shipping_address' => 'Dostava 1',
+            'subtotal' => 100,
+            'discount_total' => 0,
+            'shipping_fee' => 10,
+            'total' => 110,
+        ]);
+
+        $content = (new B2bOrderConfirmationCustomer($order))->content();
+
+        $this->assertSame('mail.b2b.order-confirmation-customer-text', $content->text);
+        $this->assertNull($content->markdown);
     }
 
     public function test_admin_notification_email_uses_b2b_env_fallback(): void

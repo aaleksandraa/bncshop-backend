@@ -29,9 +29,15 @@ trait UsesB2bMailIdentity
 
     protected function b2bEnvelope(string $subject): Envelope
     {
+        $from = $this->b2bTransportFrom();
+
+        $replyTo = config('b2b.mail.use_global_from', true)
+            ? [$from]
+            : [$this->b2bBrandAddress()];
+
         return new Envelope(
-            from: $this->b2bTransportFrom(),
-            replyTo: [$this->b2bBrandAddress()],
+            from: $from,
+            replyTo: $replyTo,
             subject: $subject,
         );
     }

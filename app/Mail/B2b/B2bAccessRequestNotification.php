@@ -27,7 +27,7 @@ class B2bAccessRequestNotification extends Mailable
     public function content(): Content
     {
         return new Content(
-            markdown: 'mail.b2b.access-request-notification',
+            text: 'mail.b2b.access-request-notification-text',
         );
     }
 }

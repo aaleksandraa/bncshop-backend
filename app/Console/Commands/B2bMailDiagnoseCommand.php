@@ -38,7 +38,17 @@ class B2bMailDiagnoseCommand extends Command
         $this->line('Global From: '.config('mail.from.name').' <'.config('mail.from.address').'>');
         $this->line('B2B Reply-To: '.config('b2b.mail.from_name').' <'.config('b2b.mail.from_address').'>');
         $this->line('B2B use global From: '.(config('b2b.mail.use_global_from') ? 'yes' : 'no'));
+        $this->line('SMTP EHLO domain: '.config('mail.mailers.smtp.local_domain'));
         $this->line('Admin notifications To: '.B2bSetting::adminNotificationEmail());
+
+        if (config('b2b.mail.use_global_from')
+            && config('mail.from.address') !== config('b2b.mail.from_address')) {
+            $this->comment('Reply-To se poravnava sa From adresom radi bolje isporuke (manje spama).');
+        }
+
+        if (config('mail.mailers.smtp.local_domain') !== substr(strrchr((string) config('mail.from.address'), '@'), 1)) {
+            $this->warn('[WARN] MAIL_EHLO_DOMAIN se razlikuje od domene u MAIL_FROM_ADDRESS — postavi MAIL_EHLO_DOMAIN=bncshop.ba');
+        }
         $this->newLine();
 
         if (! $this->option('send')) {

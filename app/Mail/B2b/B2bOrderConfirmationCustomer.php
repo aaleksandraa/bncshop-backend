@@ -27,7 +27,7 @@ class B2bOrderConfirmationCustomer extends Mailable
     public function content(): Content
     {
         return new Content(
-            markdown: 'mail.b2b.order-confirmation-customer',
+            text: 'mail.b2b.order-confirmation-customer-text',
         );
     }
 }

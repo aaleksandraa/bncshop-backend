@@ -46,7 +46,9 @@ return [
             'username' => env('MAIL_USERNAME'),
             'password' => env('MAIL_PASSWORD'),
             'timeout' => null,
-            'local_domain' => env('MAIL_EHLO_DOMAIN', parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
+            'local_domain' => env('MAIL_EHLO_DOMAIN', str_contains((string) env('MAIL_FROM_ADDRESS', ''), '@')
+                ? (string) substr(strrchr((string) env('MAIL_FROM_ADDRESS'), '@'), 1)
+                : (parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_HOST) ?: 'localhost')),
         ],
 
         'ses' => [
