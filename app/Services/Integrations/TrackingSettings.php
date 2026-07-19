@@ -3,9 +3,13 @@
 namespace App\Services\Integrations;
 
 use App\Models\SystemSetting;
+use App\Services\Catalog\ProductReadCache;
 
 class TrackingSettings
 {
+    public function __construct(
+        private readonly ProductReadCache $productReadCache,
+    ) {}
     /**
      * @return array<string, mixed>
      */
@@ -43,6 +47,14 @@ class TrackingSettings
      */
     public function save(array $data): void
     {
+        if (array_key_exists('ga_measurement_id', $data)) {
+            $data['ga_measurement_id'] = trim((string) $data['ga_measurement_id']);
+        }
+
+        if (array_key_exists('fb_pixel_id', $data)) {
+            $data['fb_pixel_id'] = trim((string) $data['fb_pixel_id']);
+        }
+
         SystemSetting::query()->updateOrCreate(
             ['key' => 'tracking'],
             [
@@ -50,6 +62,9 @@ class TrackingSettings
                 'group' => 'integrations',
             ],
         );
+
+        $this->productReadCache->flushLayout();
+        $this->productReadCache->flushSettings();
     }
 
     /**

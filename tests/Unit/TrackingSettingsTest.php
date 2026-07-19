@@ -25,6 +25,22 @@ class TrackingSettingsTest extends TestCase
         $this->assertSame('G-ABC123XYZ', $settings->publicConfig()['ga_measurement_id']);
     }
 
+    public function test_trims_tracking_ids_on_save(): void
+    {
+        $settings = app(TrackingSettings::class);
+
+        $settings->save([
+            'ga_measurement_id' => '  G-TRIM123  ',
+            'fb_pixel_id' => ' 1234567890 ',
+        ]);
+
+        $stored = SystemSetting::query()->where('key', 'tracking')->first();
+
+        $this->assertNotNull($stored);
+        $this->assertSame('G-TRIM123', $stored->value['ga_measurement_id']);
+        $this->assertSame('1234567890', $stored->value['fb_pixel_id']);
+    }
+
     public function test_public_config_omits_empty_tracking_ids(): void
     {
         $settings = app(TrackingSettings::class);
