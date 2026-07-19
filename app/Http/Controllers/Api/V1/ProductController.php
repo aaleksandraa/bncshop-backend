@@ -42,6 +42,25 @@ class ProductController extends Controller
         ]);
     }
 
+    public function categoryOptions(Request $request): JsonResponse
+    {
+        $cacheKey = 'products:category-options:'.md5(json_encode($request->query()));
+
+        $payload = $this->productReadCache->rememberList($cacheKey, 300, function () use ($request): array {
+            $slugs = $this->productListingService->categoryFullSlugsWithProducts($request);
+
+            return [
+                'items' => $slugs,
+                'total' => count($slugs),
+                'per_page' => count($slugs),
+                'current_page' => 1,
+                'last_page' => 1,
+            ];
+        });
+
+        return $this->success($payload['items']);
+    }
+
     public function show(Request $request, string $slug): JsonResponse
     {
         $couponCode = $request->string('kupon')->trim()->toString()

@@ -173,6 +173,60 @@ class ProductListingService
         ];
     }
 
+    /**
+     * @return array<int, string>
+     */
+    public function categoryFullSlugsWithProducts(Request $request): array
+    {
+        $filterRequest = Request::create(
+            '/',
+            'GET',
+            collect($request->query())->except(['category', 'page', 'per_page'])->all(),
+        );
+
+        $query = Product::query()
+            ->public()
+            ->active();
+
+        $this->applyOutOfStockRefurbishedElineExclusion($query);
+        $this->applyDatabaseFilters($query, $filterRequest);
+
+        /** @var array<int, int> $directCategoryIds */
+        $directCategoryIds = $query
+            ->distinct()
+            ->pluck('category_id')
+            ->filter()
+            ->map(static fn ($id): int => (int) $id)
+            ->all();
+
+        if ($directCategoryIds === []) {
+            return [];
+        }
+
+        $categories = Category::query()
+            ->active()
+            ->get(['id', 'parent_id', 'full_slug']);
+
+        $byId = $categories->keyBy('id');
+        $includedIds = [];
+
+        foreach ($directCategoryIds as $categoryId) {
+            $current = $byId->get($categoryId);
+
+            while ($current instanceof Category) {
+                $includedIds[$current->id] = true;
+                $current = $current->parent_id ? $byId->get((int) $current->parent_id) : null;
+            }
+        }
+
+        return $categories
+            ->filter(static fn (Category $category): bool => isset($includedIds[$category->id]))
+            ->pluck('full_slug')
+            ->sort()
+            ->values()
+            ->all();
+    }
+
     private function applyOutOfStockRefurbishedElineExclusion(Builder $query): void
     {
         if (! $this->catalogListingSettings->hideOutOfStockRefurbishedEline()) {

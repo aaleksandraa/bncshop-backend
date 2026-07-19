@@ -45,6 +45,7 @@ Route::prefix('v1')->group(function (): void {
 
         Route::get('/layout/shell', [LayoutController::class, 'shell']);
 
+        Route::get('/products/category-options', [ProductController::class, 'categoryOptions']);
         Route::get('/products', [ProductController::class, 'index']);
         Route::get('/products/{slug}', [ProductController::class, 'show']);
 
