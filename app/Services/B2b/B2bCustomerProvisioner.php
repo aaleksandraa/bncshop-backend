@@ -2,18 +2,20 @@
 
 namespace App\Services\B2b;
 
-use App\Mail\B2b\B2bAccessApprovedMail;
 use App\Models\B2bAccessRequest;
 use App\Models\B2bCustomer;
 use App\Models\B2bPasswordSetupToken;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 class B2bCustomerProvisioner
 {
+    public function __construct(
+        private readonly B2bAccessMailer $accessMailer,
+    ) {}
+
     public function approveAccessRequest(B2bAccessRequest $request, ?User $reviewer = null): B2bCustomer
     {
         if (! $request->isPending()) {
@@ -113,7 +115,7 @@ class B2bCustomerProvisioner
         $plainToken = B2bPasswordSetupToken::createForUser($user);
         $setupUrl = rtrim((string) config('bnc.frontend_url'), '/').'/b2b/postavi-lozinku?token='.$plainToken;
 
-        Mail::to($user->email)->send(new B2bAccessApprovedMail($user, $setupUrl));
+        $this->accessMailer->sendAccessApproved($user, $setupUrl);
 
         return $plainToken;
     }

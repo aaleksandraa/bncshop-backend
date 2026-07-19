@@ -4,8 +4,8 @@ namespace App\Filament\B2b\Resources;
 
 use App\Filament\B2b\Resources\B2bAccessRequestResource\Pages;
 use App\Filament\Concerns\AuthorizesWithPermissions;
-use App\Mail\B2b\B2bAccessRejectedMail;
 use App\Models\B2bAccessRequest;
+use App\Services\B2b\B2bAccessMailer;
 use App\Services\B2b\B2bCustomerProvisioner;
 use Filament\Infolists;
 use Filament\Infolists\Infolist;
@@ -14,7 +14,6 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Mail;
 
 class B2bAccessRequestResource extends Resource
 {
@@ -120,7 +119,7 @@ class B2bAccessRequestResource extends Resource
                             'reviewed_at' => now(),
                         ]);
 
-                        Mail::to($record->email)->send(new B2bAccessRejectedMail($record));
+                        app(B2bAccessMailer::class)->sendAccessRejected($record);
 
                         Notification::make()->title('Zahtjev odbijen. Email poslan korisniku.')->success()->send();
                     }),

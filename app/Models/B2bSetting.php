@@ -31,11 +31,18 @@ class B2bSetting extends Model
 
     public static function defaultAdminNotificationEmail(): string
     {
-        return (string) (
-            config('b2b.mail.admin_notification_email')
-            ?: config('bnc.admin_notification_email')
-            ?: config('mail.from.address')
-        );
+        foreach ([
+            config('b2b.mail.admin_notification_email'),
+            config('bnc.admin_notification_email'),
+            env('SELLER_EMAIL'),
+            config('mail.from.address'),
+        ] as $candidate) {
+            if (filled($candidate)) {
+                return (string) $candidate;
+            }
+        }
+
+        return 'b2b@bncshop.ba';
     }
 
     public static function instance(): self

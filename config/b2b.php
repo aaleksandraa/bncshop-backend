@@ -18,5 +18,7 @@ return [
         'from_address' => env('B2B_MAIL_FROM_ADDRESS', env('MAIL_FROM_ADDRESS')),
         'from_name' => env('B2B_MAIL_FROM_NAME', 'BNC B2B'),
         'admin_notification_email' => env('B2B_ADMIN_NOTIFICATION_EMAIL', 'b2b@bncshop.ba'),
+        // Send through the authorized MAIL_FROM transport (info@) to avoid Postfix rejecting b2b@ as envelope sender.
+        'use_global_from' => filter_var(env('B2B_MAIL_USE_GLOBAL_FROM', true), FILTER_VALIDATE_BOOL),
     ],
 ];

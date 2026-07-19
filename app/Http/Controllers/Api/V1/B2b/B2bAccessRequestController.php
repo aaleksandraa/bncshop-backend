@@ -6,14 +6,12 @@ use App\Http\Controllers\Api\V1\B2b\Concerns\FormatsB2bResponses;
 use App\Http\Controllers\Api\V1\Concerns\RespondsWithJson;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Concerns\ValidatesBotProtection;
-use App\Mail\B2b\B2bAccessRequestNotification;
 use App\Models\B2bAccessRequest;
 use App\Models\B2bCustomer;
-use App\Models\B2bSetting;
 use App\Models\User;
+use App\Services\B2b\B2bAccessMailer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Mail;
 
 class B2bAccessRequestController extends Controller
 {
@@ -21,7 +19,7 @@ class B2bAccessRequestController extends Controller
     use RespondsWithJson;
     use ValidatesBotProtection;
 
-    public function store(Request $request): JsonResponse
+    public function store(Request $request, B2bAccessMailer $mailer): JsonResponse
     {
         $validated = $request->validate([
             'first_name' => ['required', 'string', 'max:100'],
@@ -57,8 +55,7 @@ class B2bAccessRequestController extends Controller
 
         $accessRequest = B2bAccessRequest::query()->create($validated + ['status' => 'pending']);
 
-        Mail::to(B2bSetting::adminNotificationEmail())
-            ->send(new B2bAccessRequestNotification($accessRequest));
+        $mailer->notifyAdminOfAccessRequest($accessRequest);
 
         return $this->success([
             'message' => 'Zahtjev je uspješno poslan. Kontaktiraćemo vas nakon odobrenja.',

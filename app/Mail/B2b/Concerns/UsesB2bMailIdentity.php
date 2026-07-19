@@ -7,21 +7,31 @@ use Illuminate\Mail\Mailables\Envelope;
 
 trait UsesB2bMailIdentity
 {
-    protected function b2bMailFrom(): Address
+    protected function b2bBrandAddress(): Address
     {
-        return new Address(
-            (string) config('b2b.mail.from_address'),
-            (string) config('b2b.mail.from_name'),
-        );
+        $address = config('b2b.mail.from_address') ?: config('mail.from.address');
+        $name = config('b2b.mail.from_name', 'BNC B2B');
+
+        return new Address((string) $address, (string) $name);
+    }
+
+    protected function b2bTransportFrom(): Address
+    {
+        if (config('b2b.mail.use_global_from', true)) {
+            return new Address(
+                (string) config('mail.from.address'),
+                (string) (config('b2b.mail.from_name') ?: config('mail.from.name', 'BNC B2B')),
+            );
+        }
+
+        return $this->b2bBrandAddress();
     }
 
     protected function b2bEnvelope(string $subject): Envelope
     {
-        $from = $this->b2bMailFrom();
-
         return new Envelope(
-            from: $from,
-            replyTo: [$from],
+            from: $this->b2bTransportFrom(),
+            replyTo: [$this->b2bBrandAddress()],
             subject: $subject,
         );
     }

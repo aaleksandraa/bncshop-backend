@@ -13,11 +13,14 @@ class B2bMailIdentityTest extends TestCase
     use CreatesB2bCustomers;
     use RefreshDatabase;
 
-    public function test_b2b_mailable_uses_configured_from_and_reply_to(): void
+    public function test_b2b_mailable_uses_global_from_and_b2b_reply_to(): void
     {
         config([
+            'mail.from.address' => 'info@bncshop.ba',
+            'mail.from.name' => 'BNC Shop',
             'b2b.mail.from_address' => 'b2b@bncshop.ba',
             'b2b.mail.from_name' => 'BNC B2B',
+            'b2b.mail.use_global_from' => true,
         ]);
 
         [, $customer] = $this->createB2bUser();
@@ -42,7 +45,7 @@ class B2bMailIdentityTest extends TestCase
 
         $envelope = (new B2bOrderConfirmationCustomer($order))->envelope();
 
-        $this->assertSame('b2b@bncshop.ba', $envelope->from->address);
+        $this->assertSame('info@bncshop.ba', $envelope->from->address);
         $this->assertSame('BNC B2B', $envelope->from->name);
         $this->assertSame('b2b@bncshop.ba', $envelope->replyTo[0]->address);
         $this->assertSame('BNC B2B', $envelope->replyTo[0]->name);
