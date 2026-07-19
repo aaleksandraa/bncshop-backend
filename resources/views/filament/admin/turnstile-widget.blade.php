@@ -4,7 +4,7 @@
             id="bnc-admin-turnstile"
             class="cf-turnstile"
             data-sitekey="{{ config('turnstile.site_key') }}"
-            data-theme="light"
+            data-theme="auto"
         ></div>
     </div>
 
@@ -22,7 +22,7 @@
 
                 turnstile.render(container, {
                     sitekey: @js(config('turnstile.site_key')),
-                    theme: 'light',
+                    theme: document.documentElement.classList.contains('dark') ? 'dark' : 'light',
                     callback: (token) => {
                         @this.set('data.turnstile_token', token);
                     },
