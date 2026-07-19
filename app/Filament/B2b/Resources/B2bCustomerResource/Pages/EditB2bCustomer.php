@@ -7,10 +7,35 @@ use App\Services\B2b\B2bCustomerProvisioner;
 use Filament\Actions;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
+use Illuminate\Database\Eloquent\Model;
 
 class EditB2bCustomer extends EditRecord
 {
     protected static string $resource = B2bCustomerResource::class;
+
+    protected function mutateFormDataBeforeFill(array $data): array
+    {
+        $data['name'] = $this->record->user?->name;
+        $data['email'] = $this->record->user?->email;
+
+        return $data;
+    }
+
+    protected function handleRecordUpdate(Model $record, array $data): Model
+    {
+        $formData = $this->form->getState();
+
+        /** @var \App\Models\B2bCustomer $record */
+        $record->user?->update([
+            'name' => $formData['name'],
+            'email' => $formData['email'],
+            'phone' => $formData['phone'],
+        ]);
+
+        $record->update($data);
+
+        return $record;
+    }
 
     protected function getHeaderActions(): array
     {
