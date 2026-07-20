@@ -8,12 +8,23 @@ use Illuminate\Console\Command;
 class PerfCheckCommand extends Command
 {
     protected $signature = 'bnc:perf-check
-                            {--json : Ispiši pun izvještaj kao JSON}';
+                            {--json : Ispiši pun izvještaj kao JSON}
+                            {--clear-failed-history : Obriši Horizon recent_failed_jobs historiju iz Redis-a}';
 
     protected $description = 'Jedinstveni izvještaj o performansama servera, queue redova, Horizon-a i sync-a';
 
     public function handle(PerfHealthChecker $checker): int
     {
+        if ($this->option('clear-failed-history')) {
+            $cleared = $checker->clearFailedHistory();
+
+            if ($cleared) {
+                $this->info('Horizon recent_failed_jobs historija je obrisana.');
+            } else {
+                $this->warn('recent_failed_jobs nije pronađen ili Redis nije dostupan.');
+            }
+        }
+
         $report = $checker->report();
 
         if ($this->option('json')) {
@@ -93,7 +104,8 @@ class PerfCheckCommand extends Command
         $this->renderStatusLine('Horizon', $horizonLevel, (string) ($horizon['message'] ?? ''));
         $this->line('Worker procesi: '.($horizon['process_count'] ?? '?'));
         $this->line('Jobs/min: '.($horizon['jobs_per_minute'] ?? 'n/a'));
-        $this->line('Nedavno failed: '.($horizon['recent_failed_jobs'] ?? 'n/a'));
+        $this->line('Failed queue: '.($horizon['total_failed_jobs'] ?? 'n/a'));
+        $this->line('Failed historija (7d): '.($horizon['recent_failed_jobs'] ?? 'n/a'));
 
         $this->newLine();
         $this->section('Queue backlog');

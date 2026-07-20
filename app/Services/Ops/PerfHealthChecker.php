@@ -240,6 +240,7 @@ class PerfHealthChecker
                 'process_count' => 0,
                 'jobs_per_minute' => null,
                 'recent_failed_jobs' => $this->safeHorizonMetric(fn () => app(JobRepository::class)->countRecentlyFailed()),
+                'total_failed_jobs' => $this->safeHorizonMetric(fn () => app(JobRepository::class)->totalFailed()),
                 'workload' => [],
             ];
         }
@@ -264,6 +265,7 @@ class PerfHealthChecker
             'process_count' => $processCount,
             'jobs_per_minute' => $this->safeHorizonMetric(fn () => app(MetricsRepository::class)->jobsProcessedPerMinute()),
             'recent_failed_jobs' => $this->safeHorizonMetric(fn () => app(JobRepository::class)->countRecentlyFailed()),
+            'total_failed_jobs' => $this->safeHorizonMetric(fn () => app(JobRepository::class)->totalFailed()),
             'workload' => $this->safeHorizonMetric(fn () => app(WorkloadRepository::class)->get(), []),
         ];
     }
@@ -466,11 +468,20 @@ class PerfHealthChecker
             ];
         }
 
-        $failed = $horizon['recent_failed_jobs'] ?? null;
-        if (is_int($failed) && $failed > 0) {
+        $totalFailed = $horizon['total_failed_jobs'] ?? null;
+        $recentFailed = $horizon['recent_failed_jobs'] ?? null;
+
+        if (is_int($totalFailed) && $totalFailed > 0) {
             $issues[] = [
-                'level' => $failed >= 10 ? 'fail' : 'warn',
-                'message' => "Horizon ima {$failed} nedavno neuspjelih job(ova).",
+                'level' => $totalFailed >= 10 ? 'fail' : 'warn',
+                'message' => "Horizon failed queue ima {$totalFailed} job(ova). Pokreni: php artisan horizon:failed",
+            ];
+        }
+
+        if (is_int($recentFailed) && $recentFailed > 0 && (! is_int($totalFailed) || $totalFailed === 0)) {
+            $issues[] = [
+                'level' => 'warn',
+                'message' => "Horizon historija (7 dana) ima {$recentFailed} failed zapisa — to nije aktivni backlog. Očisti: php artisan bnc:perf-check --clear-failed-history",
             ];
         }
 
@@ -642,6 +653,18 @@ class PerfHealthChecker
         }
 
         return $deduped;
+    }
+
+    public function clearFailedHistory(): bool
+    {
+        try {
+            $redis = \Illuminate\Support\Facades\Redis::connection(config('horizon.use', 'default'));
+            $key = config('horizon.prefix').'recent_failed_jobs';
+
+            return (bool) $redis->del($key);
+        } catch (Throwable) {
+            return false;
+        }
     }
 
     /**
