@@ -16,6 +16,12 @@ class ProductReadCache
             ->remember($cacheKey, $ttlSeconds, $callback);
     }
 
+    public function rememberWeeklyOffer(string $cacheKey, int $ttlSeconds, callable $callback): array
+    {
+        return $this->tagged(['homepage:weekly-offer'])
+            ->remember($cacheKey, $ttlSeconds, $callback);
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -238,6 +244,15 @@ class ProductReadCache
         }
 
         Cache::tags(['products'])->flush();
+    }
+
+    public function flushWeeklyOffer(): void
+    {
+        if (! $this->supportsTags()) {
+            return;
+        }
+
+        Cache::tags(['homepage:weekly-offer'])->flush();
     }
 
     public function flushAll(): void

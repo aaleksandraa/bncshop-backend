@@ -42,7 +42,7 @@ class WeeklyOfferProducts
 
         $cacheKey = 'homepage:weekly-offer:'.md5(implode(',', $productIds));
 
-        $products = $this->productReadCache->rememberList($cacheKey, 120, function () use ($productIds): array {
+        $products = $this->productReadCache->rememberWeeklyOffer($cacheKey, 120, function () use ($productIds): array {
             return $this->loadProducts($productIds);
         });
 

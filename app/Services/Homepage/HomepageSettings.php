@@ -3,10 +3,14 @@
 namespace App\Services\Homepage;
 
 use App\Models\SystemSetting;
+use App\Services\Catalog\ProductReadCache;
 use Illuminate\Support\Facades\Cache;
 
 class HomepageSettings
 {
+    public function __construct(
+        private readonly ProductReadCache $productReadCache,
+    ) {}
     public const WEEKLY_OFFER_LAYOUTS = [
         'spotlight_card' => 'Kartica u hero sekciji (1 proizvod)',
         'grid_2' => 'Mreža — 2 proizvoda u redu',
@@ -54,6 +58,11 @@ class HomepageSettings
      */
     public function saveWeeklyOffer(array $data): void
     {
+        $previousProductIds = array_values(array_map(
+            intval(...),
+            (array) ($this->weeklyOffer()['product_ids'] ?? []),
+        ));
+
         $layout = (string) ($data['layout'] ?? 'spotlight_card');
         $limit = max(1, min(6, (int) ($data['product_limit'] ?? 1)));
 
@@ -83,16 +92,24 @@ class HomepageSettings
             ],
         );
 
-        $this->flushWeeklyOfferCache($productIds);
+        $this->flushWeeklyOfferCache($previousProductIds, $productIds);
     }
 
     /**
+     * @param  array<int, int>  $previousProductIds
      * @param  array<int, int>  $productIds
      */
-    public function flushWeeklyOfferCache(array $productIds = []): void
+    public function flushWeeklyOfferCache(array $previousProductIds = [], array $productIds = []): void
     {
-        Cache::forget('homepage:weekly-offer:'.md5(implode(',', $productIds)));
-        Cache::forget('homepage:weekly-offer:'.md5(''));
+        $this->productReadCache->flushWeeklyOffer();
+
+        if ($this->productReadCache->supportsTags()) {
+            return;
+        }
+
+        foreach ([[], $previousProductIds, $productIds] as $ids) {
+            Cache::forget('homepage:weekly-offer:'.md5(implode(',', $ids)));
+        }
     }
 
     public function weeklyOfferInHero(): bool

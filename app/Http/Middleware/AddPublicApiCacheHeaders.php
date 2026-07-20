@@ -33,6 +33,7 @@ class AddPublicApiCacheHeaders
      * @var array<string, string>
      */
     private const CACHE_CONTROL_BY_PREFIX = [
+        'api/v1/homepage/weekly-offer' => 'private, no-cache, no-store, must-revalidate',
         'api/v1/filters' => 'public, max-age=300, s-maxage=300, stale-while-revalidate=600',
         'api/v1/layout/shell' => 'public, max-age=300, s-maxage=300, stale-while-revalidate=600',
         'api/v1/settings/public' => 'public, max-age=600, s-maxage=600, stale-while-revalidate=900',
@@ -51,14 +52,31 @@ class AddPublicApiCacheHeaders
 
         foreach (self::CACHEABLE_PREFIXES as $prefix) {
             if (str_starts_with($path, $prefix)) {
-                $cacheControl = self::CACHE_CONTROL_BY_PREFIX[$prefix]
-                    ?? 'public, max-age=120, s-maxage=240, stale-while-revalidate=300';
-                $response->headers->set('Cache-Control', $cacheControl);
+                $response->headers->set('Cache-Control', self::resolveCacheControl($path));
 
                 return $response;
             }
         }
 
         return $response;
+    }
+
+    private static function resolveCacheControl(string $path): string
+    {
+        $matched = null;
+        $matchedLength = -1;
+
+        foreach (self::CACHE_CONTROL_BY_PREFIX as $prefix => $cacheControl) {
+            if (! str_starts_with($path, $prefix)) {
+                continue;
+            }
+
+            if (strlen($prefix) > $matchedLength) {
+                $matched = $cacheControl;
+                $matchedLength = strlen($prefix);
+            }
+        }
+
+        return $matched ?? 'public, max-age=120, s-maxage=240, stale-while-revalidate=300';
     }
 }
