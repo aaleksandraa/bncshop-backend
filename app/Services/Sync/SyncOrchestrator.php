@@ -2,11 +2,11 @@
 
 namespace App\Services\Sync;
 
+use App\Jobs\ReindexProductsJob;
 use App\Models\ApiImportJob;
 use App\Models\ApiImportJobItem;
 use App\Models\ApiSource;
 use App\Models\Product;
-use App\Jobs\ReindexProductsJob;
 use App\Services\Catalog\ProductReadCache;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -19,6 +19,7 @@ class SyncOrchestrator
         private readonly AttributeImporter $attributeImporter,
         private readonly ProductImporter $productImporter,
         private readonly ProductReadCache $productReadCache,
+        private readonly ImportJobChangeLogger $changeLogger,
     ) {}
 
     /**
@@ -32,7 +33,9 @@ class SyncOrchestrator
         bool $skipMetadata = false,
     ): array {
         $syncStartedAt = now();
-        $previousSyncAt = $fullSync ? null : $source->last_successful_sync_at?->toIso8601String();
+        $previousSyncAt = $fullSync
+            ? null
+            : IntegrationApiClient::formatModifiedAfter($source->last_successful_sync_at);
 
         $job = ApiImportJob::query()->create([
             'api_source_id' => $source->id,
@@ -45,7 +48,14 @@ class SyncOrchestrator
         $stats = [
             'categories' => ['created' => 0, 'updated' => 0, 'pending_parent' => 0],
             'attributes' => ['created' => 0, 'updated' => 0, 'mappings' => 0],
-            'products' => ['imported' => 0, 'pages' => 0, 'errors' => []],
+            'products' => [
+                'created' => 0,
+                'updated' => 0,
+                'deactivated' => 0,
+                'imported' => 0,
+                'pages' => 0,
+                'errors' => [],
+            ],
         ];
 
         $importedProductIds = [];
@@ -71,6 +81,8 @@ class SyncOrchestrator
                 $importedProductIds,
             );
 
+            $this->changeLogger->flush();
+
             DB::transaction(function () use ($source, $syncStartedAt, $job, $stats): void {
                 $source->update([
                     'last_successful_sync_at' => $syncStartedAt,
@@ -94,6 +106,8 @@ class SyncOrchestrator
 
             return $stats;
         } catch (Throwable $e) {
+            $this->changeLogger->flush();
+
             $source->update([
                 'connection_status' => 'error',
                 'last_error' => $e->getMessage(),
@@ -111,7 +125,14 @@ class SyncOrchestrator
     }
 
     /**
-     * @return array{imported: int, pages: int, errors: array<int, string>}
+     * @return array{
+     *     created: int,
+     *     updated: int,
+     *     deactivated: int,
+     *     imported: int,
+     *     pages: int,
+     *     errors: array<int, string>
+     * }
      */
     private function syncProducts(
         IntegrationApiClient $client,
@@ -123,7 +144,9 @@ class SyncOrchestrator
         array &$importedProductIds = [],
     ): array {
         $page = $startProductPage ?? 1;
-        $imported = 0;
+        $created = 0;
+        $updated = 0;
+        $deactivated = 0;
         $errors = [];
         $pageSize = $source->page_size ?? config('bnc.default_page_size', 500);
         $pagesProcessed = 0;
@@ -138,18 +161,28 @@ class SyncOrchestrator
 
             foreach ($products as $productPayload) {
                 try {
-                    $product = Product::withoutSyncingToSearch(function () use ($productPayload, $source): Product {
+                    $result = Product::withoutSyncingToSearch(function () use ($productPayload, $source): ProductUpsertResult {
                         return $this->productImporter->upsertOne($productPayload, $source);
                     });
-                    $importedProductIds[] = $product->id;
+
+                    $this->changeLogger->log($result, $job);
+                    $importedProductIds[] = $result->product->id;
                     $pageImported++;
+
+                    match ($result->action) {
+                        'inserted' => $created++,
+                        'updated' => $updated++,
+                        'deactivated' => $deactivated++,
+                        default => null,
+                    };
                 } catch (Throwable $e) {
-                    $externalId = $productPayload['productId'] ?? 'unknown';
-                    $pageErrors[] = "{$externalId}: {$e->getMessage()}";
+                    $externalId = (string) ($productPayload['productId'] ?? 'unknown');
+                    $message = $e->getMessage();
+                    $pageErrors[] = "{$externalId}: {$message}";
+                    $this->changeLogger->logError($externalId, $message, $job);
                 }
             }
 
-            $imported += $pageImported;
             $errors = array_merge($errors, $pageErrors);
             $pagesProcessed++;
 
@@ -168,7 +201,12 @@ class SyncOrchestrator
             $page = $this->resolveNextPage($pagination, $page, count($products), $pageSize);
         } while ($page !== null);
 
+        $imported = $created + $updated + $deactivated;
+
         return [
+            'created' => $created,
+            'updated' => $updated,
+            'deactivated' => $deactivated,
             'imported' => $imported,
             'pages' => $pagesProcessed,
             'errors' => $errors,

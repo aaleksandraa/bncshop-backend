@@ -84,12 +84,42 @@ class ApiImportJobResource extends Resource
                         Infolists\Components\TextEntry::make('error_message')
                             ->label('Greška')
                             ->columnSpanFull(),
-                        Infolists\Components\KeyValueEntry::make('stats')
-                            ->label('Statistika')
-                            ->getStateUsing(fn (ApiImportJob $record): array => self::flattenStatsForDisplay($record->stats))
-                            ->columnSpanFull(),
                     ])
                     ->columns(2),
+                Infolists\Components\Section::make('Statistika proizvoda')
+                    ->schema([
+                        Infolists\Components\TextEntry::make('stats.products.created')
+                            ->label('Ubačeno')
+                            ->state(fn (ApiImportJob $record): string => (string) ($record->stats['products']['created'] ?? '—')),
+                        Infolists\Components\TextEntry::make('stats.products.updated')
+                            ->label('Izmijenjeno')
+                            ->state(fn (ApiImportJob $record): string => (string) ($record->stats['products']['updated'] ?? '—')),
+                        Infolists\Components\TextEntry::make('stats.products.deactivated')
+                            ->label('Deaktivirano')
+                            ->state(fn (ApiImportJob $record): string => (string) ($record->stats['products']['deactivated'] ?? '—')),
+                        Infolists\Components\TextEntry::make('stats.products.imported')
+                            ->label('Ukupno obrađeno')
+                            ->state(fn (ApiImportJob $record): string => (string) ($record->stats['products']['imported'] ?? '—')),
+                        Infolists\Components\TextEntry::make('stats.products.pages')
+                            ->label('Stranica API-ja')
+                            ->state(fn (ApiImportJob $record): string => (string) ($record->stats['products']['pages'] ?? '—')),
+                        Infolists\Components\TextEntry::make('stats.products.errors')
+                            ->label('Greške')
+                            ->state(fn (ApiImportJob $record): string => self::formatErrorCount($record->stats['products']['errors'] ?? null))
+                            ->columnSpanFull(),
+                    ])
+                    ->columns(3)
+                    ->visible(fn (ApiImportJob $record): bool => isset($record->stats['products'])),
+                Infolists\Components\Section::make('Ostala statistika')
+                    ->schema([
+                        Infolists\Components\KeyValueEntry::make('stats')
+                            ->label('Statistika')
+                            ->getStateUsing(fn (ApiImportJob $record): array => self::flattenStatsForDisplay(
+                                self::statsWithoutProducts($record->stats),
+                            ))
+                            ->columnSpanFull(),
+                    ])
+                    ->visible(fn (ApiImportJob $record): bool => self::statsWithoutProducts($record->stats) !== []),
             ]);
     }
 
@@ -122,6 +152,24 @@ class ApiImportJobResource extends Resource
                 Tables\Columns\TextColumn::make('completed_at')
                     ->label('Kraj')
                     ->dateTime('d.m.Y H:i'),
+                Tables\Columns\TextColumn::make('stats.products.created')
+                    ->label('Ubačeno')
+                    ->state(fn (ApiImportJob $record): ?string => isset($record->stats['products']['created'])
+                        ? (string) $record->stats['products']['created']
+                        : null)
+                    ->placeholder('—'),
+                Tables\Columns\TextColumn::make('stats.products.updated')
+                    ->label('Izmijenjeno')
+                    ->state(fn (ApiImportJob $record): ?string => isset($record->stats['products']['updated'])
+                        ? (string) $record->stats['products']['updated']
+                        : null)
+                    ->placeholder('—'),
+                Tables\Columns\TextColumn::make('stats.products.deactivated')
+                    ->label('Deaktivirano')
+                    ->state(fn (ApiImportJob $record): ?string => isset($record->stats['products']['deactivated'])
+                        ? (string) $record->stats['products']['deactivated']
+                        : null)
+                    ->placeholder('—'),
             ])
             ->defaultSort('id', 'desc')
             ->filters([
@@ -144,6 +192,7 @@ class ApiImportJobResource extends Resource
     public static function getRelations(): array
     {
         return [
+            RelationManagers\ChangesRelationManager::class,
             RelationManagers\ItemsRelationManager::class,
         ];
     }
@@ -198,5 +247,33 @@ class ApiImportJobResource extends Resource
         }
 
         return $flat;
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $stats
+     * @return array<string, mixed>
+     */
+    private static function statsWithoutProducts(?array $stats): array
+    {
+        if ($stats === null || $stats === []) {
+            return [];
+        }
+
+        $filtered = $stats;
+        unset($filtered['products']);
+
+        return $filtered;
+    }
+
+    /**
+     * @param  array<int, string>|null  $errors
+     */
+    private static function formatErrorCount(?array $errors): string
+    {
+        if ($errors === null || $errors === []) {
+            return '0';
+        }
+
+        return count($errors).' (vidi stavke joba / promjene)';
     }
 }

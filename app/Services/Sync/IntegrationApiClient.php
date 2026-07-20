@@ -4,6 +4,7 @@ namespace App\Services\Sync;
 
 use App\Models\ApiSource;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Support\Carbon;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
@@ -21,6 +22,15 @@ class IntegrationApiClient
     public static function forSource(ApiSource $source): self
     {
         return new self($source);
+    }
+
+    public static function formatModifiedAfter(?Carbon $date): ?string
+    {
+        if ($date === null) {
+            return null;
+        }
+
+        return $date->utc()->format('Y-m-d\TH:i:s\Z');
     }
 
     public function login(): ApiSource

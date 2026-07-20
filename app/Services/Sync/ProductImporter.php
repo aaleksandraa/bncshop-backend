@@ -28,12 +28,14 @@ class ProductImporter
     /**
      * @param  array<string, mixed>  $payload
      */
-    public function upsertOne(array $payload, ?ApiSource $source = null): Product
+    public function upsertOne(array $payload, ?ApiSource $source = null): ProductUpsertResult
     {
         $externalId = (string) ($payload['productId'] ?? $payload['external_product_id'] ?? '');
         $product = Product::query()->firstOrNew(['external_product_id' => $externalId]);
+        $wasExisting = $product->exists;
+        $wasPublic = $wasExisting ? (bool) $product->is_public : null;
 
-        if (! $product->exists) {
+        if (! $wasExisting) {
             $product->first_imported_at = now();
             $product->sync_status = 'synced';
         }
@@ -43,9 +45,19 @@ class ProductImporter
             $product->import_source = $source->target_system_code ?? $source->name ?? 'api';
         }
 
-        $this->applyScalarFields($product, $payload);
-        $product->manufacturer_id = $this->resolveManufacturer($payload['manufacturer'] ?? null)?->id;
-        $product->category_id = $this->resolveCategory($payload['category'] ?? null)?->id;
+        $changedFields = $this->applyScalarFields($product, $payload);
+
+        $newManufacturerId = $this->resolveManufacturer($payload['manufacturer'] ?? null)?->id;
+        if ($wasExisting && $product->manufacturer_id !== $newManufacturerId) {
+            $changedFields[] = 'manufacturer_id';
+        }
+        $product->manufacturer_id = $newManufacturerId;
+
+        $newCategoryId = $this->resolveCategory($payload['category'] ?? null)?->id;
+        if ($wasExisting && $product->category_id !== $newCategoryId) {
+            $changedFields[] = 'category_id';
+        }
+        $product->category_id = $newCategoryId;
 
         $product->save();
 
@@ -67,31 +79,46 @@ class ProductImporter
             'marked_missing_at' => null,
         ]);
 
-        return $product;
+        $payloadIsPublic = (bool) ($payload['isPublic'] ?? false);
+
+        $action = match (true) {
+            ! $wasExisting => 'inserted',
+            ! $payloadIsPublic && $wasPublic => 'deactivated',
+            default => 'updated',
+        };
+
+        return new ProductUpsertResult(
+            action: $action,
+            product: $product->fresh(),
+            changedFields: array_values(array_unique($changedFields)),
+        );
     }
 
     /**
      * @param  list<array<string, mixed>>  $payloads
-     * @return list<Product>
+     * @return list<ProductUpsertResult>
      */
     public function upsertMany(array $payloads, int $chunkSize = 50, ?ApiSource $source = null): array
     {
-        $products = [];
+        $results = [];
 
         foreach (array_chunk($payloads, max(1, $chunkSize)) as $chunk) {
             foreach ($chunk as $payload) {
-                $products[] = $this->upsertOne($payload, $source);
+                $results[] = $this->upsertOne($payload, $source);
             }
         }
 
-        return $products;
+        return $results;
     }
 
     /**
      * @param  array<string, mixed>  $payload
+     * @return list<string>
      */
-    private function applyScalarFields(Product $product, array $payload): void
+    private function applyScalarFields(Product $product, array $payload): array
     {
+        $changedFields = [];
+
         $fieldMap = [
             'name' => fn (): mixed => trim((string) ($payload['name'] ?? '')),
             'slug' => fn (): string => $this->resolveSlug($product, (string) ($payload['slug'] ?? '')),
@@ -122,7 +149,13 @@ class ProductImporter
                 continue;
             }
 
-            if ($this->fieldLockService->shouldApply($product, $field, $newValue, $product->{$field})) {
+            $currentValue = $product->{$field};
+
+            if ($this->fieldLockService->shouldApply($product, $field, $newValue, $currentValue)) {
+                if ($currentValue != $newValue) {
+                    $changedFields[] = $field;
+                }
+
                 $product->{$field} = $newValue;
             }
         }
@@ -130,6 +163,8 @@ class ProductImporter
         if ($product->status === null) {
             $product->status = 'active';
         }
+
+        return $changedFields;
     }
 
     /**

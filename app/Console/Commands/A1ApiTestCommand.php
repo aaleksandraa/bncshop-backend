@@ -109,8 +109,37 @@ class A1ApiTestCommand extends Command
         // Test 1.7 ModifiedAfter
         $this->info('Test 1.7 — ModifiedAfter filter');
         try {
-            $response = $client->getProducts('2026-01-01T00:00:00', 1, 10);
-            $this->line('  PASS: filter accepted, '.count($response['data']).' products returned');
+            $modifiedAfter = IntegrationApiClient::formatModifiedAfter(
+                $source->last_successful_sync_at ?? now()->subMonth(),
+            ) ?? '2026-01-01T00:00:00Z';
+
+            $response = $client->getProducts($modifiedAfter, 1, 10);
+            $products = $response['data'];
+            $notPublic = 0;
+            $deleteFieldKeys = [];
+
+            foreach ($products as $product) {
+                if (($product['isPublic'] ?? true) === false) {
+                    $notPublic++;
+                }
+
+                foreach (['isDeleted', 'deletedAt', 'deleted_at', 'isRemoved'] as $key) {
+                    if (array_key_exists($key, $product)) {
+                        $deleteFieldKeys[$key] = true;
+                    }
+                }
+            }
+
+            $this->line('  PASS: filter accepted, '.count($products).' products returned');
+            $this->line('  ModifiedAfter sent: '.$modifiedAfter);
+            $this->line('  isPublic=false in sample: '.$notPublic);
+
+            if ($deleteFieldKeys !== []) {
+                $this->line('  Delete-related fields found: '.implode(', ', array_keys($deleteFieldKeys)));
+            } else {
+                $this->line('  No isDeleted/deletedAt fields in sample payload (deactivation uses isPublic only).');
+            }
+
             $passed++;
         } catch (\Throwable $e) {
             $this->warn('  WARN: ModifiedAfter may not be supported: '.$e->getMessage());

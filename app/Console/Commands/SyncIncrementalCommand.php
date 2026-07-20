@@ -26,11 +26,24 @@ class SyncIncrementalCommand extends Command
         }
 
         foreach ($sources as $source) {
+            if ($source->last_successful_sync_at === null) {
+                $this->error("Source #{$source->id} ({$source->name}): last_successful_sync_at is empty. Run full sync first.");
+
+                continue;
+            }
+
             $this->info("Incremental sync for source #{$source->id} ({$source->name})");
 
             if ($this->option('sync')) {
                 $stats = $orchestrator->run($source, fullSync: false);
-                $this->info('Imported products: '.($stats['products']['imported'] ?? 0));
+                $products = $stats['products'] ?? [];
+                $this->info(sprintf(
+                    'Imported products: %d (created: %d, updated: %d, deactivated: %d)',
+                    $products['imported'] ?? 0,
+                    $products['created'] ?? 0,
+                    $products['updated'] ?? 0,
+                    $products['deactivated'] ?? 0,
+                ));
             } else {
                 RunApiSyncJob::dispatch($source, fullSync: false, skipMetadata: true);
                 $this->info('Incremental sync job dispatched.');

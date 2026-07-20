@@ -38,4 +38,9 @@ class ApiImportJob extends Model
     {
         return $this->hasMany(ApiImportJobItem::class);
     }
+
+    public function changes(): HasMany
+    {
+        return $this->hasMany(ApiImportJobChange::class);
+    }
 }

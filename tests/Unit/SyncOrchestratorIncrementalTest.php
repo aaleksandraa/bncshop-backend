@@ -6,6 +6,7 @@ use App\Models\ApiImportJob;
 use App\Models\ApiSource;
 use App\Services\Sync\AttributeImporter;
 use App\Services\Sync\CategoryImporter;
+use App\Services\Sync\IntegrationApiClient;
 use App\Services\Sync\ProductImporter;
 use App\Services\Sync\SyncOrchestrator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -63,7 +64,7 @@ class SyncOrchestratorIncrementalTest extends TestCase
 
         Http::assertSent(function ($request) use ($lastSync): bool {
             return str_contains($request->url(), '/products')
-                && ($request->data()['ModifiedAfter'] ?? null) === $lastSync->toIso8601String();
+                && ($request->data()['ModifiedAfter'] ?? null) === IntegrationApiClient::formatModifiedAfter($lastSync);
         });
 
         $source->refresh();
@@ -72,6 +73,9 @@ class SyncOrchestratorIncrementalTest extends TestCase
         $this->assertSame('completed', $job->status);
         $this->assertTrue($source->last_successful_sync_at->greaterThan($lastSync));
         $this->assertSame(0, $stats['products']['imported']);
+        $this->assertSame(0, $stats['products']['created']);
+        $this->assertSame(0, $stats['products']['updated']);
+        $this->assertSame(0, $stats['products']['deactivated']);
     }
 
     public function test_failed_sync_does_not_update_timestamp(): void
