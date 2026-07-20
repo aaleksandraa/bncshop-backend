@@ -4,6 +4,7 @@ namespace App\Filament\B2b\Resources\B2bOrderResource\Pages;
 
 use App\Filament\B2b\Resources\B2bOrderResource;
 use App\Services\B2b\B2bOrderService;
+use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 
 class EditB2bOrder extends EditRecord
@@ -14,7 +15,13 @@ class EditB2bOrder extends EditRecord
 
     protected function getHeaderActions(): array
     {
-        return [];
+        return [
+            Actions\Action::make('downloadInvoice')
+                ->label('Faktura PDF')
+                ->icon('heroicon-o-document-arrow-down')
+                ->url(fn (): string => route('filament.b2b-admin.b2b-orders.invoice', $this->record))
+                ->openUrlInNewTab(),
+        ];
     }
 
     protected function beforeSave(): void

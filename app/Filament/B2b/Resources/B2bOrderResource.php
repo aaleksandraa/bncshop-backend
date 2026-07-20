@@ -5,7 +5,6 @@ namespace App\Filament\B2b\Resources;
 use App\Filament\B2b\Resources\B2bOrderResource\Pages;
 use App\Filament\Concerns\AuthorizesWithPermissions;
 use App\Models\B2bOrder;
-use App\Services\B2b\B2bOrderInvoicePdf;
 use App\Support\B2bOrderStatus;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -103,9 +102,8 @@ class B2bOrderResource extends Resource
                 Tables\Actions\Action::make('downloadInvoice')
                     ->label('Faktura PDF')
                     ->icon('heroicon-o-document-arrow-down')
-                    ->action(function (B2bOrder $record) {
-                        return app(B2bOrderInvoicePdf::class)->download($record);
-                    }),
+                    ->url(fn (B2bOrder $record): string => route('filament.b2b-admin.b2b-orders.invoice', $record))
+                    ->openUrlInNewTab(),
             ]);
     }
 

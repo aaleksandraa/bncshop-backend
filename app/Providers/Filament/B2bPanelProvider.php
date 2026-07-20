@@ -3,6 +3,7 @@
 namespace App\Providers\Filament;
 
 use App\Filament\B2b\Auth\Login;
+use App\Http\Controllers\Admin\B2bOrderInvoiceController;
 use App\Http\Middleware\Filament\AuthenticateB2bPanel;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -17,6 +18,7 @@ use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
@@ -60,6 +62,10 @@ class B2bPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 AuthenticateB2bPanel::class,
-            ]);
+            ])
+            ->routes(function (): void {
+                Route::get('/b2b-orders/{order}/invoice', B2bOrderInvoiceController::class)
+                    ->name('b2b-orders.invoice');
+            });
     }
 }
