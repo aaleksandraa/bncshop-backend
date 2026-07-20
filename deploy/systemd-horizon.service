@@ -1,4 +1,7 @@
 ; systemd unit for Laravel Horizon (alternative to Supervisor)
+; WARNING: Do NOT enable alongside Supervisor — use ONE manager only.
+; On api.bncshop.ba production we use Supervisor; keep this unit disabled:
+;   sudo systemctl disable --now bncshop-horizon
 ; Copy to /etc/systemd/system/bncshop-horizon.service and adjust paths.
 ;
 ;   sudo systemctl daemon-reload

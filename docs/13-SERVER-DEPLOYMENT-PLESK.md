@@ -474,6 +474,48 @@ URL: `https://api.bncshop.ba/horizon`
 
 Pristup: samo autentificirani korisnici sa permisijom `manage_sync`.
 
+### ⚠️ Samo jedan process manager (Supervisor **ili** systemd)
+
+**Nikad ne instalirati oba** za isti Horizon. Na produkciji (`api.bncshop.ba`) koristiti **Supervisor**; systemd unit (`bncshop-horizon.service`) mora biti **disabled**.
+
+Ako su oba aktivna, `pkill` ne pomaže — systemd (`Restart=always`) odmah podigne novi PHP 8.4 Horizon i load ostaje visok.
+
+```bash
+# Prije Supervisor starta — systemd mora biti OFF
+sudo systemctl stop bncshop-horizon
+sudo systemctl disable bncshop-horizon
+sudo pkill -9 -f "artisan horizon"
+sleep 10
+ps aux | grep "artisan horizon" | grep -v grep   # prazno
+
+sudo supervisorctl reread && sudo supervisorctl update
+sudo supervisorctl start bncshop-horizon
+```
+
+**Produkcijski PHP:** `/opt/plesk/php/8.3/bin/php` (ne 8.4). Supervisor command primjer:
+
+```ini
+command=/bin/bash -c 'pkill -f "8.4/bin/php artisan horizon" 2>/dev/null || true; exec /opt/plesk/php/8.3/bin/php /var/www/vhosts/bncshop.ba/api.bncshop.ba/artisan horizon'
+user=bncshop.ba_itus4zie2k
+stopasgroup=true
+killasgroup=true
+```
+
+**Nikad ručno** `php artisan horizon` u SSH — samo Supervisor/systemd.
+
+### Dijagnostika visokog load-a / duplog Horizon-a
+
+```bash
+uptime
+ps aux | grep "artisan horizon" | grep -v grep
+sudo supervisorctl status bncshop-horizon
+systemctl is-active bncshop-horizon    # treba: inactive
+crontab -u bncshop.ba_itus4zie2k -l | grep schedule
+cd /var/www/vhosts/bncshop.ba/api.bncshop.ba && /opt/plesk/php/8.3/bin/php artisan bnc:perf-check
+```
+
+Očekivano: **jedan** Horizon master, **samo 8.3**, ~6–7 procesa, load &lt; 2 na idle serveru.
+
 ---
 
 ## Cron — Plesk Scheduled Tasks
@@ -484,9 +526,9 @@ Plesk → Domains → Scheduled Tasks → Add Task:
 |-------|------------|
 | Task type | Run a command |
 | Run | Every minute |
-| Command | `cd /full/path/to/backend && /usr/bin/php artisan schedule:run >> /dev/null 2>&1` |
+| Command | `/opt/plesk/php/8.3/bin/php '/var/www/vhosts/bncshop.ba/api.bncshop.ba/artisan' 'schedule:run'` |
 
-Zamijeniti `/full/path/to/backend` stvarnom putanjom (npr. `/var/www/vhosts/bncshop.ba/bncshopweb/backend`).
+**Samo `schedule:run`** — **ne** stavljati `artisan horizon` u cron. Horizon pokreće Supervisor.
 
 ### Provjera schedulera
 
@@ -574,6 +616,8 @@ Health endpoint (`/api/v1/health`) provjerava PostgreSQL, Redis i Meilisearch.
 | Restart workers | `php artisan horizon:terminate` |
 | Sync dijagnostika | `php artisan bnc:sync-diagnose` |
 | Health | `php artisan bnc:health` |
+| Load / Horizon dijagnostika | `php artisan bnc:perf-check` |
+| Ugasi systemd Horizon | `sudo systemctl disable --now bncshop-horizon` |
 
 ---
 
