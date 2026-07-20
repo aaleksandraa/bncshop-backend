@@ -495,11 +495,14 @@ sudo supervisorctl start bncshop-horizon
 **Produkcijski PHP:** `/opt/plesk/php/8.3/bin/php` (ne 8.4). Supervisor command primjer:
 
 ```ini
-command=/bin/bash -c 'pkill -f "8.4/bin/php artisan horizon" 2>/dev/null || true; exec /opt/plesk/php/8.3/bin/php /var/www/vhosts/bncshop.ba/api.bncshop.ba/artisan horizon'
+directory=/var/www/vhosts/bncshop.ba/api.bncshop.ba
+command=/opt/plesk/php/8.3/bin/php artisan horizon
 user=bncshop.ba_itus4zie2k
 stopasgroup=true
 killasgroup=true
 ```
+
+**Ne stavljati `pkill` u `command=`** — `pkill -f "8.4/.../horizon"` pogodi i sam `bash -c` proces (pattern je u njegovoj cmdline) → Supervisor `BACKOFF Exited too quickly`. Prije starta ručno ugasi systemd/stari Horizon; u `command=` samo `artisan horizon`.
 
 **Nikad ručno** `php artisan horizon` u SSH — samo Supervisor/systemd.
 
