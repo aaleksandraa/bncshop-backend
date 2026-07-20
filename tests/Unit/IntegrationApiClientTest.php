@@ -104,4 +104,39 @@ class IntegrationApiClientTest extends TestCase
                 && ($request->data()['ModifiedAfter'] ?? null) === '2026-09-03T14:30:00+00:00';
         });
     }
+
+    public function test_refresh_falls_back_to_login_when_refresh_token_is_invalid(): void
+    {
+        config(['bnc.a1_api_verify_ssl' => false]);
+
+        $source = ApiSource::query()->create([
+            'name' => 'Test',
+            'target_system_code' => 'bnc-shop',
+            'base_url' => 'https://a1team.ba',
+            'username' => 'bnc',
+            'password' => 'secret',
+            'access_token' => 'old-access',
+            'refresh_token' => 'expired-refresh',
+            'token_expires_at' => now()->subHour(),
+            'is_active' => true,
+        ]);
+
+        Http::fake([
+            'https://a1team.ba/api/auth/refresh' => Http::response([
+                'error' => 'invalid_refresh_token',
+                'message' => 'Refresh token is invalid or expired.',
+            ], 401),
+            'https://a1team.ba/api/auth/login' => Http::response([
+                'access_token' => 'new-access',
+                'refresh_token' => 'new-refresh',
+                'expires_in' => 3600,
+            ], 200),
+        ]);
+
+        IntegrationApiClient::forSource($source)->ensureAuthenticated();
+
+        $source->refresh();
+        $this->assertSame('new-access', $source->access_token);
+        $this->assertSame('new-refresh', $source->refresh_token);
+    }
 }

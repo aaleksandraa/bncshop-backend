@@ -8,6 +8,7 @@ use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
+use Throwable;
 
 class IntegrationApiClient
 {
@@ -43,19 +44,23 @@ class IntegrationApiClient
             return $this->login();
         }
 
-        $response = $this->baseRequest()
-            ->withToken($this->source->access_token)
-            ->post('/api/auth/refresh', [
-                'refresh_token' => $this->source->refresh_token,
-            ]);
+        try {
+            $response = $this->baseRequest()
+                ->withToken($this->source->access_token)
+                ->post('/api/auth/refresh', [
+                    'refresh_token' => $this->source->refresh_token,
+                ]);
 
-        if ($response->failed()) {
+            if ($response->failed()) {
+                return $this->login();
+            }
+
+            $this->persistTokens($response->json());
+
+            return $this->source->fresh();
+        } catch (Throwable) {
             return $this->login();
         }
-
-        $this->persistTokens($response->json());
-
-        return $this->source->fresh();
     }
 
     public function ensureAuthenticated(): void
@@ -210,7 +215,8 @@ class IntegrationApiClient
             ->retry(
                 (int) config('bnc.a1_api_retries', 3),
                 (int) config('bnc.a1_api_retry_delay_ms', 5000),
-                fn (\Throwable $exception) => $exception instanceof ConnectionException,
+                fn (Throwable $exception) => $exception instanceof ConnectionException,
+                throw: false,
             )
             ->withOptions(['verify' => (bool) config('bnc.a1_api_verify_ssl', true)]);
     }
