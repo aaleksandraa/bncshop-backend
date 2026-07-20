@@ -4,8 +4,8 @@ namespace App\Services\B2b;
 
 use App\Models\B2bOrder;
 use Barryvdh\DomPDF\Facade\Pdf;
-use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\Response;
 
 class B2bOrderInvoicePdf
 {

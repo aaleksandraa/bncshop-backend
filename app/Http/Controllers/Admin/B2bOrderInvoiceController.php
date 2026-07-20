@@ -6,7 +6,7 @@ use App\Http\Controllers\Admin\Concerns\AuthorizesB2bAdminAccess;
 use App\Http\Controllers\Controller;
 use App\Models\B2bOrder;
 use App\Services\B2b\B2bOrderInvoicePdf;
-use Illuminate\Http\Response;
+use Symfony\Component\HttpFoundation\Response;
 
 class B2bOrderInvoiceController extends Controller
 {
