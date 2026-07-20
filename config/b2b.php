@@ -21,4 +21,11 @@ return [
         // Send through the authorized MAIL_FROM transport (info@) to avoid Postfix rejecting b2b@ as envelope sender.
         'use_global_from' => filter_var(env('B2B_MAIL_USE_GLOBAL_FROM', true), FILTER_VALIDATE_BOOL),
     ],
+
+    'vat_rate_percent' => (float) env('B2B_VAT_RATE_PERCENT', 17),
+
+    'invoice' => [
+        'seller_jib' => env('B2B_INVOICE_SELLER_JIB'),
+        'seller_pdv' => env('B2B_INVOICE_SELLER_PDV'),
+    ],
 ];

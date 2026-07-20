@@ -3,6 +3,7 @@
 namespace App\Services\B2b;
 
 use App\Models\B2bOrder;
+use App\Support\B2bInvoiceVat;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\Response;
@@ -14,8 +15,7 @@ class B2bOrderInvoicePdf
         $order->loadMissing('items');
 
         $relativePath = 'b2b/invoices/'.$order->order_number.'.pdf';
-        $pdf = Pdf::loadView('b2b.order-invoice', ['order' => $order])
-            ->setPaper('a4');
+        $pdf = $this->renderPdf($order);
 
         Storage::disk('local')->put($relativePath, $pdf->output());
 
@@ -28,16 +28,15 @@ class B2bOrderInvoicePdf
     {
         $order->loadMissing('items');
 
-        if ($order->invoice_path && Storage::disk('local')->exists($order->invoice_path)) {
-            return response()->download(
-                Storage::disk('local')->path($order->invoice_path),
-                'faktura-'.$order->order_number.'.pdf',
-                ['Content-Type' => 'application/pdf'],
-            );
-        }
-
-        return Pdf::loadView('b2b.order-invoice', ['order' => $order])
-            ->setPaper('a4')
+        return $this->renderPdf($order)
             ->download('faktura-'.$order->order_number.'.pdf');
+    }
+
+    private function renderPdf(B2bOrder $order): \Barryvdh\DomPDF\PDF
+    {
+        return Pdf::loadView('b2b.order-invoice', [
+            'order' => $order,
+            'vat' => B2bInvoiceVat::forOrder($order),
+        ])->setPaper('a4');
     }
 }

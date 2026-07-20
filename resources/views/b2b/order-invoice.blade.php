@@ -4,80 +4,194 @@
     <meta charset="utf-8">
     <title>Faktura {{ $order->order_number }}</title>
     <style>
-        @page { size: A4; margin: 14mm; }
+        @page { size: A4; margin: 12mm; }
         * { box-sizing: border-box; }
         body {
             font-family: DejaVu Sans, Arial, sans-serif;
             margin: 0;
             padding: 0;
             color: #111;
-            font-size: 11px;
-            line-height: 1.45;
+            font-size: 10px;
+            line-height: 1.4;
         }
         .header {
             border-bottom: 2px solid #111;
-            padding-bottom: 12px;
-            margin-bottom: 18px;
+            padding-bottom: 10px;
+            margin-bottom: 14px;
         }
-        .store-name {
-            font-size: 9px;
+        .header-top {
+            width: 100%;
+            margin-bottom: 8px;
+        }
+        .header-top td { vertical-align: top; }
+        .doc-title {
+            font-size: 18px;
+            font-weight: bold;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            color: #666;
+            letter-spacing: 0.5px;
         }
-        h1 { margin: 4px 0 0; font-size: 20px; }
+        .doc-meta {
+            text-align: right;
+            font-size: 10px;
+        }
+        .parties {
+            width: 100%;
+            margin-bottom: 14px;
+        }
+        .parties td {
+            vertical-align: top;
+            width: 50%;
+            padding-right: 14px;
+        }
+        .party-box {
+            border: 1px solid #ccc;
+            padding: 10px;
+            min-height: 118px;
+        }
         h2 {
             margin: 0 0 8px;
-            font-size: 11px;
+            font-size: 10px;
             text-transform: uppercase;
+            letter-spacing: 0.4px;
         }
-        .section { margin-bottom: 16px; }
-        .grid { width: 100%; }
-        .grid td { vertical-align: top; width: 50%; padding-right: 12px; }
-        .field { margin-bottom: 6px; }
+        .field { margin-bottom: 5px; }
         .field-label {
             display: block;
-            font-size: 9px;
+            font-size: 8px;
             color: #666;
             text-transform: uppercase;
         }
-        table.items { width: 100%; border-collapse: collapse; margin-top: 6px; }
-        table.items th, table.items td {
-            border: 1px solid #ccc;
-            padding: 6px 8px;
+        table.items {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 4px;
         }
-        table.items th { background: #f3f3f3; }
-        .num { text-align: right; }
-        .totals { width: 280px; margin-left: auto; margin-top: 12px; }
-        .totals .row { display: table; width: 100%; margin-bottom: 4px; }
-        .totals .label, .totals .value { display: table-cell; }
-        .totals .value { text-align: right; font-weight: bold; }
-        .total-row .value { font-size: 14px; }
-        .note { margin-top: 16px; font-size: 10px; color: #666; }
+        table.items th,
+        table.items td {
+            border: 1px solid #bbb;
+            padding: 5px 6px;
+        }
+        table.items th {
+            background: #f2f2f2;
+            font-size: 8px;
+            text-transform: uppercase;
+        }
+        .num { text-align: right; white-space: nowrap; }
+        .center { text-align: center; }
+        .totals-wrap {
+            width: 100%;
+            margin-top: 12px;
+        }
+        .totals-wrap td { vertical-align: top; }
+        .notes {
+            width: 58%;
+            padding-right: 12px;
+            font-size: 9px;
+            color: #555;
+        }
+        .totals {
+            width: 42%;
+            border: 1px solid #bbb;
+            padding: 8px 10px;
+        }
+        .totals .row {
+            display: table;
+            width: 100%;
+            margin-bottom: 4px;
+        }
+        .totals .label,
+        .totals .value {
+            display: table-cell;
+        }
+        .totals .value {
+            text-align: right;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+        .totals .divider {
+            border-top: 1px solid #bbb;
+            margin: 6px 0;
+        }
+        .total-row .label,
+        .total-row .value {
+            font-size: 11px;
+            font-weight: bold;
+        }
+        .footer-note {
+            margin-top: 14px;
+            font-size: 9px;
+            color: #666;
+        }
     </style>
 </head>
 <body>
     @php
-        $currency = config('bnc.currency_symbol', 'KM');
-        $storeName = config('mail.from.name', 'BNC Shop');
-        $itemsSubtotal = (float) $order->subtotal - (float) $order->discount_total;
+        $vat ??= \App\Support\B2bInvoiceVat::forOrder($order);
+        $money = fn (float $amount): string => \App\Support\B2bInvoiceVat::format($amount);
     @endphp
 
     <div class="header">
-        <div class="store-name">{{ $storeName }} — B2B faktura</div>
-        <h1>{{ $order->order_number }}</h1>
-        <div>Datum: {{ $order->created_at?->format('d.m.Y H:i') }}</div>
-    </div>
-
-    <div class="section">
-        <table class="grid">
+        <table class="header-top">
             <tr>
                 <td>
+                    <div class="doc-title">Faktura</div>
+                    <div>{{ $vat['seller']['name'] }}</div>
+                </td>
+                <td class="doc-meta">
+                    <div><strong>Broj:</strong> {{ $order->order_number }}</div>
+                    <div><strong>Datum:</strong> {{ $order->created_at?->format('d.m.Y') }}</div>
+                    <div><strong>Valuta:</strong> {{ $vat['currency'] }}</div>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <table class="parties">
+        <tr>
+            <td>
+                <div class="party-box">
+                    <h2>Prodavac</h2>
+                    <div class="field">
+                        <span class="field-label">Naziv</span>
+                        {{ $vat['seller']['name'] }}
+                    </div>
+                    @if($vat['seller']['address'])
+                        <div class="field">
+                            <span class="field-label">Adresa</span>
+                            {{ $vat['seller']['address'] }}
+                        </div>
+                    @endif
+                    @if($vat['seller']['jib'])
+                        <div class="field">
+                            <span class="field-label">JIB</span>
+                            {{ $vat['seller']['jib'] }}
+                        </div>
+                    @endif
+                    @if($vat['seller']['pdv_number'])
+                        <div class="field">
+                            <span class="field-label">PDV broj</span>
+                            {{ $vat['seller']['pdv_number'] }}
+                        </div>
+                    @endif
+                    <div class="field">
+                        <span class="field-label">Kontakt</span>
+                        {{ $vat['seller']['email'] }}@if($vat['seller']['phone']) · {{ $vat['seller']['phone'] }}@endif
+                    </div>
+                </div>
+            </td>
+            <td>
+                <div class="party-box">
                     <h2>Kupac</h2>
                     <div class="field">
-                        <span class="field-label">Firma</span>
+                        <span class="field-label">Naziv</span>
                         {{ $order->company_name }}
                     </div>
+                    @if($order->company_address)
+                        <div class="field">
+                            <span class="field-label">Adresa</span>
+                            {{ $order->company_address }}
+                        </div>
+                    @endif
                     <div class="field">
                         <span class="field-label">JIB</span>
                         {{ $order->jib }}
@@ -90,85 +204,96 @@
                     @endif
                     <div class="field">
                         <span class="field-label">Kontakt</span>
-                        {{ $order->contact_name }}
+                        {{ $order->contact_name }} · {{ $order->contact_email }} · {{ $order->contact_phone }}
                     </div>
-                    <div class="field">
-                        <span class="field-label">Email</span>
-                        {{ $order->contact_email }}
-                    </div>
-                    <div class="field">
-                        <span class="field-label">Telefon</span>
-                        {{ $order->contact_phone }}
-                    </div>
-                </td>
-                <td>
-                    <h2>Dostava</h2>
-                    <div class="field">
-                        <span class="field-label">Adresa</span>
-                        {{ $order->shipping_address }}
-                    </div>
-                    <div class="field">
-                        <span class="field-label">Plaćanje</span>
-                        Faktura
-                    </div>
-                    @if($order->notes)
-                        <div class="field">
-                            <span class="field-label">Napomena</span>
-                            {{ $order->notes }}
+                </div>
+            </td>
+        </tr>
+    </table>
+
+    <table class="items">
+        <thead>
+            <tr>
+                <th class="center">R.br</th>
+                <th>Naziv artikla</th>
+                <th>Šifra</th>
+                <th class="center">JM</th>
+                <th class="num">Kol.</th>
+                <th class="num">Cijena bez PDV</th>
+                <th class="num">Iznos bez PDV</th>
+                <th class="center">PDV %</th>
+                <th class="num">Iznos PDV</th>
+                <th class="num">Iznos sa PDV</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($vat['lines'] as $index => $line)
+                <tr>
+                    <td class="center">{{ $index + 1 }}</td>
+                    <td>{{ $line['product_name'] }}</td>
+                    <td>{{ $line['product_sku'] ?? '—' }}</td>
+                    <td class="center">kom</td>
+                    <td class="num">{{ $line['quantity'] }}</td>
+                    <td class="num">{{ $money($line['unit_net']) }}</td>
+                    <td class="num">{{ $money($line['line_net']) }}</td>
+                    <td class="center">{{ number_format($line['vat_percent'], 0) }}%</td>
+                    <td class="num">{{ $money($line['vat_amount']) }}</td>
+                    <td class="num">{{ $money($line['line_gross']) }}</td>
+                </tr>
+            @endforeach
+        </tbody>
+    </table>
+
+    <table class="totals-wrap">
+        <tr>
+            <td class="notes">
+                <strong>Adresa dostave:</strong> {{ $order->shipping_address }}<br>
+                <strong>Način plaćanja:</strong> Faktura<br>
+                @if($order->notes)
+                    <strong>Napomena:</strong> {{ $order->notes }}
+                @endif
+            </td>
+            <td>
+                <div class="totals">
+                    @if($vat['discount_total'] > 0)
+                        <div class="row">
+                            <span class="label">Roba prije popusta (bez PDV)</span>
+                            <span class="value">{{ $money($vat['subtotal_before_discount']) }} {{ $vat['currency'] }}</span>
+                        </div>
+                        <div class="row">
+                            <span class="label">Popust (bez PDV)</span>
+                            <span class="value">-{{ $money($vat['discount_total']) }} {{ $vat['currency'] }}</span>
                         </div>
                     @endif
-                </td>
-            </tr>
-        </table>
-    </div>
+                    <div class="row">
+                        <span class="label">Roba ukupno (bez PDV)</span>
+                        <span class="value">{{ $money($vat['items_net']) }} {{ $vat['currency'] }}</span>
+                    </div>
+                    <div class="row">
+                        <span class="label">Dostava (bez PDV)</span>
+                        <span class="value">{{ $money($vat['shipping_net']) }} {{ $vat['currency'] }}</span>
+                    </div>
+                    <div class="divider"></div>
+                    <div class="row">
+                        <span class="label">Osnovica za PDV</span>
+                        <span class="value">{{ $money($vat['net_total']) }} {{ $vat['currency'] }}</span>
+                    </div>
+                    <div class="row">
+                        <span class="label">PDV {{ number_format($vat['rate_percent'], 0) }}%</span>
+                        <span class="value">{{ $money($vat['vat_total']) }} {{ $vat['currency'] }}</span>
+                    </div>
+                    <div class="divider"></div>
+                    <div class="row total-row">
+                        <span class="label">Ukupno za uplatu (sa PDV)</span>
+                        <span class="value">{{ $money($vat['gross_total']) }} {{ $vat['currency'] }}</span>
+                    </div>
+                </div>
+            </td>
+        </tr>
+    </table>
 
-    <div class="section">
-        <h2>Stavke</h2>
-        <table class="items">
-            <thead>
-                <tr>
-                    <th>Proizvod</th>
-                    <th>Šifra</th>
-                    <th class="num">Kol.</th>
-                    <th class="num">Cijena</th>
-                    <th class="num">Ukupno</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($order->items as $item)
-                    <tr>
-                        <td>{{ $item->product_name }}</td>
-                        <td>{{ $item->product_sku ?? '—' }}</td>
-                        <td class="num">{{ $item->quantity }}</td>
-                        <td class="num">{{ number_format((float) $item->unit_final_price, 2, ',', '.') }} {{ $currency }}</td>
-                        <td class="num">{{ number_format((float) $item->line_total, 2, ',', '.') }} {{ $currency }}</td>
-                    </tr>
-                @endforeach
-            </tbody>
-        </table>
-    </div>
-
-    <div class="totals">
-        <div class="row">
-            <span class="label">Međuzbir</span>
-            <span class="value">{{ number_format((float) $order->subtotal, 2, ',', '.') }} {{ $currency }}</span>
-        </div>
-        @if((float) $order->discount_total > 0)
-            <div class="row">
-                <span class="label">Popust</span>
-                <span class="value">-{{ number_format((float) $order->discount_total, 2, ',', '.') }} {{ $currency }}</span>
-            </div>
-        @endif
-        <div class="row">
-            <span class="label">Dostava</span>
-            <span class="value">{{ number_format((float) $order->shipping_fee, 2, ',', '.') }} {{ $currency }}</span>
-        </div>
-        <div class="row total-row">
-            <span class="label">Ukupno</span>
-            <span class="value">{{ number_format((float) $order->total, 2, ',', '.') }} {{ $currency }}</span>
-        </div>
-    </div>
-
-    <p class="note">PDV nije uključen u cijenu.</p>
+    <p class="footer-note">
+        Sve cijene artikala i dostave iskazane su bez PDV-a. PDV je obračunat po stopi od {{ number_format($vat['rate_percent'], 0) }}% u skladu sa važećim propisima Bosne i Hercegovine.
+    </p>
 </body>
 </html>
