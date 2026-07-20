@@ -532,11 +532,94 @@ cd /var/www/vhosts/bncshop.ba/api.bncshop.ba && /opt/plesk/php/8.3/bin/php artis
 
 Očekivano: **jedan** Horizon master, **samo 8.3**, ~6–7 procesa, load &lt; 2 na idle serveru.
 
+### Scheduler (Supervisor, ne Plesk cron)
+
+**Ne koristiti** Plesk cron `schedule:run` svake minute — svaki poziv boota cijeli Laravel (~4–5 s) i diže load.
+
+Umjesto toga, jedan `schedule:work` proces pod Supervisorom:
+
+```bash
+sudo cp deploy/supervisor-scheduler.conf /etc/supervisor/conf.d/bncshop-scheduler.conf
+sudo supervisorctl reread && sudo supervisorctl update
+sudo supervisorctl start bncshop-scheduler
+sudo supervisorctl status bncshop-scheduler   # RUNNING
+```
+
+Ukloni stari Plesk task za `schedule:run` ako postoji.
+
 ---
 
-## Cron — Plesk Scheduled Tasks
+## Produkcijski health check (runbook)
 
-Plesk → Domains → Scheduled Tasks → Add Task:
+Jedna skripta za snapshot stanja nakon deploya ili kad je sajt spor:
+
+```bash
+cd /var/www/vhosts/bncshop.ba/api.bncshop.ba
+bash scripts/vps-health-check.sh
+```
+
+Provjerava: load, Supervisor (Horizon + scheduler), Redis, `bnc:perf-check`, curl latencije (layout, product 1×/2×, home, cart), top CPU procese.
+
+**Artisan uvijek iz backend roota** — ne iz `/var/www/vhosts/bncshop.ba`:
+
+```bash
+cd /var/www/vhosts/bncshop.ba/api.bncshop.ba
+/opt/plesk/php/8.3/bin/php artisan bnc:perf-check
+```
+
+### Ciljevi (idle server, 8 CPU)
+
+| Metrika | Cilj |
+|---------|------|
+| `load average` (1m) | &lt; 2 |
+| `supervisorctl status` | `bncshop-horizon` + `bncshop-scheduler` RUNNING |
+| `systemctl is-active bncshop-horizon` | inactive |
+| Redis | `PONG`, `CACHE_STORE=redis` |
+| Product API (2. curl) | &lt; 0.1 s |
+| Storefront home | &lt; 2 s |
+
+### Redoslijed deploya (produkcija)
+
+```bash
+# 1) Backend
+cd /var/www/vhosts/bncshop.ba/api.bncshop.ba
+git pull origin main
+/opt/plesk/php/8.3/bin/php /usr/local/bin/composer install --no-dev --optimize-autoloader --no-interaction
+/opt/plesk/php/8.3/bin/php artisan migrate --force
+/opt/plesk/php/8.3/bin/php artisan config:cache
+/opt/plesk/php/8.3/bin/php artisan horizon:terminate
+
+# 2) Frontend
+cd /var/www/vhosts/bncshop.ba/httpdocs
+git pull origin main
+rm -rf .next node_modules/.cache
+npm ci
+npm run build:clean
+# Plesk → Domains → bncshop.ba → Node.js → Restart App
+
+# 3) Verifikacija
+cd /var/www/vhosts/bncshop.ba/api.bncshop.ba
+bash scripts/vps-health-check.sh
+```
+
+### Što ne raditi
+
+| Zabranjeno | Zašto |
+|------------|-------|
+| `php artisan horizon` u SSH | Duplikat uz Supervisor |
+| `pkill -f "artisan horizon"` dok Supervisor radi | Restart loop / BACKOFF |
+| systemd + Supervisor Horizon zajedno | 14+ procesa, load 9+ |
+| Plesk cron `schedule:run` + `schedule:work` | Dvostruki scheduler |
+| `npm run build` bez brisanja `.next` nakon greške | Korumpiran webpack cache |
+| Povećati PHP-FPM pool dok je load &gt; 3 | Još više konkurencije za CPU |
+
+---
+
+## Cron — Laravel scheduler
+
+**Preporučeno:** Supervisor `schedule:work` (vidi [Scheduler (Supervisor)](#scheduler-supervisor-ne-plesk-cron) iznad). Template: [deploy/supervisor-scheduler.conf](../deploy/supervisor-scheduler.conf).
+
+**Legacy (ne preporučeno na produkciji):** Plesk cron svake minute boota Laravel od nule:
 
 | Polje | Vrijednost |
 |-------|------------|
@@ -544,7 +627,7 @@ Plesk → Domains → Scheduled Tasks → Add Task:
 | Run | Every minute |
 | Command | `/opt/plesk/php/8.3/bin/php '/var/www/vhosts/bncshop.ba/api.bncshop.ba/artisan' 'schedule:run'` |
 
-**Samo `schedule:run`** — **ne** stavljati `artisan horizon` u cron. Horizon pokreće Supervisor.
+**Ne** stavljati `artisan horizon` u cron. Horizon pokreće Supervisor.
 
 ### Provjera schedulera
 
@@ -614,7 +697,8 @@ Health endpoint (`/api/v1/health`) provjerava PostgreSQL, Redis i Meilisearch.
 | Session / login ne radi | Cookie domena | `SESSION_DOMAIN=.bncshop.ba`, `SANCTUM_STATEFUL_DOMAINS` |
 | CORS greške / live pretraga ne radi | Browser fetch blokiran cross-origin | Postavi `BACKEND_URL=https://api.bncshop.ba`, rebuild (frontend zove `api.bncshop.ba` direktno); ili popravi nginx proxy za `/backend-api` |
 | OLX sync se ne pokreće | Auto sync isključen | Admin → OLX settings + `OLX_*` env varijable |
-| Sync zakasnio | Cron ili worker | Provjeri Plesk Scheduled Task + `bnc:sync-diagnose` |
+| Sync zakasnio | Cron ili worker | Provjeri `bncshop-scheduler` RUNNING + `bnc:sync-diagnose` |
+| Visok load / spor sajt | Dupli Horizon, cron schedule:run, prefetch | `bash scripts/vps-health-check.sh`, vidi runbook iznad |
 | `tags disabled` | Redis cache | `CACHE_STORE=redis`, phpredis ekstenzija |
 
 ---
@@ -633,6 +717,7 @@ Health endpoint (`/api/v1/health`) provjerava PostgreSQL, Redis i Meilisearch.
 | Sync dijagnostika | `php artisan bnc:sync-diagnose` |
 | Health | `php artisan bnc:health` |
 | Load / Horizon dijagnostika | `php artisan bnc:perf-check` |
+| VPS snapshot (load, Redis, curl) | `bash scripts/vps-health-check.sh` |
 | Ugasi systemd Horizon | `sudo systemctl disable --now bncshop-horizon` |
 
 ---
