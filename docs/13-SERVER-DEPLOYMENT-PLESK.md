@@ -250,7 +250,7 @@ Tagged product cache **ne radi** bez `CACHE_STORE=redis`.
 4. **Document root:** `/httpdocs/.next/static` — **samo ako** dodaš nginx rewrite ispod; inače koristi `/httpdocs` (vidi troubleshooting)
 5. **Application startup file:** `start.js` (u rootu repoa — ne `index.html`)
 6. **Application mode:** `production`
-7. **Node.js version:** 20.x
+7. **Node.js version:** 24.x ili 26.x (Plesk panel mora odgovarati verziji pri SSH buildu)
 
 Kreirati `.env.local` u application rootu:
 
@@ -265,12 +265,28 @@ NEXT_PUBLIC_TURNSTILE_SITE_KEY=
 
 Alternativa: `NEXT_PUBLIC_API_URL=https://api.bncshop.ba/api/v1` — tada **mora** raditi `CORS_ALLOWED_ORIGINS` na backendu.
 
-Build prije starta (Plesk → Run Node.js commands ili SSH):
+Build prije starta — **preporučeno preko SSH**, ne Plesk “Run Node.js commands” (web timeout, nema pun PATH).
+
+Root SSH **nema** `npm` u PATH-u. Plesk Node je u `/opt/plesk/node/<verzija>/bin/`:
 
 ```bash
-npm ci
-npm run build
+ls /opt/plesk/node/                    # npr. 24, 26 — ista verzija kao u Plesk panelu
+export PATH="/opt/plesk/node/24/bin:$PATH"
+node -v && npm -v
+
+cd /var/www/vhosts/bncshop.ba/httpdocs
+pkill -f "next-server" 2>/dev/null || true   # Stop App prije builda
+rm -rf .next node_modules/.cache
+export NODE_ENV=production
+export NODE_OPTIONS="--max-old-space-size=4096"
+
+time npm run build:clean 2>&1 | tee /var/www/vhosts/bncshop.ba/logs/frontend-build.log
+test -f .next/BUILD_ID && echo "BUILD OK"
 ```
+
+**Ne** `apt install npm` — to je stara sistemska Node verzija, ne Plesk app runtime.
+
+Očekivano trajanje: **3–6 min** idle load; **15–20 min** kad je load &gt; 8 (webpack compile + typecheck).
 
 Provjera: folder `.next/` mora postojati nakon builda. Next.js **ne kreira `dist/`**.
 
@@ -284,6 +300,8 @@ Zatim: **Restart App** u Node.js panelu.
 | 403 Forbidden | Document root bez proxy-ja na Node | Startup file = `start.js`, restart |
 | Prazna stranica / API ne radi | Pogrešan `NEXT_PUBLIC_API_URL` / nema `BACKEND_URL` | `BACKEND_URL=https://api.bncshop.ba`, `NEXT_PUBLIC_API_URL=/backend-api/v1`, **rebuild** (BACKEND_URL se ugrađuje u bundle) |
 | Slike/API 404 na `/backend-api/v1/*` | Klijent koristi proxy putanju koja nginx ne prosljeđuje Node-u; slike su na `/storage`, ne `/api/v1/storage` | Postavi `BACKEND_URL=https://api.bncshop.ba`, `npm run build`, restart; ili nginx proxy za `/backend-api` na Node port |
+| `npm: command not found` (root SSH) | Plesk Node nije u PATH-u | `export PATH="/opt/plesk/node/24/bin:$PATH"` prije builda |
+| Build 15+ min / Plesk panel “ne završi” | Visok load + web timeout | SSH + `build:clean`, load &lt; 3 idealno |
 | `ChunkLoadError`, JS 400/404, MIME `text/html` | Document root `.next/static` bez nginx rewrite-a | Vidi sekciju ispod |
 
 ### ChunkLoadError / `_next/static/*.js` vraća HTML (400/404)
