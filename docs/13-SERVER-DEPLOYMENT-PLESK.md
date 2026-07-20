@@ -492,17 +492,30 @@ sudo supervisorctl reread && sudo supervisorctl update
 sudo supervisorctl start bncshop-horizon
 ```
 
-**Produkcijski PHP:** `/opt/plesk/php/8.3/bin/php` (ne 8.4). Supervisor command primjer:
+**Produkcijski PHP:** `/opt/plesk/php/8.3/bin/php` (ne 8.4). Cijeli Supervisor blok (`/etc/supervisor/conf.d/bncshop-horizon.conf`):
 
 ```ini
+[program:bncshop-horizon]
+process_name=%(program_name)s
 directory=/var/www/vhosts/bncshop.ba/api.bncshop.ba
-command=/opt/plesk/php/8.3/bin/php artisan horizon
-user=bncshop.ba_itus4zie2k
+command=/opt/plesk/php/8.3/bin/php /var/www/vhosts/bncshop.ba/api.bncshop.ba/artisan horizon
+autostart=true
+autorestart=true
 stopasgroup=true
 killasgroup=true
+user=bncshop.ba_itus4zie2k
+numprocs=1
+redirect_stderr=true
+stdout_logfile=/var/www/vhosts/bncshop.ba/logs/horizon-supervisor.log
+stdout_logfile_maxbytes=10MB
+stdout_logfile_backups=3
+stopwaitsecs=3600
+environment=HOME="/var/www/vhosts/bncshop.ba",APP_ENV="production"
 ```
 
-**Ne stavljati `pkill` u `command=`** — `pkill -f "8.4/.../horizon"` pogodi i sam `bash -c` proces (pattern je u njegovoj cmdline) → Supervisor `BACKOFF Exited too quickly`. Prije starta ručno ugasi systemd/stari Horizon; u `command=` samo `artisan horizon`.
+Log **ne** stavljati u `/var/log/` na Plesku — često `spawn error` / log se ne kreira. Koristi vhost `logs/` direktorij.
+
+**Ne stavljati `pkill` u `command=`** — `pkill -f "8.4/.../horizon"` pogodi i sam `bash -c` proces (pattern je u njegovoj cmdline) → Supervisor `BACKOFF Exited too quickly`. Prije starta ručno ugasi systemd/stari Horizon; u `command=` samo puni put do `artisan horizon`.
 
 **Nikad ručno** `php artisan horizon` u SSH — samo Supervisor/systemd.
 
