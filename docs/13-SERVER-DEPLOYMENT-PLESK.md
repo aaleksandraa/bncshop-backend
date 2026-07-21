@@ -265,7 +265,35 @@ NEXT_PUBLIC_TURNSTILE_SITE_KEY=
 
 Alternativa: `NEXT_PUBLIC_API_URL=https://api.bncshop.ba/api/v1` — tada **mora** raditi `CORS_ALLOWED_ORIGINS` na backendu.
 
-Build prije starta — **preporučeno preko SSH**, ne Plesk “Run Node.js commands” (web timeout, nema pun PATH).
+Build prije starta — može **kroz Plesk panel** ili preko SSH. Plesk build radi samo ako je `httpdocs` u vlasništvu subscription usera (vidi ispod).
+
+#### Build kroz Plesk (Node.js panel)
+
+**Jednom** (nakon SSH builda kao `root` ili greške `EACCES: .next/trace`):
+
+```bash
+cd /var/www/vhosts/bncshop.ba/httpdocs
+bash scripts/plesk-reset-build-permissions.sh
+```
+
+Skripta zaustavi `next-server`, obriše `.next/`, i vrati vlasništvo na Plesk usera.
+
+Zatim u Plesk-u (**Domains → bncshop.ba → Node.js**):
+
+1. **Disable Node.js** ili **Stop App** (app ne smije držati `.next/` tokom builda)
+2. **Run script:** `build:clean` (ne samo `build` — briše stari `.next` prije kompilacije)
+3. Sačekaj završetak (3–10 min; panel može izgledati “zaleđen” — to je normalno)
+4. **Restart App** / **Enable Node.js**
+
+**Pravilo:** ako ikad radiš `npm run build` preko SSH kao `root`, odmah poslije:
+
+```bash
+chown -R $(stat -c '%U' /var/www/vhosts/bncshop.ba/httpdocs):psacln /var/www/vhosts/bncshop.ba/httpdocs
+```
+
+Inače Plesk build opet pada sa `EACCES`.
+
+#### Build preko SSH (alternativa)
 
 Root SSH **nema** `npm` u PATH-u. Plesk Node je u `/opt/plesk/node/<verzija>/bin/`:
 
@@ -301,6 +329,7 @@ Zatim: **Restart App** u Node.js panelu.
 | Prazna stranica / API ne radi | Pogrešan `NEXT_PUBLIC_API_URL` / nema `BACKEND_URL` | `BACKEND_URL=https://api.bncshop.ba`, `NEXT_PUBLIC_API_URL=/backend-api/v1`, **rebuild** (BACKEND_URL se ugrađuje u bundle) |
 | Slike/API 404 na `/backend-api/v1/*` | Klijent koristi proxy putanju koja nginx ne prosljeđuje Node-u; slike su na `/storage`, ne `/api/v1/storage` | Postavi `BACKEND_URL=https://api.bncshop.ba`, `npm run build`, restart; ili nginx proxy za `/backend-api` na Node port |
 | `npm: command not found` (root SSH) | Plesk Node nije u PATH-u | `export PATH="/opt/plesk/node/24/bin:$PATH"` prije builda |
+| `EACCES` na `.next/trace` | `.next/` vlasništvo `root` (SSH build), Plesk user ne može pisati | `bash scripts/plesk-reset-build-permissions.sh` (root SSH), pa `build:clean` u Plesk-u |
 | Build 15+ min / Plesk panel “ne završi” | Visok load + web timeout | SSH + `build:clean`, load &lt; 3 idealno |
 | `ChunkLoadError`, JS 400/404, MIME `text/html` | Document root `.next/static` bez nginx rewrite-a | Vidi sekciju ispod |
 
