@@ -309,6 +309,26 @@ Skripta popravi vlasništvo, provjeri `start.js` / `.next/BUILD_ID` / nodejs ext
 
 Zatim u panelu: **Enable Node.js → build:clean → Restart App**.
 
+BUILD OK ali curl 403 → Node.js disabled (nginx servira statiku, ne Next app):
+
+```bash
+cd /var/www/vhosts/bncshop.ba/httpdocs
+git pull origin main
+bash scripts/plesk-enable-node.sh
+```
+
+Ili u panelu: **Enable Node.js → Restart App** (ne Disable).
+
+Provjera:
+
+```bash
+awk '/#extension nodejs begin/,/#extension nodejs end/' /var/www/vhosts/system/bncshop.ba/conf/httpd.conf
+pgrep -af next-server
+curl -I https://bncshop.ba/
+```
+
+Blok `#extension nodejs` ne smije biti prazan — inače je Node disabled.
+
 #### Dozvole (samo ako Plesk build padne na EACCES)
 
 ```bash
