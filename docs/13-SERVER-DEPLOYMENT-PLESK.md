@@ -276,7 +276,12 @@ cd /var/www/vhosts/bncshop.ba/httpdocs
 bash scripts/plesk-reset-build-permissions.sh
 ```
 
-Skripta zaustavi `next-server`, obriše `.next/`, i vrati vlasništvo na Plesk usera.
+Skripta zaustavi `next-server` i vrati vlasništvo na Plesk usera. **Ne briše `.next/`** osim sa `--clean`:
+
+```bash
+bash scripts/plesk-reset-build-permissions.sh          # samo chown (build ostaje)
+bash scripts/plesk-reset-build-permissions.sh --clean  # briše .next, zatim rebuild
+```
 
 Zatim u Plesk-u (**Domains → bncshop.ba → Node.js**):
 
