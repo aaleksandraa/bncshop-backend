@@ -376,7 +376,7 @@ Zatim: **Restart App** u Node.js panelu.
 | `npm: command not found` (root SSH) | Plesk Node nije u PATH-u | `export PATH="/opt/plesk/node/24/bin:$PATH"` prije builda |
 | `EACCES` na `.next/trace` | `.next/` vlasništvo `root` (SSH build), Plesk user ne može pisati | `bash scripts/plesk-reset-build-permissions.sh` (root SSH), pa `build:clean` u Plesk-u |
 | 403 + BUILD OK + Passenger enabled | Pogrešno vlasništvo (`httpdocs` mora biti `user:psaserv`, fajlovi `user:psacln`) | `bash scripts/plesk-enable-node.sh` (koristi `plesk repair fs`) |
-| Build 15+ min / Plesk panel “ne završi” | Visok load + web timeout | SSH + `build:clean`, load &lt; 3 idealno |
+| `next: Permission denied` (exit 126) | `chmod 644` na sve fajlove uklonio +x sa `node_modules/.bin/next` | `bash scripts/plesk-fix-npm-bin.sh`, pa `build:clean` |
 
 ### ChunkLoadError / `_next/static/*.js` vraća HTML (400/404)
 
