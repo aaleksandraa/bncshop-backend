@@ -33,7 +33,7 @@ class AddPublicApiCacheHeaders
      * @var array<string, string>
      */
     private const CACHE_CONTROL_BY_PREFIX = [
-        'api/v1/homepage/weekly-offer' => 'private, no-cache, no-store, must-revalidate',
+        'api/v1/homepage/weekly-offer' => 'public, max-age=60, s-maxage=120, stale-while-revalidate=300',
         'api/v1/filters' => 'public, max-age=300, s-maxage=300, stale-while-revalidate=600',
         'api/v1/layout/shell' => 'public, max-age=300, s-maxage=300, stale-while-revalidate=600',
         'api/v1/settings/public' => 'public, max-age=600, s-maxage=600, stale-while-revalidate=900',
@@ -51,11 +51,36 @@ class AddPublicApiCacheHeaders
         $path = trim($request->path(), '/');
 
         foreach (self::CACHEABLE_PREFIXES as $prefix) {
-            if (str_starts_with($path, $prefix)) {
-                $response->headers->set('Cache-Control', self::resolveCacheControl($path));
-
-                return $response;
+            if (! str_starts_with($path, $prefix)) {
+                continue;
             }
+
+            $response->headers->set('Cache-Control', self::resolveCacheControl($path));
+
+            return $this->applyEtag($request, $response);
+        }
+
+        return $response;
+    }
+
+    private function applyEtag(Request $request, Response $response): Response
+    {
+        $content = $response->getContent();
+
+        if ($content === false || $content === '') {
+            return $response;
+        }
+
+        $etag = '"'.hash('xxh128', $content).'"';
+        $response->headers->set('ETag', $etag);
+
+        $ifNoneMatch = $request->headers->get('If-None-Match');
+
+        if ($ifNoneMatch !== null && hash_equals($etag, trim($ifNoneMatch))) {
+            $notModified = new Response('', Response::HTTP_NOT_MODIFIED, $response->headers->all());
+            $notModified->headers->set('ETag', $etag);
+
+            return $notModified;
         }
 
         return $response;

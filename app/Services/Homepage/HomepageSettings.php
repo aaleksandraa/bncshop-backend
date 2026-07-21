@@ -42,15 +42,17 @@ class HomepageSettings
      */
     public function weeklyOffer(): array
     {
-        $stored = SystemSetting::query()
-            ->where('key', 'homepage_weekly_offer')
-            ->value('value');
+        return Cache::remember('homepage:weekly-offer:settings', 300, function (): array {
+            $stored = SystemSetting::query()
+                ->where('key', 'homepage_weekly_offer')
+                ->value('value');
 
-        if (! is_array($stored)) {
-            return $this->weeklyOfferDefaults();
-        }
+            if (! is_array($stored)) {
+                return $this->weeklyOfferDefaults();
+            }
 
-        return array_merge($this->weeklyOfferDefaults(), $stored);
+            return array_merge($this->weeklyOfferDefaults(), $stored);
+        });
     }
 
     /**
@@ -101,6 +103,7 @@ class HomepageSettings
      */
     public function flushWeeklyOfferCache(array $previousProductIds = [], array $productIds = []): void
     {
+        Cache::forget('homepage:weekly-offer:settings');
         $this->productReadCache->flushWeeklyOffer();
 
         if ($this->productReadCache->supportsTags()) {

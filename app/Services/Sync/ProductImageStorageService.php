@@ -5,6 +5,7 @@ namespace App\Services\Sync;
 use App\Models\Product;
 use App\Models\ProductImage;
 use App\Support\PublicStorageUrl;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -75,16 +76,64 @@ class ProductImageStorageService
             'file_extension' => $extension,
         ])->save();
 
+        $this->forgetResolvedUrlCache($image);
+
         return true;
     }
 
     public function resolvedUrl(ProductImage $image): ?string
     {
-        if (filled($image->local_path) && Storage::disk('public')->exists($image->local_path)) {
-            return PublicStorageUrl::url($image->local_path);
+        $cacheKey = $this->resolvedUrlCacheKey($image);
+        $ttl = (int) config('bnc.resolved_image_url_cache_ttl', 3600);
+
+        if ($cacheKey !== null && $ttl > 0) {
+            $cached = Cache::get($cacheKey);
+
+            if (is_string($cached)) {
+                return $cached !== '' ? $cached : null;
+            }
+        }
+
+        $resolved = $this->resolveUrlWithoutCache($image);
+
+        if ($cacheKey !== null && $ttl > 0) {
+            Cache::put($cacheKey, $resolved ?? '', $ttl);
+        }
+
+        return $resolved;
+    }
+
+    public function forgetResolvedUrlCache(ProductImage $image): void
+    {
+        $cacheKey = $this->resolvedUrlCacheKey($image);
+
+        if ($cacheKey !== null) {
+            Cache::forget($cacheKey);
+        }
+    }
+
+    private function resolveUrlWithoutCache(ProductImage $image): ?string
+    {
+        if (filled($image->local_path)) {
+            if ((bool) config('bnc.trust_local_image_path', true)) {
+                return PublicStorageUrl::url((string) $image->local_path);
+            }
+
+            if (Storage::disk('public')->exists($image->local_path)) {
+                return PublicStorageUrl::url((string) $image->local_path);
+            }
         }
 
         return $image->public_url ?: $image->image_url ?: $image->source_url;
+    }
+
+    private function resolvedUrlCacheKey(ProductImage $image): ?string
+    {
+        if (! $image->id) {
+            return null;
+        }
+
+        return 'product-image:resolved-url:'.$image->id;
     }
 
     private function resolveDownloadUrl(ProductImage $image): ?string

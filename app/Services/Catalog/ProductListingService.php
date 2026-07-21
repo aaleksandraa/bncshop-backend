@@ -263,7 +263,9 @@ class ProductListingService
         }
 
         if ($brandSlug = $request->string('brand')->toString()) {
-            $manufacturer = Manufacturer::query()->where('slug', $brandSlug)->first();
+            $manufacturer = $this->productReadCache->rememberManufacturerBySlug($brandSlug, 300, function () use ($brandSlug): ?Manufacturer {
+                return Manufacturer::query()->where('slug', $brandSlug)->first();
+            });
             if ($manufacturer) {
                 $query->where('manufacturer_id', $manufacturer->id);
             }
@@ -302,15 +304,15 @@ class ProductListingService
         }
 
         if ($search = trim($request->string('q')->toString())) {
-            $like = '%'.addcslashes(mb_strtolower($search), '%_\\').'%';
+            $like = '%'.addcslashes($search, '%_\\').'%';
 
             $query->where(function (Builder $builder) use ($like): void {
-                $builder->whereRaw('LOWER(name) LIKE ?', [$like])
-                    ->orWhereRaw('LOWER(sku) LIKE ?', [$like])
-                    ->orWhereRaw('LOWER(short_description) LIKE ?', [$like])
+                $builder->where('name', 'ilike', $like)
+                    ->orWhere('sku', 'ilike', $like)
+                    ->orWhere('short_description', 'ilike', $like)
                     ->orWhereHas(
                         'manufacturer',
-                        fn (Builder $manufacturerQuery) => $manufacturerQuery->whereRaw('LOWER(name) LIKE ?', [$like]),
+                        fn (Builder $manufacturerQuery) => $manufacturerQuery->where('name', 'ilike', $like),
                     );
             });
         }

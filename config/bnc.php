@@ -109,4 +109,6 @@ return [
     'product_image_download_timeout' => (int) env('BNC_PRODUCT_IMAGE_DOWNLOAD_TIMEOUT', 30),
     'product_image_verify_ssl' => env('BNC_PRODUCT_IMAGE_VERIFY_SSL', env('A1_API_VERIFY_SSL', true)),
     'product_image_download_on_import' => env('BNC_PRODUCT_IMAGE_DOWNLOAD_ON_IMPORT', true),
+    'trust_local_image_path' => env('BNC_TRUST_LOCAL_IMAGE_PATH', true),
+    'resolved_image_url_cache_ttl' => (int) env('BNC_RESOLVED_IMAGE_URL_CACHE_TTL', 3600),
 ];

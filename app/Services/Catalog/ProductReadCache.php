@@ -3,6 +3,7 @@
 namespace App\Services\Catalog;
 
 use App\Models\Category;
+use App\Models\Manufacturer;
 use App\Models\Product;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
@@ -235,6 +236,12 @@ class ProductReadCache
         }
 
         Cache::tags(['manufacturers'])->flush();
+    }
+
+    public function rememberManufacturerBySlug(string $slug, int $ttlSeconds, callable $callback): ?Manufacturer
+    {
+        return $this->tagged(['manufacturers', "manufacturer:{$slug}"])
+            ->remember("manufacturer:slug:{$slug}", $ttlSeconds, $callback);
     }
 
     public function flushProducts(): void
