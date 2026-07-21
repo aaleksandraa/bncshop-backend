@@ -27,9 +27,14 @@ return Application::configure(basePath: dirname(__DIR__))
         }
 
         $middleware->api(prepend: [
+            \App\Http\Middleware\EnsureFreshConnections::class,
             EnsureFrontendRequestsAreStateful::class,
             \App\Http\Middleware\SecurityHeaders::class,
             \App\Http\Middleware\AddPublicApiCacheHeaders::class,
+        ]);
+
+        $middleware->web(prepend: [
+            \App\Http\Middleware\EnsureFreshConnections::class,
         ]);
 
         $middleware->alias([

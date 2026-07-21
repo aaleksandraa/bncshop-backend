@@ -178,7 +178,7 @@ chmod -R ug+rwx storage bootstrap/cache
 cd /path/to/bncshop-backend
 rm -f .env
 cp .env.production.example .env
-# popuni DB_PASSWORD, MAIL_*, API keys...
+# popuni DB_PASSWORD, MAIL_*, API keys... (vidi docs/email-setup.md)
 php artisan key:generate
 ```
 
@@ -377,29 +377,29 @@ Zatim: **Restart App** u Node.js panelu.
 | `EACCES` na `.next/trace` | `.next/` vlasništvo `root` (SSH build), Plesk user ne može pisati | `bash scripts/plesk-reset-build-permissions.sh` (root SSH), pa `build:clean` u Plesk-u |
 | 403 + BUILD OK + Passenger enabled | Pogrešno vlasništvo (`httpdocs` mora biti `user:psaserv`, fajlovi `user:psacln`) | `bash scripts/plesk-enable-node.sh` (koristi `plesk repair fs`) |
 | Build 15+ min / Plesk panel “ne završi” | Visok load + web timeout | SSH + `build:clean`, load &lt; 3 idealno |
-| `ChunkLoadError`, JS 400/404, MIME `text/html` | Document root `.next/static` bez nginx rewrite-a | Vidi sekciju ispod |
 
 ### ChunkLoadError / `_next/static/*.js` vraća HTML (400/404)
 
 Browser traži npr. `/_next/static/chunks/8094-xxx.js`, ali nginx traži fajl na pogrešnoj putanji (`/.next/static/_next/static/...`) i vraća HTML error stranicu umjesto JavaScript-a.
 
-**Opcija A (najjednostavnije):** Document root = **isti kao Application root** (`/httpdocs`). Node.js (`start.js`) servira i stranice i `_next/static`. Restart App.
+**Opcija A (obavezna preporuka):** Document root = **isti kao Application root** (`/httpdocs`). Node.js (`start.js`) servira i stranice i `_next/static`. Restart App.
 
-**Opcija B (brži static):** Document root = `/httpdocs/.next/static` + nginx rewrite u Plesk → **Apache & nginx Settings** → **Additional nginx directives**:
+**NE koristiti** Document root = `/httpdocs/.next/static` bez potpunog nginx rewrite-a — to uzrokuje `400 Bad Request`, MIME `text/html` umjesto JS, i `Application error`.
 
-```nginx
-location ^~ /_next/static/ {
-    alias /var/www/vhosts/bncshop.ba/httpdocs/.next/static/;
-}
+Build uvijek pokrenuti skriptom:
 
-location ^~ /_next/image {
-    proxy_pass http://127.0.0.1:$plesk_nodejs_port;
-    proxy_http_version 1.1;
-    proxy_set_header Host $host;
-}
+```bash
+npm run deploy:production
+# ili: bash scripts/deploy-production.sh
 ```
 
-(Ako `$plesk_nodejs_port` nije dostupan, koristi Opciju A.)
+Nakon **Restart App** u Plesk-u, provjeri da chunkovi stvarno rade (ne samo da postoje na disku):
+
+```bash
+npm run verify:live
+```
+
+Ako `verify:live` prijavi `BROKEN` chunk URL-ove sa HTTP 400 i `content-type=text/html`, **Document root je pogrešan** — mora biti `/httpdocs`, ne `/httpdocs/.next/static`.
 
 **Uvijek nakon deploya:**
 
@@ -733,24 +733,37 @@ php artisan schedule:test --name="bnc:sync-scheduled"
 
 ## Svaki naredni deploy (release)
 
-Iz root-a repoa:
+### Backend (`api.bncshop.ba`)
 
 ```bash
-bash scripts/deploy-production.sh
+cd backend
+git pull origin main
+composer install --no-dev --optimize-autoloader --no-interaction
+php artisan migrate --force
+php artisan bnc:deploy-fix --apply --flush-all
+php artisan horizon:terminate
 ```
 
-Skripta ([scripts/deploy-production.sh](../scripts/deploy-production.sh)) radi:
+`bnc:deploy-fix` provjerava `APP_URL`, čisti keš i uklanja stare API odgovore sa `localhost` URL-ovima za slike.
 
-1. `composer install --no-dev`
-2. `php artisan migrate --force`
-3. `php artisan storage:link --force`
-4. `php artisan config:cache`, `route:cache`, `view:cache`
-5. `php artisan scout:import "App\Models\Product"`
-6. `php artisan horizon:terminate`
-7. Frontend: `npm ci`, `npm run build`
-8. Health check na `APP_URL/api/v1/health`
+### Frontend (`bncshop.ba`)
 
-**Skripta ne radi:** seed, full sync, kreiranje admin korisnika.
+```bash
+cd httpdocs   # application root
+git pull origin main
+npm run deploy:production
+# Plesk -> Node.js -> Restart App
+npm run verify:live
+```
+
+Skripta `deploy:production` ([scripts/deploy-production.mjs](../scripts/deploy-production.mjs)) radi:
+
+1. briše stari `.next/`
+2. `npm ci` + `npm run build`
+3. provjerava da svi chunk fajlovi postoje i da su stvarni JS (ne HTML)
+4. piše `PLESK-DEPLOY-CHECKLIST.txt`
+
+**Skripta ne radi:** Plesk Restart App (uradi ručno nakon builda).
 
 ---
 
@@ -760,6 +773,7 @@ Skripta ([scripts/deploy-production.sh](../scripts/deploy-production.sh)) radi:
 cd backend
 
 php artisan bnc:health
+php artisan bnc:deploy-fix
 php artisan bnc:sync-diagnose
 php artisan schedule:list
 php artisan horizon:status
@@ -770,6 +784,58 @@ php artisan tinker --execute="echo app(\App\Services\Catalog\ProductReadCache::c
 ```
 
 Health endpoint (`/api/v1/health`) provjerava PostgreSQL, Redis i Meilisearch.
+
+---
+
+## Idle tab / stale connections (produkcija)
+
+Nakon ~10 min neaktivnog browser taba, prvi API/RSC request može visjeti 1–2 min zbog zatvorenih keep-alive konekcija (browser, PHP-FPM → PostgreSQL/Redis).
+
+**Dijagnostika:** [idle-tab-navigation.md](./idle-tab-navigation.md)
+
+**Kod (deploy):** Laravel `EnsureFreshConnections` middleware + frontend timeouti/prefetch (vidi git commit).
+
+**Infra preporuke na VPS/Plesk:**
+
+### PostgreSQL TCP keepalive
+
+U `postgresql.conf` (ili Plesk PostgreSQL settings):
+
+```ini
+tcp_keepalives_idle = 60
+tcp_keepalives_interval = 10
+tcp_keepalives_count = 6
+```
+
+Restart PostgreSQL nakon promjene.
+
+### PHP-FPM worker recycling
+
+U Plesk → PHP Settings → PHP-FPM za **8.3** (backend):
+
+```ini
+pm.max_requests = 500
+```
+
+Reciklira workere i osvježava DB/Redis konekcije. Ne povećavati pool dok je load > 3.
+
+### Env (opcionalno)
+
+U backend `.env`:
+
+```env
+DB_CONNECT_TIMEOUT=5
+```
+
+Ograničava trajanje novog PostgreSQL connecta (Laravel `config/database.php`).
+
+### Restart nakon deploya
+
+```bash
+php artisan config:cache
+sudo systemctl reload php8.3-fpm   # ili Plesk PHP-FPM restart
+# Frontend: Plesk → Node.js → Restart App
+```
 
 ---
 
@@ -786,12 +852,13 @@ Health endpoint (`/api/v1/health`) provjerava PostgreSQL, Redis i Meilisearch.
 | Sync jobovi stoje u queue | Horizon ne sluša `sync` red | Provjeri `config/horizon.php` — mora imati `supervisor-sync` |
 | Pretraga prazna / spora | Meilisearch nije indeksiran | `scout:import`, provjeri `MEILISEARCH_HOST` i `MEILISEARCH_KEY` |
 | Cache se ne invalidira | `CACHE_STORE` nije redis | Postavi `CACHE_STORE=redis`, restart PHP-FPM |
-| Email ne stiže | Queue ili SMTP | Provjeri Horizon na `default` redu, MAIL_* env, failed jobs u Horizon-u |
+| Email ne stiže | Queue ili SMTP | [email-setup.md](./email-setup.md) — Horizon `default`, MAIL_*, failed jobs |
 | Session / login ne radi | Cookie domena | `SESSION_DOMAIN=.bncshop.ba`, `SANCTUM_STATEFUL_DOMAINS` |
 | CORS greške / live pretraga ne radi | Browser fetch blokiran cross-origin | Postavi `BACKEND_URL=https://api.bncshop.ba`, rebuild (frontend zove `api.bncshop.ba` direktno); ili popravi nginx proxy za `/backend-api` |
 | OLX sync se ne pokreće | Auto sync isključen | Admin → OLX settings + `OLX_*` env varijable |
 | Sync zakasnio | Cron ili worker | Provjeri `bncshop-scheduler` RUNNING + `bnc:sync-diagnose` |
 | Visok load / spor sajt | Dupli Horizon, cron schedule:run, prefetch | `bash scripts/vps-health-check.sh`, vidi runbook iznad |
+| Spor sajt nakon idle taba (~10 min) | Stale HTTP/DB konekcije, fetch bez timeouta | [idle-tab-navigation.md](./idle-tab-navigation.md), `EnsureFreshConnections`, infra ispod |
 | `tags disabled` | Redis cache | `CACHE_STORE=redis`, phpredis ekstenzija |
 
 ---
