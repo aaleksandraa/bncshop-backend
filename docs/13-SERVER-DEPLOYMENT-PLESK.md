@@ -375,6 +375,7 @@ Zatim: **Restart App** u Node.js panelu.
 | Slike/API 404 na `/backend-api/v1/*` | Klijent koristi proxy putanju koja nginx ne prosljeđuje Node-u; slike su na `/storage`, ne `/api/v1/storage` | Postavi `BACKEND_URL=https://api.bncshop.ba`, `npm run build`, restart; ili nginx proxy za `/backend-api` na Node port |
 | `npm: command not found` (root SSH) | Plesk Node nije u PATH-u | `export PATH="/opt/plesk/node/24/bin:$PATH"` prije builda |
 | `EACCES` na `.next/trace` | `.next/` vlasništvo `root` (SSH build), Plesk user ne može pisati | `bash scripts/plesk-reset-build-permissions.sh` (root SSH), pa `build:clean` u Plesk-u |
+| 403 + BUILD OK + Passenger enabled | Pogrešno vlasništvo (`httpdocs` mora biti `user:psaserv`, fajlovi `user:psacln`) | `bash scripts/plesk-enable-node.sh` (koristi `plesk repair fs`) |
 | Build 15+ min / Plesk panel “ne završi” | Visok load + web timeout | SSH + `build:clean`, load &lt; 3 idealno |
 | `ChunkLoadError`, JS 400/404, MIME `text/html` | Document root `.next/static` bez nginx rewrite-a | Vidi sekciju ispod |
 
