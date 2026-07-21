@@ -265,40 +265,60 @@ NEXT_PUBLIC_TURNSTILE_SITE_KEY=
 
 Alternativa: `NEXT_PUBLIC_API_URL=https://api.bncshop.ba/api/v1` — tada **mora** raditi `CORS_ALLOWED_ORIGINS` na backendu.
 
-Build prije starta — može **kroz Plesk panel** ili preko SSH. Plesk build radi samo ako je `httpdocs` u vlasništvu subscription usera (vidi ispod).
+Build prije starta — **preporučeno kroz Plesk panel**. SSH build samo kao rezerva.
 
-#### Build kroz Plesk (Node.js panel)
+#### Normalni Plesk deploy (kao prije)
 
-**Jednom** (nakon SSH builda kao `root` ili greške `EACCES: .next/trace`):
+**Domains → bncshop.ba → Node.js** — provjeri postavke:
+
+| Polje | Vrijednost |
+|-------|------------|
+| Application root | `/httpdocs` |
+| Document root | `/httpdocs` |
+| Startup file | `start.js` |
+| Mode | `production` |
+
+**Svaki deploy:**
+
+1. **Enable Node.js** mora biti aktivan (dugme “Disable” ne smije biti jedina opcija)
+2. **Run script:** `build:clean`
+3. Sačekaj završetak (3–10 min)
+4. **Restart App**
+5. Hard refresh u browseru (Ctrl+Shift+R)
+
+**NE radi ovo:**
+
+| Zabranjeno | Zašto |
+|------------|-------|
+| **Disable Node.js** prije/poslije builda | Gasí nginx proxy → **403 Forbidden** (prazan `#extension nodejs` u httpd.conf) |
+| `npm run build` kao **root** preko SSH | `.next/` postane root-owned → Plesk build pada na EACCES |
+| `plesk-reset-build-permissions.sh` bez `--clean` kad nema builda | Samo chown — ne pravi build; moraš `build:clean` u Plesk-u |
+| `plesk-reset-build-permissions.sh --clean` bez rebuilda | Briše `.next/` → sajt ne može startati |
+
+#### Vraćanje na Plesk nakon SSH eksperimenta
+
+Jednom na serveru (root SSH):
 
 ```bash
 cd /var/www/vhosts/bncshop.ba/httpdocs
-bash scripts/plesk-reset-build-permissions.sh
+git pull origin main
+bash scripts/plesk-restore-frontend.sh
 ```
 
-Skripta zaustavi `next-server` i vrati vlasništvo na Plesk usera. **Ne briše `.next/`** osim sa `--clean`:
+Skripta popravi vlasništvo, provjeri `start.js` / `.next/BUILD_ID` / nodejs extension, i ispiše tačan Plesk checklist.
+
+Zatim u panelu: **Enable Node.js → build:clean → Restart App**.
+
+#### Dozvole (samo ako Plesk build padne na EACCES)
 
 ```bash
 bash scripts/plesk-reset-build-permissions.sh          # samo chown (build ostaje)
-bash scripts/plesk-reset-build-permissions.sh --clean  # briše .next, zatim rebuild
+bash scripts/plesk-reset-build-permissions.sh --clean  # briše .next, zatim build:clean u Plesk-u
 ```
 
-Zatim u Plesk-u (**Domains → bncshop.ba → Node.js**):
+**Pravilo:** nikad `npm run build` kao root. Koristi Plesk **Run script: build:clean**.
 
-1. **Disable Node.js** ili **Stop App** (app ne smije držati `.next/` tokom builda)
-2. **Run script:** `build:clean` (ne samo `build` — briše stari `.next` prije kompilacije)
-3. Sačekaj završetak (3–10 min; panel može izgledati “zaleđen” — to je normalno)
-4. **Restart App** / **Enable Node.js**
-
-**Pravilo:** ako ikad radiš `npm run build` preko SSH kao `root`, odmah poslije:
-
-```bash
-chown -R $(stat -c '%U' /var/www/vhosts/bncshop.ba/httpdocs):psacln /var/www/vhosts/bncshop.ba/httpdocs
-```
-
-Inače Plesk build opet pada sa `EACCES`.
-
-#### Build preko SSH (alternativa)
+#### Build preko SSH (samo rezerva)
 
 Root SSH **nema** `npm` u PATH-u. Plesk Node je u `/opt/plesk/node/<verzija>/bin/`:
 
@@ -329,8 +349,8 @@ Zatim: **Restart App** u Node.js panelu.
 
 | Simptom | Uzrok | Rješenje |
 |---------|-------|----------|
-| 403 Forbidden | Node.js nije enabled ili `start.js` ne postoji | Enable Node.js, `git pull`, Restart App |
-| 403 Forbidden | Document root bez proxy-ja na Node | Startup file = `start.js`, restart |
+| 403 Forbidden | Node.js **disabled** ili prazan `#extension nodejs` u httpd.conf | **Enable Node.js** (ne Disable), Restart App, `bash scripts/plesk-restore-frontend.sh` |
+| 403 Forbidden | Nema `.next/BUILD_ID` (build obrisan reset skriptom) | Plesk → `build:clean` → Restart App |
 | Prazna stranica / API ne radi | Pogrešan `NEXT_PUBLIC_API_URL` / nema `BACKEND_URL` | `BACKEND_URL=https://api.bncshop.ba`, `NEXT_PUBLIC_API_URL=/backend-api/v1`, **rebuild** (BACKEND_URL se ugrađuje u bundle) |
 | Slike/API 404 na `/backend-api/v1/*` | Klijent koristi proxy putanju koja nginx ne prosljeđuje Node-u; slike su na `/storage`, ne `/api/v1/storage` | Postavi `BACKEND_URL=https://api.bncshop.ba`, `npm run build`, restart; ili nginx proxy za `/backend-api` na Node port |
 | `npm: command not found` (root SSH) | Plesk Node nije u PATH-u | `export PATH="/opt/plesk/node/24/bin:$PATH"` prije builda |
