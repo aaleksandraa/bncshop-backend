@@ -105,4 +105,35 @@ class B2bAccessRequestMailTest extends TestCase
                 && str_contains($mail->setupUrl, 'https://bncshop.ba/b2b/postavi-lozinku?token=');
         });
     }
+
+    public function test_duplicate_password_setup_email_is_suppressed_within_cooldown(): void
+    {
+        Mail::fake();
+
+        config([
+            'bnc.frontend_url' => 'https://bncshop.ba',
+        ]);
+
+        $payload = $this->accessRequestPayload('4');
+
+        $customer = app(B2bCustomerProvisioner::class)->createCustomer([
+            'name' => $payload['first_name'].' '.$payload['last_name'],
+            'email' => $payload['email'],
+            'phone' => $payload['phone'],
+            'company_name' => $payload['company_name'],
+            'company_address' => $payload['company_address'],
+            'jib' => $payload['jib'],
+            'pdv_number' => $payload['pdv_number'],
+        ]);
+
+        Mail::assertSent(B2bAccessApprovedMail::class, 1);
+
+        app(B2bCustomerProvisioner::class)->sendPasswordSetupEmail($customer->user);
+
+        Mail::assertSent(B2bAccessApprovedMail::class, 1);
+
+        app(B2bCustomerProvisioner::class)->sendPasswordSetupEmail($customer->user, force: true);
+
+        Mail::assertSent(B2bAccessApprovedMail::class, 2);
+    }
 }

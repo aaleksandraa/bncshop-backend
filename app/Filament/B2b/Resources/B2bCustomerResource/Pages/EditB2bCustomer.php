@@ -42,11 +42,12 @@ class EditB2bCustomer extends EditRecord
     {
         return [
             Actions\Action::make('sendAccess')
-                ->label('Pošalji pristup')
+                ->label('Pošalji ponovo pristup')
                 ->icon('heroicon-o-envelope')
                 ->requiresConfirmation()
+                ->modalDescription('Korisniku će biti poslan novi link za postavljanje lozinke. Prethodni link prestaje važiti.')
                 ->action(function (): void {
-                    app(B2bCustomerProvisioner::class)->sendPasswordSetupEmail($this->record->user);
+                    app(B2bCustomerProvisioner::class)->sendPasswordSetupEmail($this->record->user, force: true);
                     Notification::make()->title('Email za postavljanje lozinke je poslan.')->success()->send();
                 }),
             Actions\DeleteAction::make(),

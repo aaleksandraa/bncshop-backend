@@ -8,6 +8,7 @@ use App\Models\B2bPasswordSetupToken;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class B2bCustomerProvisioner
@@ -75,7 +76,7 @@ class B2bCustomerProvisioner
      *     discount_percent?: float|null
      * }  $data
      */
-    public function createCustomer(array $data, ?User $creator = null): B2bCustomer
+    public function createCustomer(array $data, ?User $creator = null, bool $sendPasswordEmail = true): B2bCustomer
     {
         if (User::query()->where('email', $data['email'])->exists()) {
             throw new \RuntimeException('Korisnik sa ovim emailom već postoji.');
@@ -105,13 +106,31 @@ class B2bCustomerProvisioner
             ])->load('user');
         });
 
-        $this->sendPasswordSetupEmail($customer->user);
+        if ($sendPasswordEmail) {
+            $this->sendPasswordSetupEmail($customer->user);
+        }
 
         return $customer;
     }
 
-    public function sendPasswordSetupEmail(User $user): string
+    public function sendPasswordSetupEmail(User $user, bool $force = false): ?string
     {
+        if (! $force) {
+            $recentTokenExists = B2bPasswordSetupToken::query()
+                ->where('user_id', $user->id)
+                ->where('expires_at', '>', now())
+                ->where('created_at', '>=', now()->subMinutes(5))
+                ->exists();
+
+            if ($recentTokenExists) {
+                Log::info('B2B password setup email skipped: recent valid token already issued', [
+                    'user_id' => $user->id,
+                ]);
+
+                return null;
+            }
+        }
+
         $plainToken = B2bPasswordSetupToken::createForUser($user);
         $setupUrl = rtrim((string) config('bnc.frontend_url'), '/').'/b2b/postavi-lozinku?token='.$plainToken;
 

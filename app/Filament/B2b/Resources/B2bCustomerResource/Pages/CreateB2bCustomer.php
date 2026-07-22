@@ -4,6 +4,7 @@ namespace App\Filament\B2b\Resources\B2bCustomerResource\Pages;
 
 use App\Filament\B2b\Resources\B2bCustomerResource;
 use App\Services\B2b\B2bCustomerProvisioner;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 
 class CreateB2bCustomer extends CreateRecord
@@ -24,6 +25,16 @@ class CreateB2bCustomer extends CreateRecord
             'jib' => $formData['jib'],
             'pdv_number' => $formData['pdv_number'] ?? null,
             'discount_percent' => $formData['discount_percent'] ?? null,
-        ], auth()->user());
+        ], auth()->user(), sendPasswordEmail: false);
+    }
+
+    protected function afterCreate(): void
+    {
+        app(B2bCustomerProvisioner::class)->sendPasswordSetupEmail($this->record->user);
+
+        Notification::make()
+            ->title('Email za postavljanje lozinke je poslan korisniku.')
+            ->success()
+            ->send();
     }
 }
