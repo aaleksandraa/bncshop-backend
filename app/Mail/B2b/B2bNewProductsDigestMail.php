@@ -28,6 +28,7 @@ class B2bNewProductsDigestMail extends Mailable implements ShouldQueue
     public function __construct(
         Collection $products,
         public B2bCustomer $customer,
+        public ?string $customIntro = null,
     ) {
         $this->customerName = (string) ($customer->user?->name ?? 'kupac');
         $this->catalogUrl = rtrim((string) config('bnc.frontend_url'), '/').'/b2b/katalog';

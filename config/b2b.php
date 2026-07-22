@@ -14,6 +14,12 @@ return [
 
     'new_product_digest_minutes' => (int) env('B2B_NEW_PRODUCT_DIGEST_MINUTES', 5),
 
+    'product_notification' => [
+        'default_custom_intro' => 'Obavještavamo vas o novim artiklima u našoj B2B ponudi.',
+        'predefined_intro' => 'U B2B katalog su dodani novi proizvodi:',
+        'new_product_days' => (int) env('B2B_NOTIFICATION_NEW_PRODUCT_DAYS', 30),
+    ],
+
     'mail' => [
         'from_address' => env('B2B_MAIL_FROM_ADDRESS', env('MAIL_FROM_ADDRESS')),
         'from_name' => env('B2B_MAIL_FROM_NAME', 'BNC B2B'),
