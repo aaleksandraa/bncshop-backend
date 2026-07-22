@@ -49,9 +49,10 @@ class OlxExportHealthCheckerTest extends TestCase
         $report = app(OlxExportHealthChecker::class)->report();
 
         $this->assertTrue($report['is_overdue']);
-        $this->assertContains(
-            'OLX export je zakasnio — provjerite da li cron pokreće bnc:sync-olx-scheduled i da li queue worker radi na sync redu.',
-            $report['issues'],
+        $this->assertTrue(
+            collect($report['issues'])->contains(
+                fn (string $issue): bool => str_contains($issue, 'OLX export je zakasnio')
+            )
         );
     }
 
@@ -71,5 +72,59 @@ class OlxExportHealthCheckerTest extends TestCase
 
         $this->assertFalse($report['has_credentials']);
         $this->assertContains('OLX kredencijali nisu konfigurirani.', $report['issues']);
+    }
+
+    public function test_detects_stale_import_pipeline_error(): void
+    {
+        $source = ApiSource::query()->create([
+            'name' => 'OLX / PIK export',
+            'target_system_code' => 'olx',
+            'base_url' => 'https://api.olx.ba',
+            'username' => 'shop',
+            'password' => 'secret',
+            'is_active' => true,
+            'auto_sync_enabled' => true,
+            'connection_status' => 'error',
+            'last_error' => 'Login failed: {"error":{"type":"resource_not_found","status":404}}',
+            'last_successful_sync_at' => now()->subHours(2),
+        ]);
+
+        $checker = app(OlxExportHealthChecker::class);
+        $report = $checker->report();
+
+        $this->assertTrue($report['stale_import_pipeline_error']);
+        $this->assertTrue($checker->isStaleImportPipelineError($source->last_error));
+    }
+
+    public function test_heal_clears_stale_error_when_latest_olx_job_completed(): void
+    {
+        $source = ApiSource::query()->create([
+            'name' => 'OLX / PIK export',
+            'target_system_code' => 'olx',
+            'base_url' => 'https://api.olx.ba',
+            'username' => 'shop',
+            'password' => 'secret',
+            'is_active' => true,
+            'auto_sync_enabled' => true,
+            'connection_status' => 'error',
+            'last_error' => 'Login failed: {"error":{"type":"resource_not_found","status":404}}',
+            'last_successful_sync_at' => now()->subHours(2),
+        ]);
+
+        \App\Models\ApiImportJob::query()->create([
+            'api_source_id' => $source->id,
+            'type' => 'olx_incremental',
+            'status' => 'completed',
+            'sync_started_at' => now()->subHour(),
+            'started_at' => now()->subHour(),
+            'completed_at' => now()->subMinutes(30),
+        ]);
+
+        $checker = app(OlxExportHealthChecker::class);
+
+        $this->assertTrue($checker->healStaleConnectionState($source->fresh()));
+        $source->refresh();
+        $this->assertSame('connected', $source->connection_status);
+        $this->assertNull($source->last_error);
     }
 }

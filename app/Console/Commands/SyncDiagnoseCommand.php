@@ -11,7 +11,8 @@ use Illuminate\Console\Command;
 class SyncDiagnoseCommand extends Command
 {
     protected $signature = 'bnc:sync-diagnose
-                            {--release-stale : Mark running jobs older than 3h as failed}';
+                            {--release-stale : Mark running jobs older than 3h as failed}
+                            {--heal-olx : Clear stale OLX connection errors from the old A1 import pipeline}';
 
     protected $description = 'Diagnose API import/export sync scheduler, queue, and source health';
 
@@ -23,6 +24,13 @@ class SyncDiagnoseCommand extends Command
         if ($this->option('release-stale')) {
             $released = $health->releaseStaleRunningJobs();
             $this->warn("Released {$released} stale running job(s).");
+        }
+
+        if ($this->option('heal-olx')) {
+            $healed = $olxHealth->healStaleConnectionState($olxHealth->report()['source']);
+            $this->line($healed
+                ? 'OLX connection status očišćen od zastarjele A1 import greške.'
+                : 'Nema zastarjele OLX greške za čišćenje.');
         }
 
         $this->renderInfrastructure($health->infrastructure());
@@ -134,6 +142,14 @@ class SyncDiagnoseCommand extends Command
         $this->line('Zadnji uspješni export: '.($source->last_successful_sync_at ?? '—'));
         $this->line('Sljedeći planirani export: '.($report['next_scheduled_at'] ?? '—'));
         $this->line('Connection: '.($source->connection_status ?? 'unknown'));
+
+        if ($report['stale_import_pipeline_error']) {
+            $this->warn('Connection error je zastarjela greška iz A1 import pipeline-a, ne iz OLX exporta.');
+        }
+
+        if (($report['wrong_pipeline_job_count'] ?? 0) > 0) {
+            $this->warn('Neuspjeli A1 import jobovi na OLX izvoru (prije fixa): '.$report['wrong_pipeline_job_count']);
+        }
 
         if ($report['is_overdue']) {
             $this->error('ZAKASnio od: '.$report['overdue_human'].' (trebao '.$report['overdue_since'].')');

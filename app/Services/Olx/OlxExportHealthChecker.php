@@ -35,8 +35,14 @@ class OlxExportHealthChecker
                 ->first()
             : null;
 
-        $nextScheduledAt = $this->nextScheduledAtAfter($source?->last_successful_sync_at ?? now());
+        $reference = $source?->last_successful_sync_at ?? now();
+        $nextScheduledAt = $this->nextScheduledAtAfter($reference);
         $isOverdue = $this->isOverdue($source, $runningJob !== null);
+        $staleImportPipelineError = $this->isStaleImportPipelineError($source?->last_error);
+        $wrongPipelineJobs = $source ? $this->wrongPipelineJobsSince($source, $reference) : collect();
+        $olxJobSinceDue = $source && $isOverdue && $nextScheduledAt
+            ? $this->olxJobSince($source, $nextScheduledAt)
+            : null;
 
         return [
             'source' => $source,
@@ -50,6 +56,9 @@ class OlxExportHealthChecker
             'overdue_human' => $isOverdue && $nextScheduledAt
                 ? $nextScheduledAt->diffForHumans(now(), true)
                 : null,
+            'stale_import_pipeline_error' => $staleImportPipelineError,
+            'wrong_pipeline_job_count' => $wrongPipelineJobs->count(),
+            'olx_job_since_due' => $olxJobSinceDue,
             'has_running_job' => $runningJob !== null,
             'running_job' => $runningJob ? [
                 'id' => $runningJob->id,
@@ -65,8 +74,49 @@ class OlxExportHealthChecker
                 'completed_at' => $latestJob->completed_at,
                 'error_message' => $latestJob->error_message,
             ] : null,
-            'issues' => $this->detectIssues($source, $isOverdue, $runningJob),
+            'issues' => $this->detectIssues(
+                $source,
+                $isOverdue,
+                $runningJob,
+                $staleImportPipelineError,
+                $wrongPipelineJobs->count(),
+                $olxJobSinceDue,
+            ),
         ];
+    }
+
+    public function healStaleConnectionState(?ApiSource $source): bool
+    {
+        if ($source === null || ! $this->isStaleImportPipelineError($source->last_error)) {
+            return false;
+        }
+
+        $latestOlxJob = ApiImportJob::query()
+            ->where('api_source_id', $source->id)
+            ->whereIn('type', ['olx_incremental', 'olx_full'])
+            ->latest()
+            ->first();
+
+        if ($latestOlxJob === null || $latestOlxJob->status !== 'completed') {
+            return false;
+        }
+
+        $source->update([
+            'connection_status' => 'connected',
+            'last_error' => null,
+        ]);
+
+        return true;
+    }
+
+    public function isStaleImportPipelineError(?string $lastError): bool
+    {
+        if ($lastError === null || $lastError === '') {
+            return false;
+        }
+
+        return str_starts_with($lastError, 'Login failed:')
+            || str_contains($lastError, '/api/auth/login');
     }
 
     public function nextScheduledAtAfter(?Carbon $after = null): ?Carbon
@@ -108,8 +158,14 @@ class OlxExportHealthChecker
     /**
      * @return list<string>
      */
-    private function detectIssues(?ApiSource $source, bool $isOverdue, ?ApiImportJob $runningJob): array
-    {
+    private function detectIssues(
+        ?ApiSource $source,
+        bool $isOverdue,
+        ?ApiImportJob $runningJob,
+        bool $staleImportPipelineError,
+        int $wrongPipelineJobCount,
+        ?ApiImportJob $olxJobSinceDue,
+    ): array {
         $issues = [];
 
         if (! $this->settings->isEnabled()) {
@@ -130,19 +186,59 @@ class OlxExportHealthChecker
             $issues[] = 'OLX ApiSource nije aktivan.';
         }
 
+        if ($staleImportPipelineError) {
+            $issues[] = 'Connection status drži zastarjelu grešku iz pogrešnog A1 import pipeline-a (RunApiSyncJob /api/auth/login). Pokrenite: php artisan bnc:sync-diagnose --heal-olx';
+        } elseif ($source?->connection_status === 'error' && $source->last_error) {
+            $issues[] = 'Zadnja greška exporta: '.$source->last_error;
+        }
+
+        if ($wrongPipelineJobCount > 0) {
+            $issues[] = "Pronađeno {$wrongPipelineJobCount} neuspjelih A1 import job(ova) na OLX izvoru (prije fixa). Ignorirati — OLX koristi RunOlxSyncJob.";
+        }
+
         if ($isOverdue) {
-            $issues[] = 'OLX export je zakasnio — provjerite da li cron pokreće bnc:sync-olx-scheduled i da li queue worker radi na sync redu.';
+            if ($olxJobSinceDue === null) {
+                $issues[] = 'OLX export je zakasnio i nijedan OLX job nije pokrenut nakon planiranog termina — provjerite da li cron pokreće schedule:run i da li Horizon/worker sluša sync red.';
+            } elseif ($olxJobSinceDue->status === 'failed') {
+                $issues[] = 'Zadnji OLX job nakon planiranog termina nije uspio: #'
+                    .$olxJobSinceDue->id.' — '.($olxJobSinceDue->error_message ?? 'nema poruke');
+            } else {
+                $issues[] = 'OLX export je zakasnio — provjerite da li cron pokreće bnc:sync-olx-scheduled i da li queue worker radi na sync redu.';
+            }
+
+            $issues[] = 'Ručno pokretanje: php artisan bnc:sync-olx';
         }
 
         if ($runningJob !== null && $runningJob->started_at?->lt(now()->subHours(3))) {
             $issues[] = "OLX job #{$runningJob->id} je u statusu running predugo — moguće zaglavljen worker.";
         }
 
-        if ($source?->connection_status === 'error' && $source->last_error) {
-            $issues[] = 'Zadnja greška exporta: '.$source->last_error;
-        }
-
         return $issues;
+    }
+
+    /**
+     * @return \Illuminate\Support\Collection<int, ApiImportJob>
+     */
+    private function wrongPipelineJobsSince(ApiSource $source, Carbon $since): \Illuminate\Support\Collection
+    {
+        return ApiImportJob::query()
+            ->where('api_source_id', $source->id)
+            ->whereIn('type', ['incremental', 'full'])
+            ->where('status', 'failed')
+            ->where('created_at', '>=', $since)
+            ->orderByDesc('created_at')
+            ->limit(5)
+            ->get();
+    }
+
+    private function olxJobSince(ApiSource $source, Carbon $since): ?ApiImportJob
+    {
+        return ApiImportJob::query()
+            ->where('api_source_id', $source->id)
+            ->whereIn('type', ['olx_incremental', 'olx_full'])
+            ->where('created_at', '>=', $since)
+            ->latest()
+            ->first();
     }
 
     /**
