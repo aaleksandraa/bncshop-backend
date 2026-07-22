@@ -22,8 +22,8 @@ class B2bNewProductsDigestMail extends Mailable implements ShouldQueue
 
     public string $catalogUrl;
 
-    /** @var array<int, string> */
-    public array $productLines;
+    /** @var array<int, array{name: string, sku: ?string, price: string, url: string}> */
+    public array $products;
 
     public function __construct(
         Collection $products,
@@ -31,27 +31,20 @@ class B2bNewProductsDigestMail extends Mailable implements ShouldQueue
         public ?string $customIntro = null,
     ) {
         $this->customerName = (string) ($customer->user?->name ?? 'kupac');
-        $this->catalogUrl = rtrim((string) config('bnc.frontend_url'), '/').'/b2b/katalog';
+        $this->catalogUrl = B2bProduct::catalogUrl();
 
         $pricingService = app(B2bPricingService::class);
-        $frontendUrl = rtrim((string) config('bnc.frontend_url'), '/');
 
-        $this->productLines = $products
-            ->map(function (B2bProduct $product) use ($pricingService, $frontendUrl): string {
+        $this->products = $products
+            ->map(function (B2bProduct $product) use ($pricingService): array {
                 $pricing = $pricingService->calculate($product, $this->customer);
-                $price = number_format($pricing['final_price'], 2, ',', '.');
-                $productUrl = $frontendUrl.'/b2b/katalog/'.$product->slug;
 
-                $line = $product->name;
-
-                if (filled($product->sku)) {
-                    $line .= ' ('.$product->sku.')';
-                }
-
-                $line .= ' — '.$price.' KM';
-                $line .= ' — '.$productUrl;
-
-                return $line;
+                return [
+                    'name' => $product->name,
+                    'sku' => filled($product->sku) ? $product->sku : null,
+                    'price' => number_format($pricing['final_price'], 2, ',', '.'),
+                    'url' => $product->frontendUrl(),
+                ];
             })
             ->values()
             ->all();
@@ -59,7 +52,7 @@ class B2bNewProductsDigestMail extends Mailable implements ShouldQueue
 
     public function envelope(): Envelope
     {
-        $count = count($this->productLines);
+        $count = count($this->products);
         $subject = $count === 1
             ? 'Novi proizvod u B2B katalogu'
             : 'Novi proizvodi u B2B katalogu ('.$count.')';

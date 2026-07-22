@@ -65,4 +65,14 @@ class B2bProduct extends Model
     {
         return $this->stock_quantity > 0;
     }
+
+    public function frontendUrl(): string
+    {
+        return rtrim((string) config('bnc.frontend_url'), '/').'/b2b/proizvod/'.$this->slug;
+    }
+
+    public static function catalogUrl(): string
+    {
+        return rtrim((string) config('bnc.frontend_url'), '/').'/b2b/katalog';
+    }
 }

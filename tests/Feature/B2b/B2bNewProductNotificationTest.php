@@ -199,7 +199,7 @@ class B2bNewProductNotificationTest extends TestCase
         $rendered = strip_tags($mail->render());
 
         $this->assertStringContainsString('Plain proizvod', $rendered);
-        $this->assertStringContainsString('/b2b/katalog/plain-proizvod', $rendered);
+        $this->assertStringContainsString('/b2b/proizvod/plain-proizvod', $rendered);
         $this->assertStringNotContainsString('<html', strtolower($mail->render()));
     }
 

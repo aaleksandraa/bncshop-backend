@@ -128,6 +128,27 @@ class B2bManualProductNotificationTest extends TestCase
         $this->assertStringContainsString('Poseban tekst prije liste.', $rendered);
         $this->assertStringContainsString('U B2B katalog su dodani novi proizvodi:', $rendered);
         $this->assertStringContainsString('Plain proizvod', $rendered);
+        $this->assertStringContainsString('/b2b/proizvod/plain-proizvod', $rendered);
+    }
+
+    public function test_manual_notification_mail_preserves_quotes_in_product_names(): void
+    {
+        $customer = $this->createCustomer('quotes@test.test');
+        $customer->load('user');
+        $product = $this->createProduct([
+            'name' => 'Dell P2422H 24"',
+            'slug' => 'dell-p2422h-24',
+        ]);
+
+        $mail = new B2bNewProductsDigestMail(
+            B2bProduct::query()->whereKey($product->id)->get(),
+            $customer,
+        );
+        $rendered = $mail->render();
+
+        $this->assertStringContainsString('Dell P2422H 24"', $rendered);
+        $this->assertStringNotContainsString('&quot;', $rendered);
+        $this->assertStringContainsString('/b2b/proizvod/dell-p2422h-24', $rendered);
     }
 
     public function test_service_rejects_inactive_products_only(): void
