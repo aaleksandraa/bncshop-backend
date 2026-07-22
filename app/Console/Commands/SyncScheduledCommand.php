@@ -23,10 +23,14 @@ class SyncScheduledCommand extends Command
         }
 
         $sources = $this->option('force')
-            ? ApiSource::query()->where('is_active', true)->get()->filter(
-                fn (ApiSource $source): bool => $source->last_successful_sync_at !== null
-                    && ! $scheduler->hasRunningJob($source)
-            )
+            ? ApiSource::query()
+                ->a1Integration()
+                ->where('is_active', true)
+                ->get()
+                ->filter(
+                    fn (ApiSource $source): bool => $source->last_successful_sync_at !== null
+                        && ! $scheduler->hasRunningJob($source)
+                )
             : $scheduler->dueSources();
 
         if ($sources->isEmpty()) {

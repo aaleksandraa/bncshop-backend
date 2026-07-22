@@ -46,6 +46,11 @@ class AdminSyncController extends Controller
         ]);
 
         $source = ApiSource::query()->findOrFail($validated['source_id']);
+
+        if (! $source->usesIntegrationApiImport()) {
+            return $this->error('Ovaj API izvor ne koristi IntegrationApiClient import sync.', 422);
+        }
+
         $fullSync = ($validated['type'] ?? 'incremental') === 'full';
 
         RunApiSyncJob::dispatch($source, $fullSync, skipMetadata: ! $fullSync);
@@ -84,6 +89,10 @@ class AdminSyncController extends Controller
         ]);
 
         $source = ApiSource::query()->findOrFail($validated['source_id']);
+
+        if (! $source->usesIntegrationApiImport()) {
+            return $this->error('Provjera konekcije nije podržana za ovaj tip API izvora.', 422);
+        }
 
         try {
             IntegrationApiClient::forSource($source)->ensureAuthenticated();

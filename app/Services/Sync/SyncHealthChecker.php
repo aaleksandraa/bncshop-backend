@@ -23,7 +23,7 @@ class SyncHealthChecker
         $isOverdue = $nextSyncAt !== null
             && $source->auto_sync_enabled
             && $source->is_active
-            && $source->target_system_code !== 'eline'
+            && $source->usesIntegrationApiImport()
             && $nextSyncAt->isPast()
             && ! $this->scheduler->hasRunningJob($source);
 

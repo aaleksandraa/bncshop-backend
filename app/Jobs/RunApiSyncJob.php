@@ -6,6 +6,7 @@ use App\Models\ApiSource;
 use App\Services\Sync\SyncOrchestrator;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use InvalidArgumentException;
 
 class RunApiSyncJob implements ShouldQueue
 {
@@ -25,6 +26,14 @@ class RunApiSyncJob implements ShouldQueue
 
     public function handle(SyncOrchestrator $orchestrator): void
     {
+        if (! $this->apiSource->usesIntegrationApiImport()) {
+            throw new InvalidArgumentException(sprintf(
+                'API source #%d (%s) does not use IntegrationApiClient import. Use the dedicated sync pipeline instead.',
+                $this->apiSource->id,
+                $this->apiSource->name,
+            ));
+        }
+
         $orchestrator->run(
             $this->apiSource,
             $this->fullSync,

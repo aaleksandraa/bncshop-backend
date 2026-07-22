@@ -7,6 +7,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ApiSource extends Model
 {
+    /** @var list<string> */
+    public const NON_INTEGRATION_IMPORT_TARGET_CODES = ['eline', 'olx'];
+
     protected $fillable = [
         'name',
         'target_system_code',
@@ -50,9 +53,20 @@ class ApiSource extends Model
      * @param  \Illuminate\Database\Eloquent\Builder<static>  $query
      * @return \Illuminate\Database\Eloquent\Builder<static>
      */
+    /**
+     * API sources synced via IntegrationApiClient (A1 Technoshop import).
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder<static>  $query
+     * @return \Illuminate\Database\Eloquent\Builder<static>
+     */
     public function scopeA1Integration($query)
     {
-        return $query->where('target_system_code', '!=', 'eline');
+        return $query->whereNotIn('target_system_code', self::NON_INTEGRATION_IMPORT_TARGET_CODES);
+    }
+
+    public function usesIntegrationApiImport(): bool
+    {
+        return ! in_array($this->target_system_code, self::NON_INTEGRATION_IMPORT_TARGET_CODES, true);
     }
 
     public function nextSyncAt(): ?\Illuminate\Support\Carbon

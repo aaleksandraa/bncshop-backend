@@ -33,6 +33,12 @@ class SyncFullCommand extends Command
         $skipMetadata = (bool) $this->option('skip-metadata');
 
         foreach ($sources as $source) {
+            if (! $source->usesIntegrationApiImport()) {
+                $this->error($this->unsupportedSourceMessage($source));
+
+                continue;
+            }
+
             $this->info("Full sync for source #{$source->id} ({$source->name})");
 
             if ($this->option('sync')) {
@@ -71,7 +77,7 @@ class SyncFullCommand extends Command
         $sourceArg = $this->argument('source');
 
         if ($sourceArg === null) {
-            return ApiSource::query()->where('is_active', true)->get();
+            return ApiSource::query()->a1Integration()->where('is_active', true)->get();
         }
 
         $source = ApiSource::query()
@@ -86,5 +92,14 @@ class SyncFullCommand extends Command
         }
 
         return $source;
+    }
+
+    private function unsupportedSourceMessage(ApiSource $source): string
+    {
+        return match ($source->target_system_code) {
+            'olx' => "Source #{$source->id} ({$source->name}) koristi OLX export pipeline. Pokrenite: php artisan bnc:sync-olx",
+            'eline' => "Source #{$source->id} ({$source->name}) koristi eLine pipeline. Pokrenite: php artisan bnc:sync-eline",
+            default => "Source #{$source->id} ({$source->name}) nije podržan za IntegrationApiClient import.",
+        };
     }
 }

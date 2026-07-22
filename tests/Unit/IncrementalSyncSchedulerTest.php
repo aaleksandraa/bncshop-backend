@@ -134,6 +134,27 @@ class IncrementalSyncSchedulerTest extends TestCase
         $this->assertTrue($scheduler->dueSources()->isEmpty());
     }
 
+    public function test_olx_source_is_never_due_for_integration_import_scheduler(): void
+    {
+        $scheduler = new IncrementalSyncScheduler;
+
+        $source = ApiSource::query()->create([
+            'name' => 'OLX / PIK export',
+            'target_system_code' => 'olx',
+            'base_url' => 'https://api.olx.ba',
+            'username' => 'shop',
+            'password' => 'secret',
+            'is_active' => true,
+            'auto_sync_enabled' => true,
+            'sync_interval_minutes' => 720,
+            'last_successful_sync_at' => now()->subDay(),
+        ]);
+
+        $this->assertFalse($source->usesIntegrationApiImport());
+        $this->assertFalse($scheduler->isDue($source));
+        $this->assertTrue($scheduler->dueSources()->isEmpty());
+    }
+
     public function test_auto_sync_disabled_source_is_not_due(): void
     {
         $scheduler = new IncrementalSyncScheduler;

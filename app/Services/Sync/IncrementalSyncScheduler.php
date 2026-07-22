@@ -23,7 +23,7 @@ class IncrementalSyncScheduler
 
     public function isDue(ApiSource $source): bool
     {
-        if ($source->target_system_code === 'eline') {
+        if (! $source->usesIntegrationApiImport()) {
             return false;
         }
 
