@@ -75,4 +75,34 @@ class B2bAccessRequestMailTest extends TestCase
 
         Mail::assertNotQueued(B2bAccessApprovedMail::class);
     }
+
+    public function test_admin_can_create_customer_directly(): void
+    {
+        Mail::fake();
+
+        config([
+            'bnc.frontend_url' => 'https://bncshop.ba',
+        ]);
+
+        $payload = $this->accessRequestPayload('3');
+
+        $customer = app(B2bCustomerProvisioner::class)->createCustomer([
+            'name' => $payload['first_name'].' '.$payload['last_name'],
+            'email' => $payload['email'],
+            'phone' => $payload['phone'],
+            'company_name' => $payload['company_name'],
+            'company_address' => $payload['company_address'],
+            'jib' => $payload['jib'],
+            'pdv_number' => $payload['pdv_number'],
+        ]);
+
+        $this->assertSame($payload['company_name'], $customer->company_name);
+        $this->assertSame($payload['email'], $customer->user->email);
+        $this->assertTrue($customer->user->is_b2b_customer);
+
+        Mail::assertSent(B2bAccessApprovedMail::class, function (B2bAccessApprovedMail $mail) use ($customer): bool {
+            return $mail->hasTo($customer->user->email)
+                && str_contains($mail->setupUrl, 'https://bncshop.ba/b2b/postavi-lozinku?token=');
+        });
+    }
 }

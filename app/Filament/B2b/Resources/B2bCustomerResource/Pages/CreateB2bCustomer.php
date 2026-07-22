@@ -12,7 +12,8 @@ class CreateB2bCustomer extends CreateRecord
 
     protected function handleRecordCreation(array $data): \Illuminate\Database\Eloquent\Model
     {
-        $formData = $this->form->getState();
+        // name/email are dehydrated(false) on the resource form — use raw state after validation.
+        $formData = $this->form->getRawState();
 
         return app(B2bCustomerProvisioner::class)->createCustomer([
             'name' => $formData['name'],

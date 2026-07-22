@@ -23,7 +23,8 @@ class EditB2bCustomer extends EditRecord
 
     protected function handleRecordUpdate(Model $record, array $data): Model
     {
-        $formData = $this->form->getState();
+        // name/email are dehydrated(false) on the resource form — use raw state after validation.
+        $formData = $this->form->getRawState();
 
         /** @var \App\Models\B2bCustomer $record */
         $record->user?->update([
