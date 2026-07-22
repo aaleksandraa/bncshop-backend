@@ -2,7 +2,9 @@
 
 namespace App\Filament\B2b\Auth;
 
+use Filament\Actions\Action;
 use Filament\Facades\Filament;
+use Filament\Forms\Components\Component;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Pages\Auth\Login as BaseLogin;
 use Illuminate\Contracts\Support\Htmlable;
@@ -29,18 +31,52 @@ class Login extends BaseLogin
         $this->form->fill();
     }
 
+    public function getTitle(): string|Htmlable
+    {
+        return 'Prijava';
+    }
+
+    public function getHeading(): string|Htmlable
+    {
+        return 'B2B admin panel';
+    }
+
     public function getSubheading(): string|Htmlable|null
     {
         return new HtmlString(
-            'Prijavite se B2B admin nalogom (<strong>b2badmin@bncshop.test</strong>) '
-            .'ili glavnim admin nalogom. B2B kupci koriste <a href="/b2b" class="text-primary-600 hover:underline">B2B portal</a>.'
+            'Prijavite se na <strong>BNC Shop</strong> B2B admin sistem.'
         );
+    }
+
+    protected function getEmailFormComponent(): Component
+    {
+        return parent::getEmailFormComponent()
+            ->label('Email adresa')
+            ->placeholder('admin@bncshop.ba');
+    }
+
+    protected function getPasswordFormComponent(): Component
+    {
+        return parent::getPasswordFormComponent()
+            ->label('Lozinka');
+    }
+
+    protected function getRememberFormComponent(): Component
+    {
+        return parent::getRememberFormComponent()
+            ->label('Zapamti me');
+    }
+
+    protected function getAuthenticateFormAction(): Action
+    {
+        return parent::getAuthenticateFormAction()
+            ->label('Prijavi se');
     }
 
     protected function throwFailureValidationException(): never
     {
         throw ValidationException::withMessages([
-            'data.email' => 'Neispravni podaci ili nalog nema pristup B2B admin panelu.',
+            'data.email' => 'Neispravna email adresa ili lozinka, ili nalog nema pristup B2B admin panelu.',
         ]);
     }
 }

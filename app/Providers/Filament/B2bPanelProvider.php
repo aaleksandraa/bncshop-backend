@@ -31,9 +31,14 @@ class B2bPanelProvider extends PanelProvider
             ->path('b2b-admin')
             ->login(Login::class)
             ->brandName('BNC B2B Admin')
+            ->brandLogo(asset('bnc-logo.png'))
+            ->brandLogoHeight('2.75rem')
+            ->favicon(asset('bnc-logo.png'))
             ->colors([
-                'primary' => Color::Blue,
+                'primary' => Color::hex('#e30613'),
             ])
+            ->darkMode()
+            ->renderHook('panels::head.end', fn () => view('filament.admin.head'))
             ->navigationGroups([
                 NavigationGroup::make('Katalog'),
                 NavigationGroup::make('Kupci'),
