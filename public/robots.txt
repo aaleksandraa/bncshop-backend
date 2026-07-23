@@ -1,2 +1,5 @@
+# API host — storefront SEO lives on the main domain.
 User-agent: *
-Disallow:
+Disallow: /
+
+Sitemap: https://bncshop.ba/sitemap.xml

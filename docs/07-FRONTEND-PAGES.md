@@ -63,6 +63,9 @@ Steps: Cart review → Customer info → Shipping method → Confirm
 
 ## SEO
 
-- `generateMetadata` per product/category
-- `sitemap.ts` fetches from API `/sitemap`
-- Redirects via `next.config.js` rewrites to API
+- `app/robots.ts` — valid `robots.txt` on the storefront (`Sitemap:` + disallow private areas)
+- `app/sitemap.ts` — XML sitemap from API `GET /sitemap` plus static routes
+- `generateMetadata` per product/category/brand/blog/CMS (canonical, Open Graph, Twitter)
+- Organization + WebSite JSON-LD in root layout; Product JSON-LD on product pages
+- Backend `sitemap:generate` caches correct storefront paths (`/kategorija`, `/brend`, `/proizvod`)
+- Legacy `/stranica/:slug` → `/:slug` permanent redirect in `next.config.ts`
