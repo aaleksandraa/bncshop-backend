@@ -438,6 +438,21 @@ location ^~ /_next/ {
 
 To forsira da **Node** (`start.js`) servira sve `/_next/*` sa ispravnim MIME tipom.
 
+### API — cache za `/storage/` slike (PageSpeed “efficient cache lifetimes”)
+
+Na **api.bncshop.ba** u **Apache & nginx Settings → Additional nginx directives** dodaj:
+
+```nginx
+location ^~ /storage/ {
+    expires 30d;
+    add_header Cache-Control "public, max-age=2592000, immutable" always;
+    access_log off;
+    try_files $uri =404;
+}
+```
+
+Bez ovoga nginx servirа product WebP bez `Cache-Control`, pa PageSpeed prijavljuje TTL “None”.
+
 **Uvijek nakon deploya:**
 
 ```bash
