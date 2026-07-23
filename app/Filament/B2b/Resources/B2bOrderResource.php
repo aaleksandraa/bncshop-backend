@@ -41,9 +41,9 @@ class B2bOrderResource extends Resource
         return false;
     }
 
-    public static function canDelete(Model $record): bool
+    public static function canDeleteAny(): bool
     {
-        return false;
+        return static::userCan('delete');
     }
 
     public static function form(Form $form): Form
@@ -104,6 +104,16 @@ class B2bOrderResource extends Resource
                     ->icon('heroicon-o-document-arrow-down')
                     ->url(fn (B2bOrder $record): string => route('filament.b2b-admin.b2b-orders.invoice', $record))
                     ->openUrlInNewTab(),
+                Tables\Actions\DeleteAction::make()
+                    ->modalHeading('Obriši B2B narudžbu')
+                    ->modalDescription('Narudžba i sve povezane stavke bit će trajno obrisane. Koristite za test narudžbe — ova radnja se ne može poništiti.'),
+            ])
+            ->bulkActions([
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->modalHeading('Obriši odabrane B2B narudžbe')
+                        ->modalDescription('Odabrane narudžbe i sve povezane stavke bit će trajno obrisane. Ova radnja se ne može poništiti.'),
+                ]),
             ]);
     }
 

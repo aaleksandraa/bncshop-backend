@@ -224,9 +224,9 @@ class OrderResource extends Resource
         return false;
     }
 
-    public static function canDelete(Model $record): bool
+    public static function canDeleteAny(): bool
     {
-        return false;
+        return static::userCan('delete');
     }
 
     public static function form(Form $form): Form
@@ -533,9 +533,15 @@ class OrderResource extends Resource
                         ->form(fn (Order $record): array => static::changeStatusForm($record))
                         ->action(fn (Order $record, array $data): mixed => static::applyStatusChange($record, $data)),
                 ]),
+                Tables\Actions\DeleteAction::make()
+                    ->modalHeading('Obriši narudžbu')
+                    ->modalDescription('Narudžba i sve povezane stavke bit će trajno obrisane. Koristite za test narudžbe — ova radnja se ne može poništiti.'),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->modalHeading('Obriši odabrane narudžbe')
+                        ->modalDescription('Odabrane narudžbe i sve povezane stavke bit će trajno obrisane. Ova radnja se ne može poništiti.'),
                     Tables\Actions\BulkAction::make('printSelected')
                         ->label('Štampaj odabrane')
                         ->icon('heroicon-o-printer')

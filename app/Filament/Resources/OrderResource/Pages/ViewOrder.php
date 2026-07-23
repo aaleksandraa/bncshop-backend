@@ -197,6 +197,10 @@ class ViewOrder extends ViewRecord
                         $this->refreshOrderRecord();
                     }
                 }),
+            Actions\DeleteAction::make()
+                ->modalHeading('Obriši narudžbu')
+                ->modalDescription('Narudžba i sve povezane stavke bit će trajno obrisane. Koristite za test narudžbe — ova radnja se ne može poništiti.')
+                ->successRedirectUrl(OrderResource::getUrl('index')),
         ];
     }
 }

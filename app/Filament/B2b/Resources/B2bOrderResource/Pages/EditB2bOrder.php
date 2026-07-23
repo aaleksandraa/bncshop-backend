@@ -21,6 +21,10 @@ class EditB2bOrder extends EditRecord
                 ->icon('heroicon-o-document-arrow-down')
                 ->url(fn (): string => route('filament.b2b-admin.b2b-orders.invoice', $this->record))
                 ->openUrlInNewTab(),
+            Actions\DeleteAction::make()
+                ->modalHeading('Obriši B2B narudžbu')
+                ->modalDescription('Narudžba i sve povezane stavke bit će trajno obrisane. Koristite za test narudžbe — ova radnja se ne može poništiti.')
+                ->successRedirectUrl(B2bOrderResource::getUrl('index')),
         ];
     }
 
