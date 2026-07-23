@@ -247,7 +247,7 @@ Tagged product cache **ne radi** bez `CACHE_STORE=redis`.
 1. Odvojeni vhost `bncshop.ba`
 2. Plesk → Node.js → **Enable Node.js** (dugme mora nestati; app mora biti aktivan)
 3. **Application root:** `/httpdocs` (root git repoa, npr. `bncshop-frontend`)
-4. **Document root:** `/httpdocs/.next/static` — **samo ako** dodaš nginx rewrite ispod; inače koristi `/httpdocs` (vidi troubleshooting)
+4. **Document root:** `/httpdocs` — **isti** kao Application root (vidi troubleshooting; **ne** `/httpdocs/.next/static`)
 5. **Application startup file:** `start.js` (u rootu repoa — ne `index.html`)
 6. **Application mode:** `production`
 7. **Node.js version:** 24.x ili 26.x (Plesk panel mora odgovarati verziji pri SSH buildu)
