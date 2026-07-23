@@ -2,6 +2,7 @@
 
 namespace App\Services\Homepage;
 
+use App\Models\Product;
 use App\Models\SystemSetting;
 use App\Services\Catalog\ProductReadCache;
 use App\Support\CategoryPriorityLookup;
@@ -234,5 +235,109 @@ class HomepageSettings
     public function flushCategoryChipsCache(): void
     {
         Cache::forget('homepage:category-chips:settings');
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function featuredProductsDefaults(): array
+    {
+        return [
+            'tiles_enabled' => true,
+            'rows_enabled' => true,
+            'tiles_eyebrow' => 'Omiljeni proizvodi',
+            'tiles_title' => 'Preporučeno od kupaca',
+            'rows_eyebrow' => 'Detaljno',
+            'rows_title' => 'Odabrani proizvodi',
+            'tiles_limit' => 4,
+            'rows_limit' => 2,
+            'product_ids' => [],
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function featuredProducts(): array
+    {
+        return Cache::remember('homepage:featured-products:settings', 300, function (): array {
+            $stored = SystemSetting::query()
+                ->where('key', 'homepage_featured_products')
+                ->value('value');
+
+            if (! is_array($stored)) {
+                return $this->featuredProductsDefaults();
+            }
+
+            return array_merge($this->featuredProductsDefaults(), $stored);
+        });
+    }
+
+    /**
+     * @param  array<string, mixed>  $config
+     * @return array<int, int>
+     */
+    public function resolvedFeaturedProductIds(array $config, int $limit): array
+    {
+        $ids = array_values(array_unique(array_map(
+            intval(...),
+            array_filter((array) ($config['product_ids'] ?? [])),
+        )));
+
+        if ($ids !== []) {
+            return array_slice($ids, 0, $limit);
+        }
+
+        return Product::query()
+            ->select('id')
+            ->where('status', 'active')
+            ->whereHas('defaultImage')
+            ->orderByDesc('created_at')
+            ->limit($limit)
+            ->pluck('id')
+            ->map(intval(...))
+            ->all();
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    public function saveFeaturedProducts(array $data): void
+    {
+        $tilesLimit = max(2, min(8, (int) ($data['tiles_limit'] ?? 4)));
+        $rowsLimit = max(0, min(6, (int) ($data['rows_limit'] ?? 2)));
+        $maxProducts = $tilesLimit + $rowsLimit;
+
+        $productIds = array_values(array_unique(array_map(
+            intval(...),
+            array_filter((array) ($data['product_ids'] ?? [])),
+        )));
+
+        $productIds = array_slice($productIds, 0, $maxProducts);
+
+        SystemSetting::query()->updateOrCreate(
+            ['key' => 'homepage_featured_products'],
+            [
+                'group' => 'homepage',
+                'value' => [
+                    'tiles_enabled' => (bool) ($data['tiles_enabled'] ?? true),
+                    'rows_enabled' => (bool) ($data['rows_enabled'] ?? true),
+                    'tiles_eyebrow' => (string) ($data['tiles_eyebrow'] ?? 'Omiljeni proizvodi'),
+                    'tiles_title' => (string) ($data['tiles_title'] ?? 'Preporučeno od kupaca'),
+                    'rows_eyebrow' => (string) ($data['rows_eyebrow'] ?? 'Detaljno'),
+                    'rows_title' => (string) ($data['rows_title'] ?? 'Odabrani proizvodi'),
+                    'tiles_limit' => $tilesLimit,
+                    'rows_limit' => $rowsLimit,
+                    'product_ids' => $productIds,
+                ],
+            ],
+        );
+
+        $this->flushFeaturedProductsCache();
+    }
+
+    public function flushFeaturedProductsCache(): void
+    {
+        Cache::forget('homepage:featured-products:settings');
     }
 }

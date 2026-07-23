@@ -60,9 +60,16 @@ class HomepageSettingsPage extends Page implements HasForms
             (array) ($categoryChips['category_ids'] ?? []),
         );
 
+        $featuredProducts = $settings->featuredProducts();
+        $featuredProducts['product_ids'] = array_map(
+            strval(...),
+            (array) ($featuredProducts['product_ids'] ?? []),
+        );
+
         $this->form->fill([
             'weekly_offer' => $weeklyOffer,
             'category_chips' => $categoryChips,
+            'featured_products' => $featuredProducts,
         ]);
     }
 
@@ -164,6 +171,68 @@ class HomepageSettingsPage extends Page implements HasForms
                     ])
                     ->columns(2)
                     ->statePath('category_chips'),
+                Section::make('Preporučeni proizvodi')
+                    ->description('Dvije sekcije na početnoj: pločice (2 u redu) i lista u redovima. Proizvodi se dijele redom — prvi idu u pločice, zatim u listu.')
+                    ->schema([
+                        Toggle::make('tiles_enabled')
+                            ->label('Prikaži sekciju „Preporučeno od kupaca” (pločice)')
+                            ->default(true),
+                        Toggle::make('rows_enabled')
+                            ->label('Prikaži sekciju „Odabrani proizvodi” (lista)')
+                            ->default(true),
+                        TextInput::make('tiles_eyebrow')
+                            ->label('Pločice — mali naslov')
+                            ->maxLength(80)
+                            ->default('Omiljeni proizvodi'),
+                        TextInput::make('tiles_title')
+                            ->label('Pločice — naslov')
+                            ->required()
+                            ->maxLength(120)
+                            ->default('Preporučeno od kupaca'),
+                        TextInput::make('rows_eyebrow')
+                            ->label('Lista — mali naslov')
+                            ->maxLength(80)
+                            ->default('Detaljno'),
+                        TextInput::make('rows_title')
+                            ->label('Lista — naslov')
+                            ->required()
+                            ->maxLength(120)
+                            ->default('Odabrani proizvodi'),
+                        Select::make('tiles_limit')
+                            ->label('Broj proizvoda u pločicama')
+                            ->options([
+                                2 => '2 proizvoda (1 red × 2)',
+                                4 => '4 proizvoda (2 reda × 2)',
+                                6 => '6 proizvoda (3 reda × 2)',
+                                8 => '8 proizvoda (4 reda × 2)',
+                            ])
+                            ->required()
+                            ->default(4)
+                            ->live(),
+                        Select::make('rows_limit')
+                            ->label('Broj proizvoda u listi')
+                            ->options([
+                                0 => '0 proizvoda',
+                                1 => '1 proizvod',
+                                2 => '2 proizvoda',
+                                3 => '3 proizvoda',
+                                4 => '4 proizvoda',
+                            ])
+                            ->required()
+                            ->default(2)
+                            ->live(),
+                        Select::make('product_ids')
+                            ->label('Proizvodi')
+                            ->multiple()
+                            ->searchable()
+                            ->searchDebounce(300)
+                            ->getSearchResultsUsing(fn (string $search): array => ProductAdminSearch::optionsForSearch($search))
+                            ->getOptionLabelsUsing(fn (array $values): array => self::productLabels($values))
+                            ->helperText(fn (Get $get): string => 'Redoslijed određuje raspodjelu: prvi '.((int) ($get('tiles_limit') ?? 4)).' u pločice, sljedeći '.((int) ($get('rows_limit') ?? 2)).' u listu. Ako ostavite prazno, koriste se najnoviji proizvodi sa slikom.')
+                            ->columnSpanFull(),
+                    ])
+                    ->columns(2)
+                    ->statePath('featured_products'),
             ])
             ->statePath('data');
     }
@@ -220,6 +289,7 @@ class HomepageSettingsPage extends Page implements HasForms
         $state = $this->form->getState();
         $weeklyOffer = (array) ($state['weekly_offer'] ?? []);
         $categoryChips = (array) ($state['category_chips'] ?? []);
+        $featuredProducts = (array) ($state['featured_products'] ?? []);
 
         $limit = (int) ($weeklyOffer['product_limit'] ?? 1);
         $ids = array_map(
@@ -240,8 +310,18 @@ class HomepageSettingsPage extends Page implements HasForms
         );
         $categoryChips['category_ids'] = $categoryIds;
 
+        $tilesLimit = (int) ($featuredProducts['tiles_limit'] ?? 4);
+        $rowsLimit = (int) ($featuredProducts['rows_limit'] ?? 2);
+        $featuredMax = max(0, $tilesLimit) + max(0, $rowsLimit);
+        $featuredProductIds = array_map(
+            intval(...),
+            array_slice(array_values((array) ($featuredProducts['product_ids'] ?? [])), 0, $featuredMax),
+        );
+        $featuredProducts['product_ids'] = $featuredProductIds;
+
         $settings->saveWeeklyOffer($weeklyOffer);
         $settings->saveCategoryChips($categoryChips);
+        $settings->saveFeaturedProducts($featuredProducts);
 
         $savedWeeklyOffer = $settings->weeklyOffer();
         $savedWeeklyOffer['product_ids'] = array_map(
@@ -255,9 +335,16 @@ class HomepageSettingsPage extends Page implements HasForms
             (array) ($savedCategoryChips['category_ids'] ?? []),
         );
 
+        $savedFeaturedProducts = $settings->featuredProducts();
+        $savedFeaturedProducts['product_ids'] = array_map(
+            strval(...),
+            (array) ($savedFeaturedProducts['product_ids'] ?? []),
+        );
+
         $this->form->fill([
             'weekly_offer' => $savedWeeklyOffer,
             'category_chips' => $savedCategoryChips,
+            'featured_products' => $savedFeaturedProducts,
         ]);
 
         Notification::make()

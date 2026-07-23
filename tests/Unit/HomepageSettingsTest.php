@@ -90,4 +90,30 @@ class HomepageSettingsTest extends TestCase
         $this->assertContains($racunari->id, $ids);
         $this->assertContains($laptopi->id, $ids);
     }
+
+    public function test_save_featured_products_persists_settings(): void
+    {
+        $product = Product::factory()->create();
+        $settings = app(HomepageSettings::class);
+
+        $settings->saveFeaturedProducts([
+            'tiles_enabled' => true,
+            'rows_enabled' => false,
+            'tiles_eyebrow' => 'Top',
+            'tiles_title' => 'Izbor kupaca',
+            'rows_eyebrow' => 'Detaljno',
+            'rows_title' => 'Lista',
+            'tiles_limit' => 4,
+            'rows_limit' => 2,
+            'product_ids' => [$product->id],
+        ]);
+
+        $stored = SystemSetting::query()
+            ->where('key', 'homepage_featured_products')
+            ->value('value');
+
+        $this->assertSame([$product->id], $stored['product_ids'] ?? null);
+        $this->assertTrue($stored['tiles_enabled'] ?? false);
+        $this->assertFalse($stored['rows_enabled'] ?? true);
+    }
 }

@@ -65,6 +65,7 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/settings/public', [SettingsController::class, 'publicSettings']);
         Route::get('/homepage/weekly-offer', [HomepageController::class, 'weeklyOffer']);
         Route::get('/homepage/category-chips', [HomepageController::class, 'categoryChips']);
+        Route::get('/homepage/featured-products', [HomepageController::class, 'featuredProducts']);
         Route::get('/loyalty/settings', [LoyaltyController::class, 'settings']);
 
         Route::post('/analytics/events', [AnalyticsEventController::class, 'store'])

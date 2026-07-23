@@ -106,6 +106,20 @@ class SystemSettingsSeeder extends Seeder
                 ],
                 'group' => 'homepage',
             ],
+            'homepage_featured_products' => [
+                'value' => [
+                    'tiles_enabled' => true,
+                    'rows_enabled' => true,
+                    'tiles_eyebrow' => 'Omiljeni proizvodi',
+                    'tiles_title' => 'Preporučeno od kupaca',
+                    'rows_eyebrow' => 'Detaljno',
+                    'rows_title' => 'Odabrani proizvodi',
+                    'tiles_limit' => 4,
+                    'rows_limit' => 2,
+                    'product_ids' => [],
+                ],
+                'group' => 'homepage',
+            ],
             'brevo' => [
                 'value' => [
                     'enabled' => false,
