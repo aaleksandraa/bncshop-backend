@@ -89,6 +89,22 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(3)->by($request->ip());
         });
 
+        RateLimiter::for('api-b2b', function (Request $request) {
+            $userId = $request->user()?->id;
+
+            return Limit::perMinute(300)->by(
+                $userId ? 'b2b-user:'.$userId : $request->ip()
+            );
+        });
+
+        RateLimiter::for('api-b2b-cart', function (Request $request) {
+            $userId = $request->user()?->id;
+
+            return Limit::perMinute(180)->by(
+                $userId ? 'b2b-cart:'.$userId : $request->ip()
+            );
+        });
+
         RateLimiter::for('api-admin', function (Request $request) {
             return Limit::perMinute(300)->by($request->user()?->id ?: $request->ip());
         });

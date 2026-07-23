@@ -123,22 +123,27 @@ Route::prefix('v1')->group(function (): void {
         Route::put('/customer/profile', [CustomerAuthController::class, 'updateProfile']);
     });
 
-    Route::middleware(['auth:sanctum', 'b2b.customer', 'throttle:api-public'])->prefix('b2b')->group(function (): void {
-        Route::post('/auth/logout', [B2bAuthController::class, 'logout']);
-        Route::get('/auth/me', [B2bAuthController::class, 'me']);
-        Route::get('/profile', [B2bProfileController::class, 'show']);
-        Route::patch('/profile', [B2bProfileController::class, 'update']);
-        Route::get('/categories', [B2bCatalogController::class, 'categories']);
-        Route::get('/products', [B2bCatalogController::class, 'products']);
-        Route::get('/products/{slug}', [B2bCatalogController::class, 'showProduct']);
-        Route::get('/cart', [B2bCartController::class, 'index']);
-        Route::get('/shipping-quote', [B2bCartController::class, 'shippingQuote']);
-        Route::post('/cart/items', [B2bCartController::class, 'store']);
-        Route::patch('/cart/items/{id}', [B2bCartController::class, 'update']);
-        Route::delete('/cart/items/{id}', [B2bCartController::class, 'destroy']);
-        Route::get('/orders', [B2bOrderController::class, 'index']);
-        Route::get('/orders/{id}', [B2bOrderController::class, 'show']);
-        Route::get('/orders/{id}/invoice', [B2bOrderController::class, 'invoice']);
+    Route::middleware(['auth:sanctum', 'b2b.customer'])->prefix('b2b')->group(function (): void {
+        Route::middleware('throttle:api-b2b')->group(function (): void {
+            Route::post('/auth/logout', [B2bAuthController::class, 'logout']);
+            Route::get('/auth/me', [B2bAuthController::class, 'me']);
+            Route::get('/profile', [B2bProfileController::class, 'show']);
+            Route::patch('/profile', [B2bProfileController::class, 'update']);
+            Route::get('/categories', [B2bCatalogController::class, 'categories']);
+            Route::get('/products', [B2bCatalogController::class, 'products']);
+            Route::get('/products/{slug}', [B2bCatalogController::class, 'showProduct']);
+            Route::get('/cart', [B2bCartController::class, 'index']);
+            Route::get('/shipping-quote', [B2bCartController::class, 'shippingQuote']);
+            Route::get('/orders', [B2bOrderController::class, 'index']);
+            Route::get('/orders/{id}', [B2bOrderController::class, 'show']);
+            Route::get('/orders/{id}/invoice', [B2bOrderController::class, 'invoice']);
+        });
+
+        Route::middleware('throttle:api-b2b-cart')->group(function (): void {
+            Route::post('/cart/items', [B2bCartController::class, 'store']);
+            Route::patch('/cart/items/{id}', [B2bCartController::class, 'update']);
+            Route::delete('/cart/items/{id}', [B2bCartController::class, 'destroy']);
+        });
     });
 
     Route::post('/b2b/checkout', [B2bCartController::class, 'checkout'])
