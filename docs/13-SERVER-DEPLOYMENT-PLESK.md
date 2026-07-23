@@ -401,6 +401,43 @@ npm run verify:live
 
 Ako `verify:live` prijavi `BROKEN` chunk URL-ove sa HTTP 400 i `content-type=text/html`, **Document root je pogrešan** — mora biti `/httpdocs`, ne `/httpdocs/.next/static`.
 
+### CSS/JS MIME `text/plain` (stilizacija ne radi)
+
+Console: `Refused to apply style ... MIME type ('text/plain')`.
+
+Apache/nginx servira `.next/static` **direktno** (prije Node.js) bez ispravnog `Content-Type`. Često kad je Document root još uvijek `/httpdocs/.next/static`, ili kad **Hosting Settings** i **Node.js** panel imaju različit document root.
+
+**Provjeri oba mjesta u Plesk-u:**
+
+| Panel | Document root |
+|-------|----------------|
+| Domains → **Hosting Settings** | `/httpdocs` |
+| Domains → **Node.js** | `/httpdocs` (Application root isto) |
+
+Na serveru:
+
+```bash
+cd /var/www/vhosts/bncshop.ba/httpdocs
+git pull origin main
+bash scripts/plesk-fix-static-mime.sh
+# Plesk -> build:clean -> Restart App
+npm run verify:live
+```
+
+Build sada automatski piše `.htaccess` u `.next/static/` (`postbuild`). Root `.htaccess` u repou dodaje `AddType text/css`.
+
+Ako i dalje `text/plain`, u **Apache & nginx Settings → Additional nginx directives**:
+
+```nginx
+location ^~ /_next/ {
+    proxy_pass https://127.0.0.1:7081;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+}
+```
+
+To forsira da **Node** (`start.js`) servira sve `/_next/*` sa ispravnim MIME tipom.
+
 **Uvijek nakon deploya:**
 
 ```bash
