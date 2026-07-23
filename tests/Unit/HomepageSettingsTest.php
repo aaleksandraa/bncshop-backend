@@ -2,6 +2,7 @@
 
 namespace Tests\Unit;
 
+use App\Models\Category;
 use App\Models\Product;
 use App\Models\SystemSetting;
 use App\Services\Catalog\ProductReadCache;
@@ -42,5 +43,51 @@ class HomepageSettingsTest extends TestCase
 
         $this->assertSame([$product->id], $stored['product_ids'] ?? null);
         $this->assertSame('Test ponuda', $stored['title'] ?? null);
+    }
+
+    public function test_save_category_chips_persists_settings(): void
+    {
+        $settings = app(HomepageSettings::class);
+
+        $settings->saveCategoryChips([
+            'enabled' => true,
+            'title' => 'Odaberite kategoriju',
+            'subtitle' => 'Brzo do proizvoda',
+            'category_limit' => 4,
+            'category_ids' => [10, 20, 30, 40],
+        ]);
+
+        $stored = SystemSetting::query()
+            ->where('key', 'homepage_category_chips')
+            ->value('value');
+
+        $this->assertSame([10, 20, 30, 40], $stored['category_ids'] ?? null);
+        $this->assertSame('Odaberite kategoriju', $stored['title'] ?? null);
+        $this->assertSame(4, $stored['category_limit'] ?? null);
+    }
+
+    public function test_resolved_category_chip_ids_fall_back_to_defaults_when_empty(): void
+    {
+        $racunari = Category::factory()->create([
+            'name' => 'Racunari',
+            'full_slug' => 'it-oprema/racunari',
+            'depth' => 1,
+            'status' => 'active',
+        ]);
+        $laptopi = Category::factory()->create([
+            'name' => 'Laptopi',
+            'full_slug' => 'it-oprema/laptopi',
+            'depth' => 1,
+            'status' => 'active',
+        ]);
+
+        $settings = app(HomepageSettings::class);
+
+        $ids = $settings->resolvedCategoryChipIds([
+            'category_ids' => [],
+        ]);
+
+        $this->assertContains($racunari->id, $ids);
+        $this->assertContains($laptopi->id, $ids);
     }
 }

@@ -4,10 +4,37 @@ namespace App\Services\Homepage;
 
 use App\Models\SystemSetting;
 use App\Services\Catalog\ProductReadCache;
+use App\Support\CategoryPriorityLookup;
 use Illuminate\Support\Facades\Cache;
 
 class HomepageSettings
 {
+    /**
+     * @var array<int, array{names: array<int, string>, slug_ends: array<int, string>, slug_paths: array<int, string>}>
+     */
+    public const DEFAULT_CATEGORY_CHIP_PRIORITIES = [
+        [
+            'names' => ['Računari', 'Racunari'],
+            'slug_ends' => ['racunari'],
+            'slug_paths' => ['it-oprema/racunari', 'racunari'],
+        ],
+        [
+            'names' => ['Laptopi'],
+            'slug_ends' => ['laptopi'],
+            'slug_paths' => ['it-oprema/laptopi', 'laptopi'],
+        ],
+        [
+            'names' => ['Monitori'],
+            'slug_ends' => ['monitori'],
+            'slug_paths' => ['it-oprema/periferija/monitori', 'it-oprema/monitori', 'monitori'],
+        ],
+        [
+            'names' => ['Printeri', 'Print i kancelarija'],
+            'slug_ends' => ['printeri', 'print-kancelarija'],
+            'slug_paths' => ['print-kancelarija/printeri', 'print-kancelarija', 'printeri'],
+        ],
+    ];
+
     public function __construct(
         private readonly ProductReadCache $productReadCache,
     ) {}
@@ -121,5 +148,91 @@ class HomepageSettings
 
         return ($config['enabled'] ?? false)
             && ($config['layout'] ?? '') === 'spotlight_card';
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function categoryChipsDefaults(): array
+    {
+        return [
+            'enabled' => true,
+            'title' => 'Šta danas tražite?',
+            'subtitle' => 'Odaberite kategoriju — jednostavno i brzo.',
+            'category_limit' => 6,
+            'category_ids' => CategoryPriorityLookup::resolveIds(self::DEFAULT_CATEGORY_CHIP_PRIORITIES),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function categoryChips(): array
+    {
+        return Cache::remember('homepage:category-chips:settings', 300, function (): array {
+            $stored = SystemSetting::query()
+                ->where('key', 'homepage_category_chips')
+                ->value('value');
+
+            if (! is_array($stored)) {
+                return $this->categoryChipsDefaults();
+            }
+
+            return array_merge($this->categoryChipsDefaults(), $stored);
+        });
+    }
+
+    /**
+     * @param  array<string, mixed>  $config
+     * @return array<int, int>
+     */
+    public function resolvedCategoryChipIds(array $config): array
+    {
+        $ids = array_values(array_unique(array_map(
+            intval(...),
+            array_filter((array) ($config['category_ids'] ?? [])),
+        )));
+
+        if ($ids !== []) {
+            return $ids;
+        }
+
+        return CategoryPriorityLookup::resolveIds(self::DEFAULT_CATEGORY_CHIP_PRIORITIES);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    public function saveCategoryChips(array $data): void
+    {
+        $limit = max(1, min(12, (int) ($data['category_limit'] ?? 6)));
+
+        $categoryIds = array_values(array_unique(array_map(
+            intval(...),
+            array_filter((array) ($data['category_ids'] ?? [])),
+        )));
+
+        $categoryIds = array_slice($categoryIds, 0, $limit);
+
+        SystemSetting::query()->updateOrCreate(
+            ['key' => 'homepage_category_chips'],
+            [
+                'group' => 'homepage',
+                'value' => [
+                    'enabled' => (bool) ($data['enabled'] ?? true),
+                    'title' => (string) ($data['title'] ?? 'Šta danas tražite?'),
+                    'subtitle' => filled($data['subtitle'] ?? null) ? (string) $data['subtitle'] : null,
+                    'category_limit' => $limit,
+                    'category_ids' => $categoryIds,
+                ],
+            ],
+        );
+
+        $this->flushCategoryChipsCache();
+    }
+
+    public function flushCategoryChipsCache(): void
+    {
+        Cache::forget('homepage:category-chips:settings');
     }
 }

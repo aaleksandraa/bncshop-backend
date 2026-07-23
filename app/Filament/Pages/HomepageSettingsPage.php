@@ -2,8 +2,10 @@
 
 namespace App\Filament\Pages;
 
+use App\Models\Category;
 use App\Models\Product;
 use App\Services\Homepage\HomepageSettings;
+use App\Support\CategoryAdminSearch;
 use App\Support\ProductAdminSearch;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
@@ -46,13 +48,22 @@ class HomepageSettingsPage extends Page implements HasForms
 
     public function mount(HomepageSettings $settings): void
     {
-        $data = $settings->weeklyOffer();
-        $data['product_ids'] = array_map(
+        $weeklyOffer = $settings->weeklyOffer();
+        $weeklyOffer['product_ids'] = array_map(
             strval(...),
-            (array) ($data['product_ids'] ?? []),
+            (array) ($weeklyOffer['product_ids'] ?? []),
         );
 
-        $this->form->fill($data);
+        $categoryChips = $settings->categoryChips();
+        $categoryChips['category_ids'] = array_map(
+            strval(...),
+            (array) ($categoryChips['category_ids'] ?? []),
+        );
+
+        $this->form->fill([
+            'weekly_offer' => $weeklyOffer,
+            'category_chips' => $categoryChips,
+        ]);
     }
 
     public function form(Form $form): Form
@@ -60,7 +71,7 @@ class HomepageSettingsPage extends Page implements HasForms
         return $form
             ->schema([
                 Section::make('Ponuda sedmice')
-                    ->description('Odaberite proizvode i način prikaza na početnoj stranici.')
+                    ->description('Odaberite proizvode i način prikaza u hero sekciji.')
                     ->schema([
                         Toggle::make('enabled')
                             ->label('Prikaži sekciju')
@@ -109,7 +120,50 @@ class HomepageSettingsPage extends Page implements HasForms
                             ->helperText('Pretražite po nazivu, brendu, SKU-u, barkodu ili ID-u. Redoslijed odabira određuje red prikaza.')
                             ->columnSpanFull(),
                     ])
-                    ->columns(2),
+                    ->columns(2)
+                    ->statePath('weekly_offer'),
+                Section::make('Kategorije na početnoj')
+                    ->description('Odaberite koje kategorije se prikazuju u sekciji „Šta danas tražite?”.')
+                    ->schema([
+                        Toggle::make('enabled')
+                            ->label('Prikaži sekciju')
+                            ->default(true),
+                        TextInput::make('title')
+                            ->label('Naslov sekcije')
+                            ->required()
+                            ->maxLength(120)
+                            ->default('Šta danas tražite?'),
+                        TextInput::make('subtitle')
+                            ->label('Podnaslov (opcionalno)')
+                            ->maxLength(255)
+                            ->default('Odaberite kategoriju — jednostavno i brzo.'),
+                        Select::make('category_limit')
+                            ->label('Maksimalan broj kategorija')
+                            ->options([
+                                2 => '2 kategorije',
+                                3 => '3 kategorije',
+                                4 => '4 kategorije',
+                                5 => '5 kategorija',
+                                6 => '6 kategorija',
+                                8 => '8 kategorija',
+                                10 => '10 kategorija',
+                                12 => '12 kategorija',
+                            ])
+                            ->required()
+                            ->default(6)
+                            ->live(),
+                        Select::make('category_ids')
+                            ->label('Kategorije')
+                            ->multiple()
+                            ->searchable()
+                            ->searchDebounce(300)
+                            ->getSearchResultsUsing(fn (string $search): array => CategoryAdminSearch::optionsForSearch($search))
+                            ->getOptionLabelsUsing(fn (array $values): array => self::categoryLabels($values))
+                            ->helperText('Redoslijed odabira određuje red prikaza. Ako ostavite prazno, koriste se podrazumijevane kategorije (računari, laptopi, monitori, printeri).')
+                            ->columnSpanFull(),
+                    ])
+                    ->columns(2)
+                    ->statePath('category_chips'),
             ])
             ->statePath('data');
     }
@@ -133,6 +187,25 @@ class HomepageSettingsPage extends Page implements HasForms
             ->all();
     }
 
+    /**
+     * @param  array<int|string>  $values
+     * @return array<string, string>
+     */
+    private static function categoryLabels(array $values): array
+    {
+        if ($values === []) {
+            return [];
+        }
+
+        return Category::query()
+            ->whereIn('id', $values)
+            ->get(['id', 'name', 'display_name', 'full_slug'])
+            ->mapWithKeys(fn (Category $category): array => [
+                (string) $category->id => CategoryAdminSearch::formatOptionLabel($category),
+            ])
+            ->all();
+    }
+
     public function save(HomepageSettings $settings): void
     {
         if (! static::canAccess()) {
@@ -145,27 +218,47 @@ class HomepageSettingsPage extends Page implements HasForms
         }
 
         $state = $this->form->getState();
-        $limit = (int) ($state['product_limit'] ?? 1);
+        $weeklyOffer = (array) ($state['weekly_offer'] ?? []);
+        $categoryChips = (array) ($state['category_chips'] ?? []);
+
+        $limit = (int) ($weeklyOffer['product_limit'] ?? 1);
         $ids = array_map(
             intval(...),
-            array_slice(array_values((array) ($state['product_ids'] ?? [])), 0, $limit),
+            array_slice(array_values((array) ($weeklyOffer['product_ids'] ?? [])), 0, $limit),
         );
-        $state['product_ids'] = $ids;
+        $weeklyOffer['product_ids'] = $ids;
 
-        if (($state['layout'] ?? '') === 'spotlight_card') {
-            $state['product_limit'] = 1;
-            $state['product_ids'] = array_slice($ids, 0, 1);
+        if (($weeklyOffer['layout'] ?? '') === 'spotlight_card') {
+            $weeklyOffer['product_limit'] = 1;
+            $weeklyOffer['product_ids'] = array_slice($ids, 0, 1);
         }
 
-        $settings->saveWeeklyOffer($state);
+        $categoryLimit = (int) ($categoryChips['category_limit'] ?? 6);
+        $categoryIds = array_map(
+            intval(...),
+            array_slice(array_values((array) ($categoryChips['category_ids'] ?? [])), 0, $categoryLimit),
+        );
+        $categoryChips['category_ids'] = $categoryIds;
 
-        $saved = $settings->weeklyOffer();
-        $saved['product_ids'] = array_map(
+        $settings->saveWeeklyOffer($weeklyOffer);
+        $settings->saveCategoryChips($categoryChips);
+
+        $savedWeeklyOffer = $settings->weeklyOffer();
+        $savedWeeklyOffer['product_ids'] = array_map(
             strval(...),
-            (array) ($saved['product_ids'] ?? []),
+            (array) ($savedWeeklyOffer['product_ids'] ?? []),
         );
 
-        $this->form->fill($saved);
+        $savedCategoryChips = $settings->categoryChips();
+        $savedCategoryChips['category_ids'] = array_map(
+            strval(...),
+            (array) ($savedCategoryChips['category_ids'] ?? []),
+        );
+
+        $this->form->fill([
+            'weekly_offer' => $savedWeeklyOffer,
+            'category_chips' => $savedCategoryChips,
+        ]);
 
         Notification::make()
             ->title('Postavke početne stranice su sačuvane.')

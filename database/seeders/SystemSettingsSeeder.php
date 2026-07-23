@@ -96,6 +96,16 @@ class SystemSettingsSeeder extends Seeder
                 ],
                 'group' => 'homepage',
             ],
+            'homepage_category_chips' => [
+                'value' => [
+                    'enabled' => true,
+                    'title' => 'Šta danas tražite?',
+                    'subtitle' => 'Odaberite kategoriju — jednostavno i brzo.',
+                    'category_limit' => 6,
+                    'category_ids' => [],
+                ],
+                'group' => 'homepage',
+            ],
             'brevo' => [
                 'value' => [
                     'enabled' => false,
