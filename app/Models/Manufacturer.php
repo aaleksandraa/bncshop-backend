@@ -20,6 +20,7 @@ class Manufacturer extends Model
         'external_id',
         'system',
         'featured',
+        'sort_order',
         'description',
         'meta_title',
         'meta_description',
@@ -33,6 +34,7 @@ class Manufacturer extends Model
             'external_manufacturer_id' => 'string',
             'system' => 'boolean',
             'featured' => 'boolean',
+            'sort_order' => 'integer',
         ];
     }
 
