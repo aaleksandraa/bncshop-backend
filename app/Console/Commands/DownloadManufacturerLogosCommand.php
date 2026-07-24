@@ -9,10 +9,10 @@ use Illuminate\Console\Command;
 class DownloadManufacturerLogosCommand extends Command
 {
     protected $signature = 'manufacturers:download-logos
-                            {--limit= : Max brands to process}
+                            {--limit= : Max brands to download after URL resolve}
                             {--force : Re-download even when a local logo already exists}';
 
-    protected $description = 'Download remote manufacturer logo_url files into local logo_path storage';
+    protected $description = 'Resolve brand logos from A1 storefront and download them into local storage';
 
     public function handle(
         ManufacturerLogoDownloader $downloader,
@@ -24,15 +24,23 @@ class DownloadManufacturerLogosCommand extends Command
             : null;
         $force = (bool) $this->option('force');
 
+        $this->info('Resolving logo URLs from A1 brand directory…');
+
         $result = $downloader->downloadMissing($limit, $force);
         $productReadCache->flushManufacturers();
 
         $this->info(sprintf(
-            'Downloaded: %d, skipped: %d, failed: %d',
+            'Resolved URLs: %d | Downloaded: %d | Skipped: %d | Failed: %d | Still without logo: %d',
+            $result['resolved'],
             $result['downloaded'],
             $result['skipped'],
             $result['failed'],
+            $result['unmatched'],
         ));
+
+        if ($result['downloaded'] === 0 && $result['resolved'] === 0) {
+            $this->warn('Nijedan logo nije pronađen. Provjerite da li server može dohvatiti https://a1team.ba/brendovi');
+        }
 
         return $result['failed'] > 0 ? self::FAILURE : self::SUCCESS;
     }

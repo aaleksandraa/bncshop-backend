@@ -27,8 +27,8 @@ class ListManufacturers extends ListRecords
                 ->icon('heroicon-o-arrow-down-tray')
                 ->color('gray')
                 ->requiresConfirmation()
-                ->modalHeading('Povuci logotipe sa eksternih URL-ova')
-                ->modalDescription('Preuzima logo_url za brendove koji još nemaju uploadani logo (do 100 po pokretanju).')
+                ->modalHeading('Povuci logotipe sa A1 brend stranice')
+                ->modalDescription('Pronalazi logotipe na a1team.ba/brendovi i preuzima ih lokalno (do 100 po pokretanju).')
                 ->action(function (
                     ManufacturerLogoDownloader $downloader,
                     ProductReadCache $cache,
@@ -39,10 +39,12 @@ class ListManufacturers extends ListRecords
                     Notification::make()
                         ->title('Preuzimanje logotipa završeno')
                         ->body(sprintf(
-                            'Preuzeto: %d, preskočeno: %d, neuspješno: %d',
+                            'Pronađeno URL: %d, preuzeto: %d, preskočeno: %d, neuspješno: %d, bez loga: %d',
+                            $result['resolved'],
                             $result['downloaded'],
                             $result['skipped'],
                             $result['failed'],
+                            $result['unmatched'],
                         ))
                         ->success()
                         ->send();
