@@ -33,7 +33,7 @@ class MenuSeeder extends Seeder
         ['names' => ['IT tehnika', 'IT oprema'], 'slug_ends' => ['it-oprema'], 'slug_paths' => ['it-oprema'], 'label' => 'IT tehnika'],
         ['names' => ['Klime', 'Klima'], 'slug_ends' => ['klime', 'klima'], 'slug_paths' => ['klime', 'klima'], 'label' => null],
         ['names' => ['Televizori', 'TV'], 'slug_ends' => ['televizori', 'tv'], 'slug_paths' => ['televizori', 'tv/televizori', 'tv'], 'label' => null],
-        ['names' => ['Softver i licence', 'Softver', 'Licence'], 'slug_ends' => ['softver', 'licence', 'softver-i-licence'], 'slug_paths' => ['softver-i-licence', 'softver-i-licenci', 'it-oprema/softver-i-licence', 'softver/licence', 'softver'], 'label' => 'Softver i licence'],
+        ['names' => ['Softver i licence', 'Softver', 'Licence'], 'slug_ends' => ['softver', 'softver-licence', 'softver-i-licence'], 'slug_paths' => ['softver-licence', 'softver-i-licence', 'softver-i-licenci', 'it-oprema/softver-i-licence', 'softver/licence', 'softver'], 'label' => 'Softver i licence'],
     ];
 
     public function run(): void

@@ -18,8 +18,9 @@ class EnsureHeaderMenuCommand extends Command
      */
     private const SOFTVER_PRIORITY = [
         'names' => ['Softver i licence', 'Softver', 'Licence'],
-        'slug_ends' => ['softver', 'licence', 'softver-i-licence'],
+        'slug_ends' => ['softver', 'softver-licence', 'softver-i-licence'],
         'slug_paths' => [
+            'softver-licence',
             'softver-i-licence',
             'softver-i-licenci',
             'it-oprema/softver-i-licence',
