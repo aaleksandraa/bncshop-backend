@@ -31,8 +31,8 @@ class MenuSeeder extends Seeder
         ['names' => ['Monitori'], 'slug_ends' => ['monitori'], 'slug_paths' => ['it-oprema/periferija/monitori', 'it-oprema/monitori', 'monitori'], 'label' => null],
         ['names' => ['Print', 'Printeri', 'Print i kancelarija'], 'slug_ends' => ['print-kancelarija', 'printeri', 'print'], 'slug_paths' => ['print-kancelarija', 'print-kancelarija/printeri', 'printeri'], 'label' => 'Print'],
         ['names' => ['IT tehnika', 'IT oprema'], 'slug_ends' => ['it-oprema'], 'slug_paths' => ['it-oprema'], 'label' => 'IT tehnika'],
-        ['names' => ['Klime', 'Klima'], 'slug_ends' => ['klime', 'klima'], 'slug_paths' => ['klime', 'klima'], 'label' => null],
-        ['names' => ['Televizori', 'TV'], 'slug_ends' => ['televizori', 'tv'], 'slug_paths' => ['televizori', 'tv/televizori', 'tv'], 'label' => null],
+        ['names' => ['Klime', 'Klima', 'Klima i grijanje'], 'slug_ends' => ['klime', 'klima', 'klima-grijanje'], 'slug_paths' => ['klima-grijanje', 'klime', 'klima'], 'label' => null],
+        ['names' => ['Televizori', 'TV', 'TV, audio i video'], 'slug_ends' => ['televizori', 'tv', 'tv-audio-video'], 'slug_paths' => ['tv-audio-video', 'televizori', 'tv/televizori', 'tv'], 'label' => null],
         ['names' => ['Softver i licence', 'Softver', 'Licence'], 'slug_ends' => ['softver', 'softver-licence', 'softver-i-licence'], 'slug_paths' => ['softver-licence', 'softver-i-licence', 'softver-i-licenci', 'it-oprema/softver-i-licence', 'softver/licence', 'softver'], 'label' => 'Softver i licence'],
     ];
 
