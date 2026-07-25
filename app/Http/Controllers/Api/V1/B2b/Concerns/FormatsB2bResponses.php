@@ -8,6 +8,7 @@ use App\Models\B2bCustomer;
 use App\Models\B2bOrder;
 use App\Models\B2bProduct;
 use App\Services\B2b\B2bPricingService;
+use App\Services\B2b\B2bProductAttributeService;
 use App\Support\B2bOrderStatus;
 use App\Support\SafeHtml;
 use Illuminate\Http\Request;
@@ -90,6 +91,7 @@ trait FormatsB2bResponses
             'stock_quantity' => $product->stock_quantity,
             'in_stock' => $product->isInStock(),
             'image_url' => $primaryImage?->url(),
+            'attributes' => $this->formatProductAttributes($product),
         ];
     }
 
@@ -127,7 +129,16 @@ trait FormatsB2bResponses
                     'is_primary' => $image->is_primary,
                 ])->values()->all()
                 : [],
+            'attributes' => $this->formatProductAttributes($product),
         ];
+    }
+
+    /**
+     * @return array<int, array{slug: string, name: string, values: array<int, string>}>
+     */
+    protected function formatProductAttributes(B2bProduct $product): array
+    {
+        return app(B2bProductAttributeService::class)->formatForProduct($product);
     }
 
     /**

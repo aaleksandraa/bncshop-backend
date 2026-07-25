@@ -3,6 +3,7 @@
 namespace App\Filament\B2b\Resources;
 
 use App\Filament\B2b\Resources\B2bProductResource\Pages;
+use App\Filament\B2b\Concerns\BuildsB2bProductAttributeFields;
 use App\Filament\Concerns\AuthorizesWithPermissions;
 use App\Models\B2bProduct;
 use Filament\Forms;
@@ -15,6 +16,7 @@ use Illuminate\Support\Str;
 class B2bProductResource extends Resource
 {
     use AuthorizesWithPermissions;
+    use BuildsB2bProductAttributeFields;
 
     protected static ?string $model = B2bProduct::class;
 
@@ -42,7 +44,8 @@ class B2bProductResource extends Resource
                     ->relationship('category', 'name')
                     ->required()
                     ->searchable()
-                    ->preload(),
+                    ->preload()
+                    ->live(),
                 Forms\Components\TextInput::make('name')
                     ->label('Naziv')
                     ->required()
@@ -61,6 +64,7 @@ class B2bProductResource extends Resource
                     ->label('Opis')
                     ->columnSpanFull(),
             ])->columns(2),
+            ...static::b2bProductAttributeFields(),
             Forms\Components\Section::make('Cijena i zalihe')->schema([
                 Forms\Components\TextInput::make('regular_price')
                     ->label('Redovna cijena (KM)')

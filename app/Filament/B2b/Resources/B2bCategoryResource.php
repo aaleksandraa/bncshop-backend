@@ -3,6 +3,7 @@
 namespace App\Filament\B2b\Resources;
 
 use App\Filament\B2b\Resources\B2bCategoryResource\Pages;
+use App\Filament\B2b\Resources\B2bCategoryResource\RelationManagers;
 use App\Filament\Concerns\AuthorizesWithPermissions;
 use App\Models\B2bCategory;
 use Filament\Forms;
@@ -85,6 +86,13 @@ class B2bCategoryResource extends Resource
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
+    }
+
+    public static function getRelations(): array
+    {
+        return [
+            RelationManagers\CategoryAttributesRelationManager::class,
+        ];
     }
 
     public static function getPages(): array

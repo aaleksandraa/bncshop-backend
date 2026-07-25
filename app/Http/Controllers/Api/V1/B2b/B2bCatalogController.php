@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\Concerns\RespondsWithJson;
 use App\Http\Controllers\Controller;
 use App\Models\B2bCategory;
 use App\Models\B2bProduct;
+use App\Services\B2b\B2bProductAttributeService;
 use App\Services\B2b\B2bReadCache;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -18,6 +19,7 @@ class B2bCatalogController extends Controller
 
     public function __construct(
         private readonly B2bReadCache $b2bReadCache,
+        private readonly B2bProductAttributeService $attributeService,
     ) {}
 
     /**
@@ -28,6 +30,7 @@ class B2bCatalogController extends Controller
         return [
             'category',
             'images',
+            'attributeValues.definition',
             'campaigns' => fn ($query) => $query
                 ->where('is_active', true)
                 ->where(function ($query): void {
@@ -58,6 +61,21 @@ class B2bCatalogController extends Controller
         return $this->success($payload);
     }
 
+    public function categoryFilters(Request $request, string $slug): JsonResponse
+    {
+        $category = B2bCategory::query()
+            ->where('slug', $slug)
+            ->where('is_active', true)
+            ->firstOrFail();
+
+        $payload = $this->b2bReadCache->rememberCategoryFilters($slug, 120, fn (): array => [
+            'category' => $this->formatCategory($category),
+            'attributes' => $this->attributeService->filtersForCategory($category),
+        ]);
+
+        return $this->success($payload);
+    }
+
     public function products(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -65,7 +83,25 @@ class B2bCatalogController extends Controller
             'search' => ['nullable', 'string', 'max:255'],
             'page' => ['nullable', 'integer', 'min:1'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
+            'attrs' => ['nullable', 'array'],
+            'attrs.*' => ['nullable'],
         ]);
+
+        $attributeFilters = collect($validated['attrs'] ?? [])
+            ->map(function ($values): array {
+                if (is_array($values)) {
+                    return array_values(array_filter(array_map(
+                        fn ($value) => trim((string) $value),
+                        $values,
+                    )));
+                }
+
+                $value = trim((string) $values);
+
+                return $value === '' ? [] : [$value];
+            })
+            ->filter(fn (array $values): bool => $values !== [])
+            ->all();
 
         $customer = $this->b2bCustomer($request);
 
@@ -92,6 +128,10 @@ class B2bCatalogController extends Controller
                 $q->where('name', 'ilike', "%{$search}%")
                     ->orWhere('sku', 'ilike', "%{$search}%");
             });
+        }
+
+        if ($attributeFilters !== []) {
+            $this->attributeService->applyFilters($query, $attributeFilters);
         }
 
         $paginator = $query

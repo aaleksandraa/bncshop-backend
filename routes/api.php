@@ -132,6 +132,7 @@ Route::prefix('v1')->group(function (): void {
             Route::get('/profile', [B2bProfileController::class, 'show']);
             Route::patch('/profile', [B2bProfileController::class, 'update']);
             Route::get('/categories', [B2bCatalogController::class, 'categories']);
+            Route::get('/categories/{slug}/filters', [B2bCatalogController::class, 'categoryFilters']);
             Route::get('/products', [B2bCatalogController::class, 'products']);
             Route::get('/products/{slug}', [B2bCatalogController::class, 'showProduct']);
             Route::get('/cart', [B2bCartController::class, 'index']);

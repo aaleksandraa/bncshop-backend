@@ -50,6 +50,11 @@ class B2bProduct extends Model
         return $this->belongsToMany(B2bCampaign::class, 'b2b_campaign_product', 'b2b_product_id', 'b2b_campaign_id');
     }
 
+    public function attributeValues(): HasMany
+    {
+        return $this->hasMany(B2bProductAttributeValue::class, 'b2b_product_id');
+    }
+
     public function primaryImage(): ?B2bProductImage
     {
         if ($this->relationLoaded('images')) {
