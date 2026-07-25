@@ -143,11 +143,11 @@ class B2bAttributeDefinitionResource extends Resource
                 Tables\Columns\TextColumn::make('input_type')
                     ->label('Tip')
                     ->badge()
-                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                    ->formatStateUsing(fn (?string $state): string => match ($state) {
                         B2bAttributeDefinition::INPUT_SELECT => 'Select',
                         B2bAttributeDefinition::INPUT_MULTISELECT => 'Multi',
                         B2bAttributeDefinition::INPUT_TEXT => 'Tekst',
-                        default => $state,
+                        default => $state ?? '—',
                     }),
                 Tables\Columns\TextColumn::make('options_count')
                     ->label('Vrijednosti')
