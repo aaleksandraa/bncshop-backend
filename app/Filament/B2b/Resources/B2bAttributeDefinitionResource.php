@@ -3,7 +3,6 @@
 namespace App\Filament\B2b\Resources;
 
 use App\Filament\B2b\Resources\B2bAttributeDefinitionResource\Pages;
-use App\Filament\B2b\Resources\B2bAttributeDefinitionResource\RelationManagers;
 use App\Filament\Concerns\AuthorizesWithPermissions;
 use App\Models\B2bAttributeDefinition;
 use App\Models\B2bAttributeOption;
@@ -81,7 +80,7 @@ class B2bAttributeDefinitionResource extends Resource
                     ->default(0),
             ])->columns(2),
             Forms\Components\Section::make('Kategorije')
-                ->description('Odaberite kategorije u kojima se ovaj atribut prikazuje pri kreiranju proizvoda.')
+                ->description('Odaberite B2B kategorije u kojima se ovaj atribut prikazuje pri kreiranju proizvoda (npr. Monitori, Laptopi).')
                 ->schema([
                     Forms\Components\Select::make('category_ids')
                         ->label('Vezano za kategorije')
@@ -94,6 +93,7 @@ class B2bAttributeDefinitionResource extends Resource
                         ->multiple()
                         ->searchable()
                         ->preload()
+                        ->helperText('Sačuvajte formu nakon izmjene kategorija.')
                         ->columnSpanFull(),
                 ]),
             Forms\Components\Section::make('Predefinisane vrijednosti')
@@ -259,10 +259,7 @@ class B2bAttributeDefinitionResource extends Resource
 
     public static function getRelations(): array
     {
-        return [
-            RelationManagers\CategoriesRelationManager::class,
-            RelationManagers\OptionsRelationManager::class,
-        ];
+        return [];
     }
 
     public static function getPages(): array
