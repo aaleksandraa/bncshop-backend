@@ -39,15 +39,19 @@ class OptionsRelationManager extends RelationManager
             ])
             ->defaultSort('sort_order')
             ->headerActions([
-                Tables\Actions\CreateAction::make(),
+                Tables\Actions\CreateAction::make()
+                    ->label('Dodaj vrijednost'),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->label('Uredi'),
+                Tables\Actions\DeleteAction::make()
+                    ->label('Obriši'),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->label('Obriši odabrane'),
                 ]),
             ]);
     }
