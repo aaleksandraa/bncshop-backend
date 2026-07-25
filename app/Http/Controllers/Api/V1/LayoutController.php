@@ -51,7 +51,7 @@ class LayoutController extends Controller
     private function buildPublicSettings(TrackingSettings $trackingSettings): array
     {
         $settings = SystemSetting::query()
-            ->whereIn('group', ['shop', 'checkout', 'seo'])
+            ->publicFacing()
             ->get()
             ->mapWithKeys(fn (SystemSetting $setting): array => [$setting->key => $setting->value]);
 

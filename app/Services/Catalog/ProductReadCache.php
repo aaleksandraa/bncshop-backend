@@ -71,7 +71,7 @@ class ProductReadCache
     public function rememberPublicSettings(int $ttlSeconds, callable $callback): array
     {
         return $this->tagged(['settings'])
-            ->remember('settings:public', $ttlSeconds, $callback);
+            ->remember('settings:public:v2', $ttlSeconds, $callback);
     }
 
     /**
@@ -80,7 +80,7 @@ class ProductReadCache
     public function rememberLayoutShell(int $ttlSeconds, callable $callback): array
     {
         return $this->tagged(['layout', 'settings', 'menus', 'categories'])
-            ->remember('layout:shell:v1', $ttlSeconds, $callback);
+            ->remember('layout:shell:v2', $ttlSeconds, $callback);
     }
 
     /**

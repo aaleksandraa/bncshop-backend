@@ -21,7 +21,7 @@ class SettingsController extends Controller
     {
         $settings = $this->productReadCache->rememberPublicSettings(600, function () use ($trackingSettings): array {
             $settings = SystemSetting::query()
-                ->whereIn('group', ['shop', 'checkout', 'seo'])
+                ->publicFacing()
                 ->get()
                 ->mapWithKeys(fn (SystemSetting $setting): array => [$setting->key => $setting->value]);
 
