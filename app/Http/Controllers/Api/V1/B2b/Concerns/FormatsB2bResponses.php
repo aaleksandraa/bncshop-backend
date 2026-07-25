@@ -10,6 +10,7 @@ use App\Models\B2bProduct;
 use App\Services\B2b\B2bPricingService;
 use App\Services\B2b\B2bProductAttributeService;
 use App\Support\B2bOrderStatus;
+use App\Support\B2bPaymentMethod;
 use App\Support\SafeHtml;
 use Illuminate\Http\Request;
 
@@ -200,6 +201,7 @@ trait FormatsB2bResponses
             'status' => $order->status,
             'status_label' => B2bOrderStatus::label($order->status),
             'payment_method' => $order->payment_method,
+            'payment_method_label' => B2bPaymentMethod::label($order->payment_method),
             'company_name' => $order->company_name,
             'subtotal' => (float) $order->subtotal,
             'discount_total' => (float) $order->discount_total,
@@ -221,6 +223,7 @@ trait FormatsB2bResponses
             'status' => $order->status,
             'status_label' => B2bOrderStatus::label($order->status),
             'payment_method' => $order->payment_method,
+            'payment_method_label' => B2bPaymentMethod::label($order->payment_method),
             'company_name' => $order->company_name,
             'company_address' => $order->company_address,
             'jib' => $order->jib,

@@ -4,6 +4,8 @@ namespace App\Services\B2b;
 
 use App\Models\B2bOrder;
 use App\Support\B2bInvoiceVat;
+use App\Support\B2bPaymentMethod;
+use App\Support\B2bQuoteDocument;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\Response;
@@ -29,7 +31,7 @@ class B2bOrderInvoicePdf
         $order->loadMissing('items');
 
         return $this->renderPdf($order)
-            ->download('faktura-'.$order->order_number.'.pdf');
+            ->download(B2bQuoteDocument::downloadFilename($order->order_number));
     }
 
     private function renderPdf(B2bOrder $order): \Barryvdh\DomPDF\PDF
@@ -37,6 +39,9 @@ class B2bOrderInvoicePdf
         return Pdf::loadView('b2b.order-invoice', [
             'order' => $order,
             'vat' => B2bInvoiceVat::forOrder($order),
+            'documentTitle' => B2bQuoteDocument::title(),
+            'paymentMethodLabel' => B2bPaymentMethod::label($order->payment_method),
+            'logoDataUri' => B2bQuoteDocument::logoDataUri(),
         ])->setPaper('a4');
     }
 }

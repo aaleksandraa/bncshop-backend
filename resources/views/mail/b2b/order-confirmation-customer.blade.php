@@ -2,7 +2,7 @@
 # Potvrda B2B narudžbe
 
 Broj narudžbe: **{{ $order->order_number }}**  
-Plaćanje: faktura
+Plaćanje: predračun
 
 @php($vat = \App\Support\B2bInvoiceVat::forOrder($order))
 

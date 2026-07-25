@@ -100,7 +100,7 @@ class B2bOrderResource extends Resource
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\Action::make('downloadInvoice')
-                    ->label('Faktura PDF')
+                    ->label('Predračun PDF')
                     ->icon('heroicon-o-document-arrow-down')
                     ->url(fn (B2bOrder $record): string => route('filament.b2b-admin.b2b-orders.invoice', $record))
                     ->openUrlInNewTab(),

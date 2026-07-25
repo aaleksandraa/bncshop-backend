@@ -2,7 +2,7 @@
 <html lang="bs">
 <head>
     <meta charset="utf-8">
-    <title>Faktura {{ $order->order_number }}</title>
+    <title>{{ $documentTitle ?? 'Predračun' }} {{ $order->order_number }}</title>
     <style>
         @page { size: A4; margin: 12mm; }
         * { box-sizing: border-box; }
@@ -16,24 +16,42 @@
         }
         .header {
             border-bottom: 2px solid #111;
-            padding-bottom: 10px;
+            padding-bottom: 12px;
             margin-bottom: 14px;
         }
         .header-top {
             width: 100%;
-            margin-bottom: 8px;
         }
         .header-top td { vertical-align: top; }
+        .brand-cell { width: 58%; padding-right: 12px; }
+        .meta-cell { width: 42%; }
+        .logo {
+            max-height: 42px;
+            max-width: 150px;
+            margin-bottom: 8px;
+        }
+        .company-name {
+            font-size: 13px;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        .company-line {
+            margin-bottom: 2px;
+            color: #333;
+        }
         .doc-title {
-            font-size: 18px;
+            font-size: 20px;
             font-weight: bold;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.6px;
+            text-align: right;
+            margin-bottom: 8px;
         }
         .doc-meta {
             text-align: right;
             font-size: 10px;
         }
+        .doc-meta div { margin-bottom: 3px; }
         .parties {
             width: 100%;
             margin-bottom: 14px;
@@ -121,6 +139,7 @@
             margin-top: 14px;
             font-size: 9px;
             color: #666;
+            line-height: 1.5;
         }
     </style>
 </head>
@@ -128,19 +147,38 @@
     @php
         $vat ??= \App\Support\B2bInvoiceVat::forOrder($order);
         $money = fn (float $amount): string => \App\Support\B2bInvoiceVat::format($amount);
+        $documentTitle ??= 'Predračun';
+        $paymentMethodLabel ??= \App\Support\B2bPaymentMethod::label($order->payment_method);
     @endphp
 
     <div class="header">
         <table class="header-top">
             <tr>
-                <td>
-                    <div class="doc-title">Faktura</div>
-                    <div>{{ $vat['seller']['name'] }}</div>
+                <td class="brand-cell">
+                    @if(!empty($logoDataUri))
+                        <img src="{{ $logoDataUri }}" alt="{{ $vat['seller']['name'] }}" class="logo">
+                    @endif
+                    <div class="company-name">{{ $vat['seller']['name'] }}</div>
+                    @if($vat['seller']['address'])
+                        <div class="company-line">{{ $vat['seller']['address'] }}</div>
+                    @endif
+                    @if($vat['seller']['jib'])
+                        <div class="company-line"><strong>JIB:</strong> {{ $vat['seller']['jib'] }}</div>
+                    @endif
+                    @if($vat['seller']['pdv_number'])
+                        <div class="company-line"><strong>PDV broj:</strong> {{ $vat['seller']['pdv_number'] }}</div>
+                    @endif
+                    <div class="company-line">
+                        {{ $vat['seller']['email'] }}@if($vat['seller']['phone']) · {{ $vat['seller']['phone'] }}@endif
+                    </div>
                 </td>
-                <td class="doc-meta">
-                    <div><strong>Broj:</strong> {{ $order->order_number }}</div>
-                    <div><strong>Datum:</strong> {{ $order->created_at?->format('d.m.Y') }}</div>
-                    <div><strong>Valuta:</strong> {{ $vat['currency'] }}</div>
+                <td class="meta-cell">
+                    <div class="doc-title">{{ $documentTitle }}</div>
+                    <div class="doc-meta">
+                        <div><strong>Broj predračuna:</strong> {{ $order->order_number }}</div>
+                        <div><strong>Datum:</strong> {{ $order->created_at?->format('d.m.Y') }}</div>
+                        <div><strong>Valuta:</strong> {{ $vat['currency'] }}</div>
+                    </div>
                 </td>
             </tr>
         </table>
@@ -248,7 +286,7 @@
         <tr>
             <td class="notes">
                 <strong>Adresa dostave:</strong> {{ $order->shipping_address }}<br>
-                <strong>Način plaćanja:</strong> Faktura<br>
+                <strong>Način plaćanja:</strong> {{ $paymentMethodLabel }}<br>
                 @if($order->notes)
                     <strong>Napomena:</strong> {{ $order->notes }}
                 @endif
@@ -293,6 +331,7 @@
     </table>
 
     <p class="footer-note">
+        Ovaj dokument je predračun informativnog karaktera i ne predstavlja konačni fiskalni račun.
         Sve cijene artikala i dostave iskazane su bez PDV-a. PDV je obračunat po stopi od {{ number_format($vat['rate_percent'], 0) }}% u skladu sa važećim propisima Bosne i Hercegovine.
     </p>
 </body>

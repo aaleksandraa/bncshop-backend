@@ -64,6 +64,10 @@ class B2bOrderInvoiceDownloadTest extends TestCase
 
         $response->assertOk();
         $response->assertHeader('content-type', 'application/pdf');
+        $this->assertStringContainsString(
+            'predracun',
+            strtolower((string) $response->headers->get('content-disposition')),
+        );
     }
 
     public function test_b2b_admin_can_download_stored_invoice_file(): void
@@ -117,6 +121,10 @@ class B2bOrderInvoiceDownloadTest extends TestCase
 
         $response->assertOk();
         $response->assertHeader('content-type', 'application/pdf');
+        $this->assertStringContainsString(
+            'predracun',
+            strtolower((string) $response->headers->get('content-disposition')),
+        );
         $this->assertSame($invoicePath, $order->fresh()->invoice_path);
     }
 }

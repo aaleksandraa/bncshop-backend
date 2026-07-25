@@ -17,7 +17,7 @@ class EditB2bOrder extends EditRecord
     {
         return [
             Actions\Action::make('downloadInvoice')
-                ->label('Faktura PDF')
+                ->label('Predračun PDF')
                 ->icon('heroicon-o-document-arrow-down')
                 ->url(fn (): string => route('filament.b2b-admin.b2b-orders.invoice', $this->record))
                 ->openUrlInNewTab(),

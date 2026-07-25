@@ -3,7 +3,7 @@ Poštovani {{ $order->contact_name }},
 Potvrđujemo vašu B2B narudžbu.
 
 Broj narudžbe: {{ $order->order_number }}
-Plaćanje: faktura
+Plaćanje: predračun
 
 @include('mail.b2b.partials.order-vat-summary-text', ['order' => $order])
 
@@ -14,7 +14,7 @@ Adresa dostave:
 Napomena: {{ $order->notes }}
 @endif
 
-Faktura u PDF formatu dostupna je u B2B portalu i putem našeg tima.
+Predračun u PDF formatu dostupan je u B2B portalu i putem našeg tima.
 
 Hvala,
 {{ config('app.name') }}
