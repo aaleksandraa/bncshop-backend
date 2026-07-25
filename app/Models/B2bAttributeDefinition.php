@@ -46,7 +46,7 @@ class B2bAttributeDefinition extends Model
             'b2b_category_attribute',
             'b2b_attribute_definition_id',
             'b2b_category_id',
-        )->withPivot('sort_order')->withTimestamps(false);
+        )->withPivot('sort_order');
     }
 
     public function productValues(): HasMany
