@@ -401,6 +401,20 @@ npm run verify:live
 
 Ako `verify:live` prijavi `BROKEN` chunk URL-ove sa HTTP 400 i `content-type=text/html`, **Document root je pogrešan** — mora biti `/httpdocs`, ne `/httpdocs/.next/static`.
 
+**Catch-all rute (`[...slug]`) — HTTP 400 samo na kategorijama:**
+
+Ako ChunkLoadError pogađa samo stranice poput `/kategorija/klima-grijanje`, a URL chunka sadrži `%5B...slug%5D` (npr. `/_next/static/chunks/app/kategorija/%5B...slug%5D/page-*.js`), provjeri da je na serveru aktualan `start.js` (ne smije odbijati putanju zbog `includes("..")` u imenu foldera `[...slug]`). Path traversal i dalje blokira `path.resolve` + provjera unutar `.next/static`.
+
+Nakon `git pull` i deploya **Restart App** (rebuild nije obavezan ako se mijenja samo `start.js`):
+
+```bash
+# Zamijeni <hash> stvarnim hashom iz .next/static/chunks/app/kategorija/[...slug]/
+curl -I "https://bncshop.ba/_next/static/chunks/app/kategorija/%5B...slug%5D/page-<hash>.js"
+# Očekivano: HTTP/2 200, content-type: application/javascript
+```
+
+U browseru: otvori `/kategorija/klima-grijanje` i soft-navigaciju s početne — bez ChunkLoadError / `$RS parentNode` grešaka.
+
 ### CSS/JS MIME `text/plain` (stilizacija ne radi)
 
 Console: `Refused to apply style ... MIME type ('text/plain')`.
