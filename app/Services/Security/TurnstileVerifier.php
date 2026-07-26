@@ -3,6 +3,7 @@
 namespace App\Services\Security;
 
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class TurnstileVerifier
 {
@@ -18,12 +19,16 @@ class TurnstileVerifier
         }
 
         if ($token === null || trim($token) === '') {
+            Log::warning('Turnstile verification failed: empty token');
+
             return false;
         }
 
         $secret = config('turnstile.secret_key');
 
         if (! is_string($secret) || $secret === '') {
+            Log::warning('Turnstile verification failed: TURNSTILE_SECRET_KEY is missing while Turnstile is enabled');
+
             return false;
         }
 
@@ -36,9 +41,21 @@ class TurnstileVerifier
             ]));
 
         if (! $response->successful()) {
+            Log::warning('Turnstile siteverify HTTP request failed', [
+                'status' => $response->status(),
+            ]);
+
             return false;
         }
 
-        return (bool) $response->json('success', false);
+        $success = (bool) $response->json('success', false);
+
+        if (! $success) {
+            Log::warning('Turnstile siteverify rejected token', [
+                'error_codes' => $response->json('error-codes', []),
+            ]);
+        }
+
+        return $success;
     }
 }
