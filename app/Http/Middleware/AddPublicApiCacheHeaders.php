@@ -79,10 +79,11 @@ class AddPublicApiCacheHeaders
         $ifNoneMatch = $request->headers->get('If-None-Match');
 
         if ($ifNoneMatch !== null && hash_equals($etag, trim($ifNoneMatch))) {
-            $notModified = new Response('', Response::HTTP_NOT_MODIFIED, $response->headers->all());
-            $notModified->headers->set('ETag', $etag);
+            // Prefer setNotModified() so Content-Length / Content-Encoding are
+            // stripped from empty 304 responses (unsafe for proxies/browsers).
+            $response->setNotModified();
 
-            return $notModified;
+            return $response;
         }
 
         return $response;
