@@ -56,6 +56,35 @@ class CategoryFilterSettingsTest extends TestCase
         $this->assertSame([], $disabled['brands']);
     }
 
+    public function test_standard_filter_counts_reflect_available_products(): void
+    {
+        $category = Category::factory()->create(['full_slug' => 'laptopi']);
+
+        Product::factory()->create([
+            'category_id' => $category->id,
+            'is_public' => true,
+            'status' => 'active',
+            'is_new' => true,
+            'is_refurbished' => false,
+            'on_sale' => false,
+        ]);
+
+        Product::factory()->create([
+            'category_id' => $category->id,
+            'is_public' => true,
+            'status' => 'active',
+            'is_new' => true,
+            'is_refurbished' => false,
+            'on_sale' => true,
+        ]);
+
+        $payload = app(FilterService::class)->getCategoryFilterPayload($category);
+
+        $this->assertSame(2, $payload['counts']['is_new']);
+        $this->assertSame(0, $payload['counts']['is_refurbished']);
+        $this->assertSame(1, $payload['counts']['on_sale']);
+    }
+
     public function test_attribute_filters_respect_mapping_toggle(): void
     {
         $category = Category::factory()->create(['full_slug' => 'telefoni']);

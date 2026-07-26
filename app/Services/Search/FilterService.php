@@ -105,6 +105,49 @@ class FilterService
             'layout' => $shopLayout,
             'attributes' => $orderedAttributes,
             'brands' => $config['brand'] ? $this->getAvailableBrands($category) : [],
+            'counts' => $this->getStandardFilterCounts($category),
+        ];
+    }
+
+    /**
+     * Product availability for standard toggles (used by mobile quick filters).
+     *
+     * @return array{is_new: int, is_refurbished: int, on_sale: int}
+     */
+    public function getStandardFilterCounts(Category $category): array
+    {
+        $categoryIds = $this->categoryScopeResolver->expandWithDescendants([(int) $category->id]);
+
+        if ($categoryIds === []) {
+            return [
+                'is_new' => 0,
+                'is_refurbished' => 0,
+                'on_sale' => 0,
+            ];
+        }
+
+        $baseQuery = DB::table('products')
+            ->whereIn('category_id', $categoryIds)
+            ->where('is_public', true)
+            ->where('status', 'active');
+
+        if ($this->catalogListingSettings->hideOutOfStockRefurbishedEline()) {
+            $baseQuery->where(function ($builder): void {
+                $builder->where('available_stock', '>', 0)
+                    ->orWhere(function ($nested): void {
+                        $nested->where('is_refurbished', false)
+                            ->where(function ($sourceQuery): void {
+                                $sourceQuery->whereNull('import_source')
+                                    ->orWhere('import_source', '!=', 'eline');
+                            });
+                    });
+            });
+        }
+
+        return [
+            'is_new' => (clone $baseQuery)->where('is_new', true)->count(),
+            'is_refurbished' => (clone $baseQuery)->where('is_refurbished', true)->count(),
+            'on_sale' => (clone $baseQuery)->where('on_sale', true)->count(),
         ];
     }
 
