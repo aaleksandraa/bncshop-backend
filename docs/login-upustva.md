@@ -77,7 +77,7 @@ Ako je postavljen `ADMIN_LOGIN_SECRET` u `.env`, na login formi traži se i **Si
 **URL:** `/prodavac/prijava` (frontend)  
 **Uloga u bazi:** `Prodavac`  
 **Seeder:** `UsersSeeder`  
-**Nakon prijave:** `/prodavac/narudzbe`
+**Nakon prijave:** `/prodavac/narudzbe` i `/prodavac/proizvodi` (eLine proizvodi)
 
 | Polje | Default vrijednost |
 |-------|-------------------|
@@ -96,6 +96,8 @@ Ako je postavljen `ADMIN_LOGIN_SECRET` u `.env`, na login formi traži se i **Si
 ### Šta može prodavač
 
 - Pregled i upravljanje narudžbama (`view_orders` / `manage_orders`)
+- Pregled eLine proizvoda i uređivanje **opisa**, **slika** i **akcijske cijene** (`seller.edit_eline_products`)
+- Redovna ERP cijena ostaje read-only; sync iz eLine ne pregazi ručno uređen opis
 - Nema pristup Filament admin panelu
 
 ---

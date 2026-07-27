@@ -58,4 +58,29 @@ trait InteractsWithStatefulApi
         return $this->withHeaders($this->statefulApiHeaders($headers))
             ->patchJson($uri, $data);
     }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @param  array<string, string>  $headers
+     */
+    protected function postMultipartStateful(string $uri, array $data = [], array $headers = [])
+    {
+        $this->initStatefulSession();
+
+        return $this->withHeaders(array_merge(
+            $this->statefulApiHeaders($headers),
+            ['Accept' => 'application/json'],
+        ))->post($uri, $data);
+    }
+
+    /**
+     * @param  array<string, string>  $headers
+     */
+    protected function deleteJsonStateful(string $uri, array $headers = [])
+    {
+        $this->initStatefulSession();
+
+        return $this->withHeaders($this->statefulApiHeaders($headers))
+            ->deleteJson($uri);
+    }
 }

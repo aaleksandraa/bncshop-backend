@@ -6,11 +6,18 @@ use App\Models\ApiSource;
 use App\Models\ElineCategoryMapping;
 use App\Models\ElineProductOverride;
 use App\Models\Product;
+use App\Services\Pricing\PriceCalculator;
+use App\Services\Sync\FieldLockService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
 class ElineProductImporter
 {
+    public function __construct(
+        private readonly FieldLockService $fieldLockService,
+        private readonly PriceCalculator $priceCalculator,
+    ) {}
+
     /**
      * @param  Collection<int, array<string, mixed>>  $items
      * @param  Collection<string, ElineCategoryMapping>  $mappingsByCategory
@@ -103,6 +110,8 @@ class ElineProductImporter
         $stanje = (int) ($item['stanje'] ?? 0);
         $isArticleActive = ElineSupport::isActive($item['aktivan'] ?? null);
         $isPriceActive = $item['price_aktivan'] === null || ElineSupport::isActive($item['price_aktivan']);
+        $description = (string) ($item['opis'] ?? '');
+        $shortDescription = Str::limit($description, 255, '');
 
         $product->fill([
             'import_source' => 'eline',
@@ -112,8 +121,6 @@ class ElineProductImporter
             'api_source_id' => $source->id,
             'name' => (string) ($item['naziv'] ?? $sifra),
             'slug' => $this->resolveSlug($product, (string) ($item['naziv'] ?? $sifra)),
-            'description' => (string) ($item['opis'] ?? ''),
-            'short_description' => Str::limit((string) ($item['opis'] ?? ''), 255, ''),
             'category_id' => $categoryId,
             'is_refurbished' => $condition === ElineCategoryMapping::CONDITION_REFURBISHED,
             'is_new' => $condition === ElineCategoryMapping::CONDITION_NEW,
@@ -124,7 +131,6 @@ class ElineProductImporter
             'api_price' => $mpc,
             'api_final_price' => $mpc,
             'regular_price' => $mpc,
-            'display_price' => $mpc,
             'api_stock' => $stanje,
             'available_stock' => $stanje,
             'reserved_stock' => 0,
@@ -133,9 +139,28 @@ class ElineProductImporter
             'marked_missing_at' => null,
         ]);
 
+        $this->applyLockedField($product, 'description', $description);
+        $this->applyLockedField($product, 'short_description', $shortDescription);
+
         $product->save();
+        $this->priceCalculator->recalculateAndPersist($product->fresh());
 
         return $wasRecentlyCreated ? 'created' : 'updated';
+    }
+
+    private function applyLockedField(Product $product, string $field, mixed $newValue): void
+    {
+        if (! $product->exists) {
+            $product->{$field} = $newValue;
+
+            return;
+        }
+
+        $currentValue = $product->{$field};
+
+        if ($this->fieldLockService->shouldApply($product, $field, $newValue, $currentValue)) {
+            $product->{$field} = $newValue;
+        }
     }
 
     private function resolveSlug(Product $product, string $name): string

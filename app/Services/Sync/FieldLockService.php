@@ -3,11 +3,27 @@
 namespace App\Services\Sync;
 
 use App\Models\Product;
+use App\Models\ProductSyncLock;
 use App\Models\SyncDiffLog;
 use Illuminate\Support\Facades\Cache;
 
 class FieldLockService
 {
+    public function lockField(Product $product, string $fieldName, ?int $userId = null): void
+    {
+        ProductSyncLock::query()->updateOrCreate(
+            [
+                'product_id' => $product->id,
+                'field_name' => $fieldName,
+            ],
+            [
+                'locked_by' => $userId,
+                'locked_at' => now(),
+            ],
+        );
+
+        $this->clearCache($product, $fieldName);
+    }
     public function isLocked(Product $product, string $fieldName): bool
     {
         $cacheKey = "product_sync_lock:{$product->id}:{$fieldName}";

@@ -39,6 +39,7 @@ class RolesAndPermissionsSeeder extends Seeder
         'blog_posts.create',
         'blog_posts.update',
         'blog_posts.delete',
+        'seller.edit_eline_products',
     ];
 
     /**
@@ -194,6 +195,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 'customers.view',
                 'loyalty_cards.view',
                 'loyalty_in_store.operate',
+                'seller.edit_eline_products',
             ],
             'Analyst' => [
                 'view_products',

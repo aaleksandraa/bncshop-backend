@@ -29,6 +29,7 @@ use App\Http\Controllers\Api\V1\RedirectController;
 use App\Http\Controllers\Api\V1\SearchController;
 use App\Http\Controllers\Api\V1\SellerAuthController;
 use App\Http\Controllers\Api\V1\SellerOrderController;
+use App\Http\Controllers\Api\V1\SellerProductController;
 use App\Http\Controllers\Api\V1\SettingsController;
 use App\Http\Controllers\Api\V1\SitemapController;
 use App\Http\Middleware\ResolveCartSession;
@@ -158,6 +159,11 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/orders', [SellerOrderController::class, 'index']);
         Route::get('/orders/{id}', [SellerOrderController::class, 'show']);
         Route::patch('/orders/{id}/status', [SellerOrderController::class, 'updateStatus']);
+        Route::get('/products', [SellerProductController::class, 'index']);
+        Route::get('/products/{id}', [SellerProductController::class, 'show']);
+        Route::patch('/products/{id}', [SellerProductController::class, 'update']);
+        Route::post('/products/{id}/images', [SellerProductController::class, 'storeImage']);
+        Route::delete('/products/{id}/images/{imageId}', [SellerProductController::class, 'destroyImage']);
     });
 
     Route::middleware(['auth:sanctum', 'throttle:api-admin', 'permission:manage_sync|view_sync'])->prefix('admin/sync')->group(function (): void {
