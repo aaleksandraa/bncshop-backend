@@ -83,13 +83,26 @@ class DeployFixCommand extends Command
         $sample = PublicStorageUrl::absoluteFromResolved(
             'https://api.bnc.ba/storage/products/deploy-check.jpg',
         );
-        $this->line('Sample storage URL rewrite: '.$sample);
+        $this->line('Legacy storage URL rewrite: '.$sample);
+
+        $sellerSample = PublicStorageUrl::absoluteFromResolved(
+            '/storage/products/demo/seller-00000000-0000-4000-8000-000000000000.jpg',
+        );
+        $this->line('Seller storage URL rewrite: '.$sellerSample);
 
         if (
             $env === 'production'
             && str_contains($sample, 'api.bnc.ba/storage')
         ) {
-            $this->error('Storage URL rewrite still points to api.bnc.ba — run git pull, then config:cache.');
+            $this->error('Legacy storage URL rewrite still points to api.bnc.ba — run git pull, then config:cache.');
+            $issues++;
+        }
+
+        if (
+            $env === 'production'
+            && ! str_contains($sellerSample, 'api.bnc.ba/storage')
+        ) {
+            $this->error('Seller storage URL rewrite must point to APP_URL (api.bnc.ba).');
             $issues++;
         }
 

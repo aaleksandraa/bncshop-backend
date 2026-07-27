@@ -250,14 +250,17 @@ ASSET_URL=https://api.bncshop.ba
 FRONTEND_URL=https://bnc.ba
 ```
 
-Bez `ASSET_URL` API vraća slike na `https://api.bnc.ba/storage/...` (403). Nakon promjene:
+- **Legacy eLine slike** (sync) serviraju se sa `ASSET_URL` → `api.bncshop.ba`
+- **Prodavač uploadi** (`seller-*.jpg`) ostaju na `APP_URL` → `api.bnc.ba` (fajl se ne kopira na bncshop host)
+
+Bez `ASSET_URL` legacy slike idu na pogrešan host. Nakon promjene:
 
 ```bash
 php artisan config:cache
 php artisan bnc:deploy-fix --apply --flush-all
 ```
 
-Alternativa: na `api.bnc.ba` nginx serviraj `/storage/` isto kao na `api.bncshop.ba`.
+Dugoročno: isti `storage/app/public` na oba vhosta ili nginx `/storage/` na `api.bnc.ba` za legacy fajlove.
 
 ---
 

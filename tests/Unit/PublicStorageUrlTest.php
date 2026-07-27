@@ -49,20 +49,53 @@ class PublicStorageUrlTest extends TestCase
         );
     }
 
-    public function test_absolute_from_resolved_rewrites_api_bnc_ba_storage_to_asset_url(): void
+    public function test_absolute_from_resolved_keeps_seller_uploads_on_app_url(): void
     {
-        app()['env'] = 'production';
         config([
             'app.url' => 'https://api.bnc.ba',
             'app.asset_url' => 'https://api.bncshop.ba',
         ]);
 
         $url = PublicStorageUrl::absoluteFromResolved(
-            'https://api.bnc.ba/storage/products/demo/seller-image.jpg',
+            '/storage/products/demo/seller-8d01474c-603d-49c2-98a3-0fffcf84ff7b.jpg',
         );
 
         $this->assertSame(
-            'https://api.bncshop.ba/storage/products/demo/seller-image.jpg',
+            'https://api.bnc.ba/storage/products/demo/seller-8d01474c-603d-49c2-98a3-0fffcf84ff7b.jpg',
+            $url,
+        );
+    }
+
+    public function test_absolute_from_resolved_rewrites_legacy_assets_to_asset_url(): void
+    {
+        config([
+            'app.url' => 'https://api.bnc.ba',
+            'app.asset_url' => 'https://api.bncshop.ba',
+        ]);
+
+        $url = PublicStorageUrl::absoluteFromResolved(
+            'https://api.bnc.ba/storage/products/demo/63780a32-1a4f-4356-9f49-24bbfbc594bf.webp',
+        );
+
+        $this->assertSame(
+            'https://api.bncshop.ba/storage/products/demo/63780a32-1a4f-4356-9f49-24bbfbc594bf.webp',
+            $url,
+        );
+    }
+
+    public function test_absolute_from_resolved_rewrites_wrong_host_for_seller_uploads(): void
+    {
+        config([
+            'app.url' => 'https://api.bnc.ba',
+            'app.asset_url' => 'https://api.bncshop.ba',
+        ]);
+
+        $url = PublicStorageUrl::absoluteFromResolved(
+            'https://api.bncshop.ba/storage/products/demo/seller-8d01474c-603d-49c2-98a3-0fffcf84ff7b.jpg',
+        );
+
+        $this->assertSame(
+            'https://api.bnc.ba/storage/products/demo/seller-8d01474c-603d-49c2-98a3-0fffcf84ff7b.jpg',
             $url,
         );
     }
@@ -78,14 +111,16 @@ class PublicStorageUrlTest extends TestCase
         $this->assertSame('https://api.bncshop.ba', PublicStorageUrl::storageOrigin());
     }
 
-    public function test_rewrite_storage_urls_in_value_rewrites_cached_product_payload(): void
+    public function test_rewrite_storage_urls_in_value_routes_seller_and_legacy_assets(): void
     {
-        app()['env'] = 'production';
-        config(['app.url' => 'https://api.bnc.ba']);
+        config([
+            'app.url' => 'https://api.bnc.ba',
+            'app.asset_url' => 'https://api.bncshop.ba',
+        ]);
 
         $payload = [
             'default_image' => [
-                'url' => 'https://api.bnc.ba/storage/products/demo/seller-image.jpg',
+                'url' => 'https://api.bncshop.ba/storage/products/demo/seller-8d01474c-603d-49c2-98a3-0fffcf84ff7b.jpg',
             ],
             'manufacturer' => [
                 'logo_url' => '/storage/manufacturers/logos/demo.webp',
@@ -95,7 +130,7 @@ class PublicStorageUrlTest extends TestCase
         $rewritten = PublicStorageUrl::rewriteStorageUrlsInValue($payload);
 
         $this->assertSame(
-            'https://api.bncshop.ba/storage/products/demo/seller-image.jpg',
+            'https://api.bnc.ba/storage/products/demo/seller-8d01474c-603d-49c2-98a3-0fffcf84ff7b.jpg',
             $rewritten['default_image']['url'],
         );
         $this->assertSame(

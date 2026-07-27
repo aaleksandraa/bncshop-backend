@@ -61,7 +61,8 @@ class PublicStorageUrl
     /**
      * Normalize a resolved image URL for API consumers.
      *
-     * Rewrites legacy localhost storage URLs to the configured public asset origin.
+     * Legacy synced assets are served from ASSET_URL (api.bncshop.ba). Seller
+     * uploads are stored on the active APP_URL host (api.bnc.ba).
      */
     public static function absoluteFromResolved(?string $url): ?string
     {
@@ -80,7 +81,20 @@ class PublicStorageUrl
         return self::absoluteUrl($url);
     }
 
+    /**
+     * Default public origin for legacy synced assets.
+     */
     public static function storageOrigin(): string
+    {
+        return self::legacyStorageOrigin();
+    }
+
+    public static function appStorageOrigin(): string
+    {
+        return rtrim((string) config('app.url'), '/');
+    }
+
+    public static function legacyStorageOrigin(): string
     {
         $assetUrl = config('app.asset_url');
 
@@ -88,7 +102,7 @@ class PublicStorageUrl
             return rtrim(trim($assetUrl), '/');
         }
 
-        $origin = rtrim((string) config('app.url'), '/');
+        $origin = self::appStorageOrigin();
 
         if (app()->environment('production') && str_contains($origin, 'localhost')) {
             return 'https://api.bncshop.ba';
@@ -104,6 +118,20 @@ class PublicStorageUrl
         return $origin;
     }
 
+    public static function storageOriginForPath(string $storagePath): string
+    {
+        if (self::isSellerManagedStoragePath($storagePath)) {
+            return self::appStorageOrigin();
+        }
+
+        return self::legacyStorageOrigin();
+    }
+
+    public static function isSellerManagedStoragePath(string $storagePath): bool
+    {
+        return (bool) preg_match('#/seller-[a-f0-9-]+\.(?:jpg|jpeg|png|webp|gif|avif)$#i', $storagePath);
+    }
+
     private static function normalizeStorageUrl(string $url): string
     {
         $parts = parse_url($url);
@@ -115,7 +143,7 @@ class PublicStorageUrl
 
         $query = isset($parts['query']) ? '?'.$parts['query'] : '';
 
-        return self::storageOrigin().$path.$query;
+        return self::storageOriginForPath($path).$path.$query;
     }
 
     private static function rewriteLocalhostStorageUrl(string $url): string
@@ -125,12 +153,12 @@ class PublicStorageUrl
         $path = (string) ($parts['path'] ?? '');
 
         if (
-            in_array($host, ['localhost', '127.0.0.1', 'api.bnc.ba'], true)
+            in_array($host, ['localhost', '127.0.0.1'], true)
             && str_starts_with($path, '/storage/')
         ) {
             $query = isset($parts['query']) ? '?'.$parts['query'] : '';
 
-            return self::storageOrigin().$path.$query;
+            return self::storageOriginForPath($path).$path.$query;
         }
 
         return $url;
