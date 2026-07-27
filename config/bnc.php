@@ -45,6 +45,13 @@ return [
 
     'frontend_url' => env('FRONTEND_URL', 'http://localhost:3000'),
 
+    /*
+    | Legacy synced /storage/ files may live on a different host than APP_URL
+    | (e.g. api.bncshop.ba while admin runs on api.bnc.ba). Used only by
+    | PublicStorageUrl — never set Laravel's global asset_url to this value.
+    */
+    'legacy_storage_url' => env('LEGACY_STORAGE_URL', env('ASSET_URL')),
+
     'seller_notification_email' => env('SELLER_EMAIL', env('MAIL_FROM_ADDRESS')),
     'admin_notification_email' => env('ADMIN_EMAIL', env('MAIL_FROM_ADDRESS')),
 

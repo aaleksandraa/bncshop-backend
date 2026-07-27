@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\SafeEncrypted;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -31,10 +32,10 @@ class ApiSource extends Model
     protected function casts(): array
     {
         return [
-            'username' => 'encrypted',
-            'password' => 'encrypted',
-            'access_token' => 'encrypted',
-            'refresh_token' => 'encrypted',
+            'username' => SafeEncrypted::class,
+            'password' => SafeEncrypted::class,
+            'access_token' => SafeEncrypted::class,
+            'refresh_token' => SafeEncrypted::class,
             'token_expires_at' => 'datetime',
             'last_successful_sync_at' => 'datetime',
             'page_size' => 'integer',

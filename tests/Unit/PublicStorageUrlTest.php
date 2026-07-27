@@ -53,7 +53,7 @@ class PublicStorageUrlTest extends TestCase
     {
         config([
             'app.url' => 'https://api.bnc.ba',
-            'app.asset_url' => 'https://api.bncshop.ba',
+            'bnc.legacy_storage_url' => 'https://api.bncshop.ba',
         ]);
 
         $url = PublicStorageUrl::absoluteFromResolved(
@@ -70,7 +70,7 @@ class PublicStorageUrlTest extends TestCase
     {
         config([
             'app.url' => 'https://api.bnc.ba',
-            'app.asset_url' => 'https://api.bncshop.ba',
+            'bnc.legacy_storage_url' => 'https://api.bncshop.ba',
         ]);
 
         $url = PublicStorageUrl::absoluteFromResolved(
@@ -87,7 +87,7 @@ class PublicStorageUrlTest extends TestCase
     {
         config([
             'app.url' => 'https://api.bnc.ba',
-            'app.asset_url' => 'https://api.bncshop.ba',
+            'bnc.legacy_storage_url' => 'https://api.bncshop.ba',
         ]);
 
         $url = PublicStorageUrl::absoluteFromResolved(
@@ -105,7 +105,7 @@ class PublicStorageUrlTest extends TestCase
         app()['env'] = 'production';
         config([
             'app.url' => 'https://api.bnc.ba',
-            'app.asset_url' => null,
+            'bnc.legacy_storage_url' => null,
         ]);
 
         $this->assertSame('https://api.bncshop.ba', PublicStorageUrl::storageOrigin());
@@ -115,7 +115,7 @@ class PublicStorageUrlTest extends TestCase
     {
         config([
             'app.url' => 'https://api.bnc.ba',
-            'app.asset_url' => 'https://api.bncshop.ba',
+            'bnc.legacy_storage_url' => 'https://api.bncshop.ba',
         ]);
 
         $payload = [

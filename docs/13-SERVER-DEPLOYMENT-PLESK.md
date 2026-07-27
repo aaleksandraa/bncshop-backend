@@ -246,12 +246,14 @@ Tagged product cache **ne radi** bez `CACHE_STORE=redis`.
 
 ```env
 APP_URL=https://api.bnc.ba
-ASSET_URL=https://api.bncshop.ba
+LEGACY_STORAGE_URL=https://api.bncshop.ba
 FRONTEND_URL=https://bnc.ba
 ```
 
-- **Legacy eLine slike** (sync) serviraju se sa `ASSET_URL` → `api.bncshop.ba`
+- **`APP_URL`** mora biti domena koju otvarate u browseru (`api.bnc.ba`) — inače Filament JS pada na CORS grešci
+- **Legacy eLine slike** (sync) serviraju se sa `LEGACY_STORAGE_URL` → `api.bncshop.ba`
 - **Prodavač uploadi** (`seller-*.jpg`) ostaju na `APP_URL` → `api.bnc.ba` (fajl se ne kopira na bncshop host)
+- **Ne postavljati** Laravel `asset_url` / globalni `ASSET_URL` za Filament — samo `LEGACY_STORAGE_URL`
 
 Bez `ASSET_URL` legacy slike idu na pogrešan host. Nakon promjene:
 

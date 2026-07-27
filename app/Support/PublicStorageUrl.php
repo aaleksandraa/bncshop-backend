@@ -96,10 +96,10 @@ class PublicStorageUrl
 
     public static function legacyStorageOrigin(): string
     {
-        $assetUrl = config('app.asset_url');
+        $legacyUrl = config('bnc.legacy_storage_url');
 
-        if (is_string($assetUrl) && trim($assetUrl) !== '') {
-            return rtrim(trim($assetUrl), '/');
+        if (is_string($legacyUrl) && trim($legacyUrl) !== '') {
+            return rtrim(trim($legacyUrl), '/');
         }
 
         $origin = self::appStorageOrigin();

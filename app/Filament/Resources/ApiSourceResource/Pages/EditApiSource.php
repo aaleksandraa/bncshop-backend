@@ -5,6 +5,7 @@ namespace App\Filament\Resources\ApiSourceResource\Pages;
 use App\Filament\Resources\ApiSourceResource;
 use App\Services\Eline\ElineSyncOrchestrator;
 use App\Services\Sync\A1SyncSettings;
+use App\Services\Sync\IntegrationApiClient;
 use Filament\Actions;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
@@ -33,6 +34,27 @@ class EditApiSource extends EditRecord
                     } catch (\Throwable $e) {
                         Notification::make()
                             ->title('eLine konekcija neuspješna')
+                            ->body($e->getMessage())
+                            ->danger()
+                            ->send();
+                    }
+                });
+        } elseif ($this->record?->usesIntegrationApiImport()
+            && (auth()->user()?->can('api_sources.update') ?? false)) {
+            $actions[] = Actions\Action::make('testIntegrationConnection')
+                ->label('Test konekcije')
+                ->icon('heroicon-o-signal')
+                ->action(function (): void {
+                    try {
+                        IntegrationApiClient::forSource($this->record)->login();
+
+                        Notification::make()
+                            ->title('Konekcija uspješna')
+                            ->success()
+                            ->send();
+                    } catch (\Throwable $e) {
+                        Notification::make()
+                            ->title('Konekcija neuspješna')
                             ->body($e->getMessage())
                             ->danger()
                             ->send();

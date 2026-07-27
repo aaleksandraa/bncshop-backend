@@ -65,19 +65,23 @@ class DeployFixCommand extends Command
             $this->info('APP_URL looks OK.');
         }
 
-        $assetUrl = rtrim((string) config('app.asset_url'), '/');
-        $this->line('ASSET_URL: '.($assetUrl !== '' ? $assetUrl : '(not set — uses APP_URL)'));
+        $assetUrl = rtrim((string) config('bnc.legacy_storage_url'), '/');
+        $this->line('LEGACY_STORAGE_URL / ASSET_URL: '.($assetUrl !== '' ? $assetUrl : '(not set — uses production fallback)'));
 
         if (
             $env === 'production'
             && str_ends_with(parse_url($appUrl, PHP_URL_HOST) ?: '', 'api.bnc.ba')
             && ($assetUrl === '' || ! str_contains($assetUrl, 'bncshop'))
         ) {
-            $this->error('APP_URL is api.bnc.ba but storage is served from api.bncshop.ba.');
-            $this->line('Set ASSET_URL=https://api.bncshop.ba in .env, then run: php artisan bnc:deploy-fix --apply');
+            $this->error('APP_URL is api.bnc.ba but legacy storage is served from api.bncshop.ba.');
+            $this->line('Set LEGACY_STORAGE_URL=https://api.bncshop.ba (or ASSET_URL=...) in .env, then run: php artisan bnc:deploy-fix --apply');
             $issues++;
-        } else        if ($assetUrl !== '') {
-            $this->info('ASSET_URL looks OK.');
+        } elseif ($assetUrl !== '') {
+            $this->info('Legacy storage URL looks OK.');
+        }
+
+        if ($env === 'production' && str_contains($appUrl, 'api.bncshop.ba')) {
+            $this->warn('APP_URL is api.bncshop.ba — if admin is opened at api.bnc.ba, Filament JS will fail CORS. Set APP_URL to the domain you use in the browser.');
         }
 
         $sample = PublicStorageUrl::absoluteFromResolved(
