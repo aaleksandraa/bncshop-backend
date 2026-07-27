@@ -39,7 +39,7 @@ class LogSentMail
             mailableClass: $mailableClass,
             templateSlug: $this->headerValue($email, 'X-Template-Slug'),
             mailer: config('mail.default'),
-            queued: false,
+            queued: $this->wasSentViaQueue(),
             context: array_filter([
                 'from' => $this->formatAddresses($email->getFrom()),
                 'reply_to' => $this->formatAddresses($email->getReplyTo()),
@@ -84,5 +84,11 @@ class LogSentMail
             ->map(fn (Address $address) => $address->getAddress())
             ->filter()
             ->implode(', ');
+    }
+
+    /** Mail queued via Horizon runs inside the console queue worker. */
+    private function wasSentViaQueue(): bool
+    {
+        return app()->runningInConsole() && app()->bound('Illuminate\Queue\Worker');
     }
 }

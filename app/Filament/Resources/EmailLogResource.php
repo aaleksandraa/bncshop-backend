@@ -100,8 +100,9 @@ class EmailLogResource extends Resource
                             ->label('Mailer')
                             ->placeholder('—'),
                         Infolists\Components\IconEntry::make('queued')
-                            ->label('Queue')
-                            ->boolean(),
+                            ->label('Preko queue-a')
+                            ->boolean()
+                            ->helperText('Da = poslano iz Horizon/queue workera. Ne = odmah pri checkoutu.'),
                         Infolists\Components\TextEntry::make('created_at')
                             ->label('Vrijeme')
                             ->dateTime('d.m.Y H:i:s'),
