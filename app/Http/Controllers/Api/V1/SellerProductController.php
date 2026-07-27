@@ -107,7 +107,7 @@ class SellerProductController extends Controller
 
     private function ensureCanEditProducts(Request $request): ?JsonResponse
     {
-        if ($request->user()?->can('seller.edit_eline_products')) {
+        if ($request->user()?->canEditSellerElineProducts()) {
             return null;
         }
 

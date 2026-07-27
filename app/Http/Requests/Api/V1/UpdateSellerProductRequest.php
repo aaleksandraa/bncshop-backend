@@ -10,7 +10,7 @@ class UpdateSellerProductRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('seller.edit_eline_products') ?? false;
+        return $this->user()?->canEditSellerElineProducts() ?? false;
     }
 
     /**

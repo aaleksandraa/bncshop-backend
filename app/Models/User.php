@@ -96,6 +96,11 @@ class User extends Authenticatable implements FilamentUser
         return $user->refresh();
     }
 
+    public function canEditSellerElineProducts(): bool
+    {
+        return $this->can('seller.edit_eline_products') || $this->hasRole('Prodavac');
+    }
+
     public function canAccessPanel(Panel $panel): bool
     {
         if ($this->is_customer || $this->is_b2b_customer) {

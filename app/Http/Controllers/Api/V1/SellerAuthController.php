@@ -81,7 +81,7 @@ class SellerAuthController extends Controller
             'email' => $user->email,
             'phone' => $user->phone,
             'roles' => $user->getRoleNames()->values()->all(),
-            'can_edit_eline_products' => $user->can('seller.edit_eline_products'),
+            'can_edit_eline_products' => $user->canEditSellerElineProducts(),
         ];
     }
 }
