@@ -4,10 +4,15 @@ namespace App\Services\Shipping;
 
 use App\Models\Cart;
 use App\Models\ShippingRule;
+use App\Services\Commerce\CartService;
 use Illuminate\Support\Collection;
 
 class ShippingCalculator
 {
+    public function __construct(
+        private readonly CartService $cartService,
+    ) {}
+
     public function calculate(Cart $cart, string $method = 'delivery'): ShippingResult
     {
         if ($method === 'pickup') {
@@ -18,13 +23,16 @@ class ShippingCalculator
             );
         }
 
-        $cart->load('items.product.category');
-        $subtotal = $this->cartSubtotal($cart);
+        $this->refreshCartItems($cart);
+        $orderMerchandiseTotal = $this->merchandiseTotalBeforeShipping($cart);
         $rules = $this->resolveApplicableRules($cart);
 
         $activeRule = $this->selectActiveRule($rules);
+        $freeThreshold = $activeRule->free_threshold !== null
+            ? (float) $activeRule->free_threshold
+            : null;
 
-        if ($activeRule->free_threshold !== null && $subtotal >= (float) $activeRule->free_threshold) {
+        if ($freeThreshold !== null && $freeThreshold > 0 && $orderMerchandiseTotal >= $freeThreshold) {
             return $this->freeResult($activeRule, $method);
         }
 
@@ -36,9 +44,15 @@ class ShippingCalculator
         );
     }
 
-    private function cartSubtotal(Cart $cart): float
+    private function refreshCartItems(Cart $cart): void
     {
-        return (float) $cart->items->sum(fn ($item): float => (float) $item->unit_price * (int) $item->quantity);
+        $cart->unsetRelation('items');
+        $cart->load('items.product.category');
+    }
+
+    private function merchandiseTotalBeforeShipping(Cart $cart): float
+    {
+        return $this->cartService->total($cart, 0.0);
     }
 
     /**
@@ -49,6 +63,10 @@ class ShippingCalculator
         $rules = collect();
 
         foreach ($cart->items as $item) {
+            if ($item->is_loyalty_reward) {
+                continue;
+            }
+
             $categoryId = $item->product?->category_id;
             $categoryRule = $categoryId
                 ? ShippingRule::query()
@@ -60,6 +78,10 @@ class ShippingCalculator
                 : null;
 
             $rules->push($categoryRule ?? $this->globalRule());
+        }
+
+        if ($rules->isEmpty()) {
+            $rules->push($this->globalRule());
         }
 
         return $rules;
@@ -79,13 +101,17 @@ class ShippingCalculator
         if ($mode === 'sum') {
             $totalFee = $rules->sum(fn (ShippingRule $rule): float => (float) $rule->fixed_fee);
             $highestPriority = $rules->sortByDesc('priority')->first();
+            $thresholds = $rules
+                ->pluck('free_threshold')
+                ->filter(fn ($threshold) => $threshold !== null)
+                ->map(fn ($threshold) => (float) $threshold);
 
             return new ShippingRule([
                 'id' => $highestPriority->id,
                 'name' => $highestPriority->name,
                 'type' => 'combined',
                 'fixed_fee' => $totalFee,
-                'free_threshold' => $rules->min(fn (ShippingRule $rule) => $rule->free_threshold),
+                'free_threshold' => $thresholds->isEmpty() ? null : $thresholds->min(),
                 'priority' => $highestPriority->priority,
             ]);
         }

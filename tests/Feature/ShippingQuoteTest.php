@@ -71,4 +71,78 @@ class ShippingQuoteTest extends TestCase
             ->assertJsonPath('data.shipping.fee', 0)
             ->assertJsonPath('data.shipping.is_free', true);
     }
+
+    public function test_shipping_quote_charges_fee_below_free_threshold(): void
+    {
+        ShippingRule::factory()->create([
+            'type' => 'global',
+            'fixed_fee' => 7,
+            'free_threshold' => 500,
+            'is_active' => true,
+            'priority' => 0,
+        ]);
+
+        $product = Product::factory()->create([
+            'price_locked' => true,
+            'manual_price' => 150,
+            'display_price' => 150,
+            'regular_price' => 150,
+            'available_stock' => 5,
+            'is_public' => true,
+            'status' => 'active',
+        ]);
+
+        $sessionId = (string) Str::uuid();
+        $cart = app(CartService::class)->getOrCreate($sessionId);
+        app(CartService::class)->addItem($cart, $product, 2);
+
+        $response = $this->postJson('/api/v1/checkout/shipping-quote', [
+            'shipping_method' => 'delivery',
+        ], [
+            'X-Cart-Session' => $sessionId,
+        ]);
+
+        $response
+            ->assertOk()
+            ->assertJsonPath('data.shipping.fee', 7)
+            ->assertJsonPath('data.shipping.is_free', false)
+            ->assertJsonPath('data.total', 307);
+    }
+
+    public function test_shipping_quote_is_free_at_or_above_threshold(): void
+    {
+        ShippingRule::factory()->create([
+            'type' => 'global',
+            'fixed_fee' => 7,
+            'free_threshold' => 500,
+            'is_active' => true,
+            'priority' => 0,
+        ]);
+
+        $product = Product::factory()->create([
+            'price_locked' => true,
+            'manual_price' => 250,
+            'display_price' => 250,
+            'regular_price' => 250,
+            'available_stock' => 5,
+            'is_public' => true,
+            'status' => 'active',
+        ]);
+
+        $sessionId = (string) Str::uuid();
+        $cart = app(CartService::class)->getOrCreate($sessionId);
+        app(CartService::class)->addItem($cart, $product, 2);
+
+        $response = $this->postJson('/api/v1/checkout/shipping-quote', [
+            'shipping_method' => 'delivery',
+        ], [
+            'X-Cart-Session' => $sessionId,
+        ]);
+
+        $response
+            ->assertOk()
+            ->assertJsonPath('data.shipping.fee', 0)
+            ->assertJsonPath('data.shipping.is_free', true)
+            ->assertJsonPath('data.total', 500);
+    }
 }

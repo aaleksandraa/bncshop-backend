@@ -59,7 +59,8 @@ class ShippingRuleResource extends Resource
                     ->label('Fiksna naknada')
                     ->numeric()
                     ->prefix('KM')
-                    ->default(0),
+                    ->default(0)
+                    ->helperText('Naknada za dostavu ispod praga besplatne dostave. Mora biti veća od 0 ako postavljate prag.'),
                 Forms\Components\TextInput::make('free_threshold')
                     ->label('Besplatna dostava od')
                     ->numeric()
