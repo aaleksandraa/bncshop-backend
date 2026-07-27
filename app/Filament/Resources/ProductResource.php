@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Concerns\AuthorizesWithPermissions;
+use App\Filament\Concerns\HasProductBulkActions;
 use App\Filament\Concerns\HasSeoFormFields;
 use App\Filament\Resources\ProductResource\Pages;
 use App\Filament\Resources\ProductResource\RelationManagers;
@@ -24,6 +25,7 @@ use Illuminate\Support\Str;
 class ProductResource extends Resource
 {
     use AuthorizesWithPermissions;
+    use HasProductBulkActions;
     use HasSeoFormFields;
 
     protected static ?string $model = Product::class;
@@ -495,6 +497,7 @@ class ProductResource extends Resource
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
+                    ...static::productBulkActions(),
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);

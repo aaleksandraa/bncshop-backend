@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Concerns\AuthorizesWithPermissions;
+use App\Filament\Concerns\HasCategoryMergeActions;
 use App\Filament\Concerns\HasSeoFormFields;
 use App\Filament\Resources\CategoryResource\Pages;
 use App\Filament\Resources\CategoryResource\RelationManagers\AttributeMappingsRelationManager;
@@ -18,6 +19,7 @@ use Illuminate\Database\Eloquent\Builder;
 class CategoryResource extends Resource
 {
     use AuthorizesWithPermissions;
+    use HasCategoryMergeActions;
     use HasSeoFormFields;
 
     protected static ?string $model = Category::class;
@@ -303,11 +305,13 @@ class CategoryResource extends Resource
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+                ...static::categoryMergeTableActions(),
                 Tables\Actions\DeleteAction::make()
                     ->visible(fn (Category $record): bool => ! $record->system),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
+                    ...static::categoryMergeBulkActions(),
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ])
