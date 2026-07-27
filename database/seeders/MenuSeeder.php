@@ -64,7 +64,9 @@ class MenuSeeder extends Seeder
             [
                 'title' => 'Dostava',
                 'slug' => 'dostava',
-                'body' => '<p>Informacije o dostavi širom Bosne i Hercegovine.</p>',
+                'body' => null,
+                'meta_title' => 'Dostava',
+                'meta_description' => 'Uslovi dostave, proces narudžbe, plaćanje i kupovina na rate u BNC web shopu. Dostava širom BiH u roku do 48 sati.',
                 'status' => 'active',
             ],
             [
