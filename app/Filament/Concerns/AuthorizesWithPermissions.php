@@ -98,6 +98,10 @@ trait AuthorizesWithPermissions
                 'create', 'update', 'delete' => ['manage_sync'],
                 default => [],
             },
+            'email_logs' => match ($action) {
+                'view' => ['manage_orders', 'view_orders'],
+                default => [],
+            },
             default => [],
         };
     }

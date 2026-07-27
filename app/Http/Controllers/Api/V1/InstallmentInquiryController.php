@@ -8,6 +8,7 @@ use App\Mail\InstallmentInquiryNotification;
 use App\Models\InstallmentInquiry;
 use App\Models\Product;
 use App\Services\Commerce\InstallmentCalculator;
+use App\Support\OrderNotificationMail;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
@@ -105,10 +106,8 @@ class InstallmentInquiryController extends Controller
             'user_agent' => $request->userAgent(),
         ]);
 
-        $sellerEmail = config('bnc.seller_notification_email');
-
-        if ($sellerEmail) {
-            Mail::to($sellerEmail)->queue(new InstallmentInquiryNotification($inquiry));
+        foreach (OrderNotificationMail::recipients() as $recipient) {
+            Mail::to($recipient)->queue(new InstallmentInquiryNotification($inquiry));
         }
 
         return response()->json([

@@ -8,6 +8,7 @@ use App\Models\Order;
 use App\Models\OrderStatusHistory;
 use App\Models\User;
 use App\Services\Loyalty\LoyaltyService;
+use App\Support\OrderNotificationMail;
 use App\Support\OrderStatus;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -151,12 +152,6 @@ class OrderService
             Mail::to($order->email)->queue(new OrderStatusChanged($order, $oldStatus, $newStatus));
         }
 
-        $sellerEmail = config('bnc.seller_notification_email');
-
-        if (! $sellerEmail) {
-            return;
-        }
-
         $statusVariables = [
             'old_status' => OrderStatus::label($oldStatus),
             'new_status' => OrderStatus::label($newStatus),
@@ -168,11 +163,13 @@ class OrderService
             default => 'order_status_changed_seller',
         };
 
-        Mail::to($sellerEmail)->queue(new TemplatedOrderMail(
-            templateSlug: $sellerTemplate,
-            order: $order,
-            extraVariables: $statusVariables,
-        ));
+        foreach (OrderNotificationMail::recipients() as $recipient) {
+            Mail::to($recipient)->queue(new TemplatedOrderMail(
+                templateSlug: $sellerTemplate,
+                order: $order,
+                extraVariables: $statusVariables,
+            ));
+        }
     }
 
     private function normalizeStatus(?string $status): string

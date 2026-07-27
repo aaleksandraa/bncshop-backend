@@ -161,6 +161,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 'loyalty_in_store.operate',
                 'export_reports',
                 'analytics.view',
+                'email_logs.view',
             ],
             'Content Editor' => [
                 'manage_products',

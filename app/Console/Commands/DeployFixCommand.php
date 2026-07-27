@@ -8,6 +8,7 @@ use App\Support\StorefrontConfig;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Schema;
 
 class DeployFixCommand extends Command
 {
@@ -86,6 +87,16 @@ class DeployFixCommand extends Command
             $this->line('Then run: php artisan bnc:deploy-fix --apply');
             $issues++;
         }
+
+        if (! Schema::hasTable('email_logs')) {
+            $this->error('email_logs table is missing — admin Email logovi will be empty. Run: php artisan migrate');
+            $issues++;
+        } else {
+            $this->info('email_logs table exists.');
+        }
+
+        $orderNotify = \App\Support\OrderNotificationMail::recipients();
+        $this->line('Order notification emails: '.($orderNotify !== [] ? implode(', ', $orderNotify) : '(none — set SELLER_EMAIL or ADMIN_EMAIL)'));
 
         if (
             $env === 'production'

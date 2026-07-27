@@ -52,7 +52,7 @@ return [
     */
     'legacy_storage_url' => env('LEGACY_STORAGE_URL', env('ASSET_URL')),
 
-    'seller_notification_email' => env('SELLER_EMAIL', env('MAIL_FROM_ADDRESS')),
+    'seller_notification_email' => env('SELLER_EMAIL', env('ADMIN_EMAIL', env('MAIL_FROM_ADDRESS'))),
     'admin_notification_email' => env('ADMIN_EMAIL', env('MAIL_FROM_ADDRESS')),
 
     'order_statuses' => [

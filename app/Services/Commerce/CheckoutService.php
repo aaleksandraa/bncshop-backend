@@ -13,6 +13,7 @@ use App\Models\LoyaltyReward;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\User;
+use App\Support\OrderNotificationMail;
 use App\Services\Loyalty\LoyaltyService;
 use App\Services\Loyalty\LoyaltySettings;
 use App\Services\Marketing\BrevoService;
@@ -417,12 +418,20 @@ class CheckoutService
             Mail::to($order->email)->queue(new OrderConfirmationCustomer($order));
         }
 
-        $sellerEmail = config('bnc.seller_notification_email');
-        if ($sellerEmail) {
-            Mail::to($sellerEmail)->queue(new TemplatedOrderMail(
+        $recipients = OrderNotificationMail::recipients();
+
+        foreach ($recipients as $recipient) {
+            Mail::to($recipient)->queue(new TemplatedOrderMail(
                 templateSlug: 'order_notification_seller',
                 order: $order,
             ));
+        }
+
+        if ($recipients === []) {
+            \Illuminate\Support\Facades\Log::warning('Order admin notification skipped: no SELLER_EMAIL or ADMIN_EMAIL configured', [
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+            ]);
         }
     }
 
