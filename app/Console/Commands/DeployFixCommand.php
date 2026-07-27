@@ -81,9 +81,19 @@ class DeployFixCommand extends Command
         }
 
         if ($env === 'production' && str_contains($appUrl, 'api.bncshop.ba')) {
-            $this->error('APP_URL is api.bncshop.ba but production uses api.bnc.ba — Filament admin tables will fail CORS.');
-            $this->line('Set APP_URL=https://api.bnc.ba in .env, unset ASSET_URL (use LEGACY_STORAGE_URL for old /storage only), then run: php artisan bnc:deploy-fix --apply');
+            $this->error('APP_URL is api.bncshop.ba but admin/API run on api.bnc.ba — Filament admin tables will fail CORS.');
+            $this->line('Set APP_URL=https://api.bnc.ba in .env. Keep LEGACY_STORAGE_URL (or ASSET_URL) for old product photos on api.bncshop.ba.');
+            $this->line('Then run: php artisan bnc:deploy-fix --apply');
             $issues++;
+        }
+
+        if (
+            $env === 'production'
+            && str_ends_with(parse_url($appUrl, PHP_URL_HOST) ?: '', 'api.bnc.ba')
+            && $assetUrl !== ''
+            && str_contains($assetUrl, 'bncshop')
+        ) {
+            $this->info('Split storage OK: APP_URL=api.bnc.ba, legacy photos on api.bncshop.ba.');
         }
 
         $sample = PublicStorageUrl::absoluteFromResolved(
