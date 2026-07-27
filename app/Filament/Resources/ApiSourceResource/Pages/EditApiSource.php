@@ -48,10 +48,17 @@ class EditApiSource extends EditRecord
                     try {
                         $this->record->refresh();
 
-                        if (blank($this->record->username) || blank($this->record->password)) {
+                        $hasCredentials = filled($this->record->username) && filled($this->record->password);
+
+                        if (! $hasCredentials && $this->record->usesIntegrationApiImport()) {
+                            $hasCredentials = filled(config('bnc.a1_api_username'))
+                                && filled(config('bnc.a1_api_password'));
+                        }
+
+                        if (! $hasCredentials) {
                             Notification::make()
                                 ->title('Kredencijali nisu postavljeni')
-                                ->body('Unesite korisničko ime i lozinku za A1 API, sačuvajte zapis, pa ponovo testirajte.')
+                                ->body('Unesite korisničko ime i lozinku za A1 API, sačuvajte zapis, ili postavite A1_API_* u .env i pokrenite php artisan bnc:a1-sync-credentials.')
                                 ->warning()
                                 ->send();
 

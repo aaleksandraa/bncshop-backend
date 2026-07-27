@@ -35,10 +35,19 @@ class IntegrationApiClient
 
     public function login(): ApiSource
     {
+        [$username, $password] = $this->resolveCredentials();
+
+        if (blank($username) || blank($password)) {
+            throw new RuntimeException(
+                'A1 API kredencijali nisu postavljeni. Unesite ih u admin panelu (API izvori) i sačuvajte, '
+                .'ili postavite A1_API_USERNAME / A1_API_PASSWORD u .env pa pokrenite: php artisan bnc:a1-sync-credentials'
+            );
+        }
+
         $response = $this->baseRequest()
             ->post('/api/auth/login', [
-                'username' => $this->source->username,
-                'password' => $this->source->password,
+                'username' => $username,
+                'password' => $password,
             ]);
 
         $this->assertSuccessful($response, 'Login failed');
@@ -243,6 +252,27 @@ class IntegrationApiClient
             $this->source->target_system_code,
             $resource
         );
+    }
+
+    /**
+     * @return array{0: ?string, 1: ?string}
+     */
+    private function resolveCredentials(): array
+    {
+        $username = $this->source->username;
+        $password = $this->source->password;
+
+        if ($this->source->usesIntegrationApiImport()) {
+            if (blank($username)) {
+                $username = config('bnc.a1_api_username');
+            }
+
+            if (blank($password)) {
+                $password = config('bnc.a1_api_password');
+            }
+        }
+
+        return [$username, $password];
     }
 
     /**

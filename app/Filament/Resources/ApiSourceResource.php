@@ -228,10 +228,17 @@ class ApiSourceResource extends Resource
                         try {
                             $record->refresh();
 
-                            if (blank($record->username) || blank($record->password)) {
+                            $hasCredentials = filled($record->username) && filled($record->password);
+
+                            if (! $hasCredentials && $record->usesIntegrationApiImport()) {
+                                $hasCredentials = filled(config('bnc.a1_api_username'))
+                                    && filled(config('bnc.a1_api_password'));
+                            }
+
+                            if (! $hasCredentials) {
                                 Notification::make()
                                     ->title('Kredencijali nisu postavljeni')
-                                    ->body('Unesite korisničko ime i lozinku za A1 API, sačuvajte zapis, pa ponovo testirajte.')
+                                    ->body('Unesite korisničko ime i lozinku za A1 API, sačuvajte zapis, ili postavite A1_API_* u .env i pokrenite php artisan bnc:a1-sync-credentials.')
                                     ->warning()
                                     ->send();
 

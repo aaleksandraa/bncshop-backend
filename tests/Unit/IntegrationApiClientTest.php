@@ -43,6 +43,37 @@ class IntegrationApiClientTest extends TestCase
         $this->assertSame('connected', $source->connection_status);
     }
 
+    public function test_login_falls_back_to_env_when_database_credentials_are_blank(): void
+    {
+        config([
+            'bnc.a1_api_verify_ssl' => false,
+            'bnc.a1_api_username' => 'bnc',
+            'bnc.a1_api_password' => 'env-secret',
+        ]);
+
+        Http::fake([
+            'https://a1team.ba/api/auth/login' => Http::response([
+                'access_token' => 'env-access',
+                'refresh_token' => 'env-refresh',
+                'expires_in' => 3600,
+            ], 200),
+        ]);
+
+        $source = ApiSource::query()->create([
+            'name' => 'Test',
+            'target_system_code' => 'bnc-shop',
+            'base_url' => 'https://a1team.ba',
+            'username' => null,
+            'password' => null,
+            'is_active' => true,
+        ]);
+
+        IntegrationApiClient::forSource($source)->login();
+
+        Http::assertSent(fn ($request) => $request['username'] === 'bnc'
+            && $request['password'] === 'env-secret');
+    }
+
     public function test_products_pagination_uses_next_page(): void
     {
         config(['bnc.a1_api_verify_ssl' => false]);

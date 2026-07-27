@@ -67,7 +67,31 @@ class AppServiceProvider extends ServiceProvider
             URL::forceScheme('https');
         }
 
+        if (! $this->app->runningInConsole()) {
+            $this->forceRootUrlFromIncomingRequest();
+        }
+
         $this->configureRateLimiting();
+    }
+
+    /**
+     * Keep Filament/Livewire asset URLs on the same host as the browser request.
+     * Fixes CORS when APP_URL still points at api.bncshop.ba but admin opens on api.bnc.ba.
+     */
+    private function forceRootUrlFromIncomingRequest(): void
+    {
+        if (! $this->app->environment('production')) {
+            return;
+        }
+
+        $request = request();
+        $host = strtolower((string) $request?->getHost());
+
+        if ($host === '' || in_array($host, ['localhost', '127.0.0.1'], true)) {
+            return;
+        }
+
+        URL::forceRootUrl('https://'.$host);
     }
 
     private function configureRateLimiting(): void
