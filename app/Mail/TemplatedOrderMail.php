@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Mail\Concerns\LogsMailableIdentity;
 use App\Models\Order;
 use App\Services\Mail\EmailTemplateRenderer;
 use App\Services\Mail\OrderEmailVariables;
@@ -15,7 +16,7 @@ use Illuminate\Queue\SerializesModels;
 
 class TemplatedOrderMail extends Mailable implements ShouldQueue
 {
-    use Queueable, SerializesModels;
+    use Queueable, SerializesModels, LogsMailableIdentity;
 
     /**
      * @param  array<string, string>  $extraVariables

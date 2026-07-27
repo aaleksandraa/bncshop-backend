@@ -65,6 +65,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'api_sources',
             'api_import_jobs',
             'loyalty_rewards',
+            'email_logs',
         ];
 
         $permissions = [

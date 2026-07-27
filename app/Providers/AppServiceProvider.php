@@ -20,9 +20,14 @@ use App\Observers\CmsPageObserver;
 use App\Observers\DiscountObserver;
 use App\Observers\MenuItemObserver;
 use App\Observers\ProductObserver;
+use App\Listeners\LogFailedMailJob;
+use App\Listeners\LogSentMail;
 use App\Services\Pricing\PricingCache;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Mail\Events\MessageSent;
+use Illuminate\Queue\Events\JobFailed;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
@@ -51,6 +56,9 @@ class AppServiceProvider extends ServiceProvider
         MenuItem::observe(MenuItemObserver::class);
         CmsPage::observe(CmsPageObserver::class);
         BlogPost::observe(BlogPostObserver::class);
+
+        Event::listen(MessageSent::class, LogSentMail::class);
+        Event::listen(JobFailed::class, LogFailedMailJob::class);
 
         if ($this->app->environment('production')) {
             URL::forceScheme('https');

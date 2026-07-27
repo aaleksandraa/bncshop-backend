@@ -3,6 +3,7 @@
 namespace App\Mail\B2b;
 
 use App\Mail\B2b\Concerns\UsesB2bMailIdentity;
+use App\Mail\Concerns\LogsMailableIdentity;
 use App\Models\B2bOrder;
 use App\Support\B2bOrderStatus;
 use Illuminate\Mail\Mailable;
@@ -12,7 +13,7 @@ use Illuminate\Queue\SerializesModels;
 
 class B2bOrderStatusChanged extends Mailable
 {
-    use SerializesModels, UsesB2bMailIdentity;
+    use SerializesModels, UsesB2bMailIdentity, LogsMailableIdentity;
 
     public function __construct(
         public B2bOrder $order,

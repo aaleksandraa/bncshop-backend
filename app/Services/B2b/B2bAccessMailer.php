@@ -12,20 +12,35 @@ use App\Models\B2bAccessRequest;
 use App\Models\B2bOrder;
 use App\Models\B2bSetting;
 use App\Models\User;
+use App\Services\Mail\EmailLogService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use RuntimeException;
 
 class B2bAccessMailer
 {
+    public function __construct(
+        private readonly EmailLogService $emailLogs,
+    ) {}
+
     public function notifyAdminOfAccessRequest(B2bAccessRequest $request): void
     {
         $recipient = B2bSetting::adminNotificationEmail();
 
         if (! filled($recipient)) {
-            Log::error('B2B access request mail skipped: admin notification email is empty', [
+            $context = [
+                'type' => 'access_request_admin',
                 'request_id' => $request->id,
-            ]);
+            ];
+
+            Log::error('B2B access request mail skipped: admin notification email is empty', $context);
+
+            $this->emailLogs->logSkipped(
+                recipient: '',
+                reason: 'Email za B2B obavijesti nije konfigurisan.',
+                mailableClass: B2bAccessRequestNotification::class,
+                context: $context,
+            );
 
             throw new RuntimeException('Email za B2B obavijesti nije konfigurisan.');
         }
@@ -69,10 +84,20 @@ class B2bAccessMailer
         $recipient = $order->contact_email;
 
         if (! filled($recipient)) {
-            Log::error('B2B order confirmation mail skipped: customer email is empty', [
+            $context = [
+                'type' => 'order_confirmation_customer',
                 'order_id' => $order->id,
                 'order_number' => $order->order_number,
-            ]);
+            ];
+
+            Log::error('B2B order confirmation mail skipped: customer email is empty', $context);
+
+            $this->emailLogs->logSkipped(
+                recipient: '',
+                reason: 'Email kupca je prazan.',
+                mailableClass: B2bOrderConfirmationCustomer::class,
+                context: $context,
+            );
 
             return;
         }
@@ -93,10 +118,20 @@ class B2bAccessMailer
         $recipient = B2bSetting::adminNotificationEmail();
 
         if (! filled($recipient)) {
-            Log::error('B2B order admin mail skipped: admin notification email is empty', [
+            $context = [
+                'type' => 'order_notification_admin',
                 'order_id' => $order->id,
                 'order_number' => $order->order_number,
-            ]);
+            ];
+
+            Log::error('B2B order admin mail skipped: admin notification email is empty', $context);
+
+            $this->emailLogs->logSkipped(
+                recipient: '',
+                reason: 'Email za B2B obavijesti nije konfigurisan.',
+                mailableClass: B2bOrderNotificationAdmin::class,
+                context: $context,
+            );
 
             return;
         }
@@ -117,10 +152,22 @@ class B2bAccessMailer
         $recipient = $order->contact_email;
 
         if (! filled($recipient)) {
-            Log::error('B2B order status mail skipped: customer email is empty', [
+            $context = [
+                'type' => 'order_status_changed_customer',
                 'order_id' => $order->id,
                 'order_number' => $order->order_number,
-            ]);
+                'previous_status' => $previousStatus,
+                'new_status' => $order->status,
+            ];
+
+            Log::error('B2B order status mail skipped: customer email is empty', $context);
+
+            $this->emailLogs->logSkipped(
+                recipient: '',
+                reason: 'Email kupca je prazan.',
+                mailableClass: B2bOrderStatusChanged::class,
+                context: $context,
+            );
 
             return;
         }
@@ -146,8 +193,30 @@ class B2bAccessMailer
             ]);
         }
 
+        $subject = null;
+
         try {
+            if (method_exists($mailable, 'envelope')) {
+                $subject = $mailable->envelope()->subject;
+            }
+        } catch (\Throwable) {
+            $subject = null;
+        }
+
+        try {
+            EmailLogService::suppressNextMessageSent();
             Mail::to($recipient)->send($mailable);
+
+            $this->emailLogs->logSent(
+                recipient: $recipient,
+                subject: $subject,
+                mailableClass: $mailable::class,
+                mailer: config('mail.default'),
+                context: $context + [
+                    'from' => config('mail.from.address'),
+                    'reply_to' => config('b2b.mail.from_address'),
+                ],
+            );
 
             Log::info('B2B mail sent', $context + [
                 'recipient' => $recipient,
@@ -156,6 +225,15 @@ class B2bAccessMailer
                 'reply_to' => config('b2b.mail.from_address'),
             ]);
         } catch (\Throwable $exception) {
+            $this->emailLogs->logFailed(
+                recipient: $recipient,
+                errorMessage: $exception->getMessage(),
+                subject: $subject,
+                mailableClass: $mailable::class,
+                mailer: config('mail.default'),
+                context: $context,
+            );
+
             Log::error('B2B mail failed', $context + [
                 'recipient' => $recipient,
                 'mailer' => config('mail.default'),
@@ -166,6 +244,8 @@ class B2bAccessMailer
                 'Slanje emaila nije uspjelo. Provjerite mail postavke na serveru (MAIL_MAILER, sendmail, From adresa).',
                 previous: $exception,
             );
+        } finally {
+            EmailLogService::clearMessageSentSuppression();
         }
     }
 }

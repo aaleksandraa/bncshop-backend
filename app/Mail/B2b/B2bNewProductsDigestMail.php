@@ -3,6 +3,7 @@
 namespace App\Mail\B2b;
 
 use App\Mail\B2b\Concerns\UsesB2bMailIdentity;
+use App\Mail\Concerns\LogsMailableIdentity;
 use App\Models\B2bCustomer;
 use App\Models\B2bProduct;
 use App\Services\B2b\B2bPricingService;
@@ -16,7 +17,7 @@ use Illuminate\Queue\SerializesModels;
 
 class B2bNewProductsDigestMail extends Mailable implements ShouldQueue
 {
-    use Queueable, SerializesModels, UsesB2bMailIdentity;
+    use Queueable, SerializesModels, UsesB2bMailIdentity, LogsMailableIdentity;
 
     public string $customerName;
 

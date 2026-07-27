@@ -2,12 +2,15 @@
 
 namespace App\Services\Marketing;
 
+use App\Models\EmailLog;
 use App\Models\EmailTemplate;
 use App\Models\MarketingContact;
+use App\Services\Mail\EmailLogService;
 use App\Services\Mail\EmailTemplateRenderer;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
+use Throwable;
 
 class BrevoService
 {
@@ -16,6 +19,7 @@ class BrevoService
     public function __construct(
         private readonly BrevoSettings $settings,
         private readonly EmailTemplateRenderer $templateRenderer,
+        private readonly EmailLogService $emailLogs,
     ) {}
 
     public function isConfigured(): bool
@@ -65,26 +69,59 @@ class BrevoService
     /**
      * @param  array<string, string>  $variables
      */
-    public function sendEmail(MarketingContact $contact, string $subject, string $htmlContent, array $variables = []): void
-    {
+    public function sendEmail(
+        MarketingContact $contact,
+        string $subject,
+        string $htmlContent,
+        array $variables = [],
+        ?string $templateSlug = null,
+    ): void {
         $this->ensureConfigured();
 
         $settings = $this->settings->all();
         $renderedSubject = $this->renderText($subject, $variables, $contact);
         $renderedHtml = $this->renderText($htmlContent, $variables, $contact);
+        $context = [
+            'type' => 'brevo_email',
+            'contact_id' => $contact->id,
+            'contact_email' => $contact->email,
+        ];
 
-        $this->client()->post('/smtp/email', [
-            'sender' => [
-                'email' => $settings['sender_email'],
-                'name' => $settings['sender_name'] ?? 'BNC Shop',
-            ],
-            'to' => [[
-                'email' => $contact->email,
-                'name' => $contact->name ?: $contact->email,
-            ]],
-            'subject' => $renderedSubject,
-            'htmlContent' => $renderedHtml,
-        ])->throw();
+        try {
+            $this->client()->post('/smtp/email', [
+                'sender' => [
+                    'email' => $settings['sender_email'],
+                    'name' => $settings['sender_name'] ?? 'BNC Shop',
+                ],
+                'to' => [[
+                    'email' => $contact->email,
+                    'name' => $contact->name ?: $contact->email,
+                ]],
+                'subject' => $renderedSubject,
+                'htmlContent' => $renderedHtml,
+            ])->throw();
+
+            $this->emailLogs->logSent(
+                recipient: $contact->email,
+                subject: $renderedSubject,
+                templateSlug: $templateSlug,
+                channel: EmailLog::CHANNEL_BREVO,
+                mailer: 'brevo',
+                context: $context,
+            );
+        } catch (Throwable $exception) {
+            $this->emailLogs->logFailed(
+                recipient: $contact->email,
+                errorMessage: $exception->getMessage(),
+                subject: $renderedSubject,
+                templateSlug: $templateSlug,
+                channel: EmailLog::CHANNEL_BREVO,
+                mailer: 'brevo',
+                context: $context,
+            );
+
+            throw $exception;
+        }
     }
 
     public function sendTemplate(MarketingContact $contact, EmailTemplate $template, array $extraVariables = []): void
@@ -100,6 +137,7 @@ class BrevoService
             (string) $template->subject,
             (string) $template->body_html,
             $variables,
+            $template->slug ?? null,
         );
     }
 

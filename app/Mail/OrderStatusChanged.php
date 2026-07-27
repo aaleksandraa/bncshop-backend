@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Mail\Concerns\LogsMailableIdentity;
 use App\Models\Order;
 use App\Support\OrderStatus;
 use Illuminate\Bus\Queueable;
@@ -13,7 +14,7 @@ use Illuminate\Queue\SerializesModels;
 
 class OrderStatusChanged extends Mailable implements ShouldQueue
 {
-    use Queueable, SerializesModels;
+    use Queueable, SerializesModels, LogsMailableIdentity;
 
     private TemplatedOrderMail $templatedMail;
 

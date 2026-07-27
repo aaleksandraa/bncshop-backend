@@ -3,6 +3,7 @@
 namespace App\Mail\B2b;
 
 use App\Mail\B2b\Concerns\UsesB2bMailIdentity;
+use App\Mail\Concerns\LogsMailableIdentity;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -13,7 +14,7 @@ use Illuminate\Queue\SerializesModels;
 
 class B2bPasswordResetMail extends Mailable implements ShouldQueue
 {
-    use Queueable, SerializesModels, UsesB2bMailIdentity;
+    use Queueable, SerializesModels, UsesB2bMailIdentity, LogsMailableIdentity;
 
     public function __construct(
         public User $user,
