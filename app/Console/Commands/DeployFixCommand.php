@@ -64,6 +64,21 @@ class DeployFixCommand extends Command
             $this->info('APP_URL looks OK.');
         }
 
+        $assetUrl = rtrim((string) config('app.asset_url'), '/');
+        $this->line('ASSET_URL: '.($assetUrl !== '' ? $assetUrl : '(not set — uses APP_URL)'));
+
+        if (
+            $env === 'production'
+            && str_ends_with(parse_url($appUrl, PHP_URL_HOST) ?: '', 'api.bnc.ba')
+            && ($assetUrl === '' || ! str_contains($assetUrl, 'bncshop'))
+        ) {
+            $this->error('APP_URL is api.bnc.ba but storage is served from api.bncshop.ba.');
+            $this->line('Set ASSET_URL=https://api.bncshop.ba in .env, then run: php artisan bnc:deploy-fix --apply');
+            $issues++;
+        } elseif ($assetUrl !== '') {
+            $this->info('ASSET_URL looks OK.');
+        }
+
         $frontendUrl = StorefrontConfig::frontendUrl();
         $this->line('FRONTEND_URL: '.($frontendUrl ?? '(missing)'));
 

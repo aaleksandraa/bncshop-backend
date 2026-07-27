@@ -48,4 +48,33 @@ class PublicStorageUrlTest extends TestCase
             $url,
         );
     }
+
+    public function test_absolute_from_resolved_rewrites_api_bnc_ba_storage_to_asset_url(): void
+    {
+        app()['env'] = 'production';
+        config([
+            'app.url' => 'https://api.bnc.ba',
+            'app.asset_url' => 'https://api.bncshop.ba',
+        ]);
+
+        $url = PublicStorageUrl::absoluteFromResolved(
+            'https://api.bnc.ba/storage/products/demo/seller-image.jpg',
+        );
+
+        $this->assertSame(
+            'https://api.bncshop.ba/storage/products/demo/seller-image.jpg',
+            $url,
+        );
+    }
+
+    public function test_storage_origin_falls_back_to_bncshop_when_app_url_is_api_bnc_ba(): void
+    {
+        app()['env'] = 'production';
+        config([
+            'app.url' => 'https://api.bnc.ba',
+            'app.asset_url' => null,
+        ]);
+
+        $this->assertSame('https://api.bncshop.ba', PublicStorageUrl::storageOrigin());
+    }
 }
