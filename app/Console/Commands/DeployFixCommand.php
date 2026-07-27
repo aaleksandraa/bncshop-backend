@@ -81,7 +81,9 @@ class DeployFixCommand extends Command
         }
 
         if ($env === 'production' && str_contains($appUrl, 'api.bncshop.ba')) {
-            $this->warn('APP_URL is api.bncshop.ba — if admin is opened at api.bnc.ba, Filament JS will fail CORS. Set APP_URL to the domain you use in the browser.');
+            $this->error('APP_URL is api.bncshop.ba but production uses api.bnc.ba — Filament admin tables will fail CORS.');
+            $this->line('Set APP_URL=https://api.bnc.ba in .env, unset ASSET_URL (use LEGACY_STORAGE_URL for old /storage only), then run: php artisan bnc:deploy-fix --apply');
+            $issues++;
         }
 
         $sample = PublicStorageUrl::absoluteFromResolved(
@@ -170,7 +172,8 @@ class DeployFixCommand extends Command
 
         Artisan::call('config:clear');
         Artisan::call('cache:clear');
-        $this->line('  config:clear + cache:clear');
+        Artisan::call('view:clear');
+        $this->line('  config:clear + cache:clear + view:clear');
 
         Artisan::call('config:cache');
         $this->line('  config:cache');

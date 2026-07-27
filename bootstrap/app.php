@@ -34,6 +34,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->web(prepend: [
+            \App\Http\Middleware\ForceApplicationUrlFromRequest::class,
             \App\Http\Middleware\EnsureFreshConnections::class,
         ]);
 
