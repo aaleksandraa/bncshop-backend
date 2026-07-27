@@ -56,6 +56,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Asset URL
+    |--------------------------------------------------------------------------
+    |
+    | Used by asset() and Filament/Livewire dynamic imports. Do NOT point this
+    | at legacy storage (api.bncshop.ba). Use LEGACY_STORAGE_URL in config/bnc.php
+    | for old /storage/ product images only.
+    |
+    */
+
+    'asset_url' => env('APP_ASSET_URL'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |

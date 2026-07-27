@@ -8,6 +8,7 @@ use App\Filament\Auth\ResetPassword;
 use App\Filament\Pages\PartnerExportSettingsPage;
 use App\Filament\Widgets\SalesChartWidget;
 use App\Filament\Widgets\StatsOverviewWidget;
+use App\Http\Middleware\ForceApplicationUrlFromRequest;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -68,6 +69,7 @@ class AdminPanelProvider extends PanelProvider
                 Widgets\AccountWidget::class,
             ])
             ->middleware([
+                ForceApplicationUrlFromRequest::class,
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
                 StartSession::class,

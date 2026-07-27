@@ -25,6 +25,7 @@ use App\Observers\ProductObserver;
 use App\Listeners\LogFailedMailJob;
 use App\Listeners\LogSentMail;
 use App\Services\Pricing\PricingCache;
+use App\Support\ApplicationUrl;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Mail\Events\MessageSent;
@@ -62,6 +63,12 @@ class AppServiceProvider extends ServiceProvider
 
         Event::listen(MessageSent::class, LogSentMail::class);
         Event::listen(JobFailed::class, LogFailedMailJob::class);
+
+        if (class_exists(\Filament\Facades\Filament::class)) {
+            \Filament\Facades\Filament::serving(function (): void {
+                ApplicationUrl::syncFromRequest();
+            });
+        }
 
         if ($this->app->environment('production')) {
             URL::forceScheme('https');

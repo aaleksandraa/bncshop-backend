@@ -5,6 +5,7 @@ namespace App\Providers\Filament;
 use App\Filament\B2b\Auth\Login;
 use App\Http\Controllers\Admin\B2bOrderInvoiceController;
 use App\Http\Middleware\Filament\AuthenticateB2bPanel;
+use App\Http\Middleware\ForceApplicationUrlFromRequest;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
@@ -55,6 +56,7 @@ class B2bPanelProvider extends PanelProvider
                 Widgets\AccountWidget::class,
             ])
             ->middleware([
+                ForceApplicationUrlFromRequest::class,
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
                 StartSession::class,

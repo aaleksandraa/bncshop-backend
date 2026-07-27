@@ -107,6 +107,16 @@ class DeployFixCommand extends Command
             $this->info('Split storage OK: APP_URL=api.bnc.ba, legacy photos on api.bncshop.ba.');
         }
 
+        $laravelAssetUrl = config('app.asset_url');
+        if ($laravelAssetUrl !== null && $laravelAssetUrl !== '' && str_contains((string) $laravelAssetUrl, 'bncshop')) {
+            $this->error('config(app.asset_url) points at api.bncshop.ba — Filament admin pagination breaks (CORS).');
+            $this->line('Unset APP_ASSET_URL. Use LEGACY_STORAGE_URL (or ASSET_URL) only for legacy /storage/ photos.');
+            $this->line('ForceApplicationUrl middleware clears asset_url per request after deploy — run config:clear && config:cache.');
+            $issues++;
+        }
+
+        $this->line('Admin check: View Source on /admin/products — table.js must load from api.bnc.ba, not api.bncshop.ba.');
+
         $sample = PublicStorageUrl::absoluteFromResolved(
             'https://api.bnc.ba/storage/products/deploy-check.jpg',
         );

@@ -26,6 +26,9 @@ return Application::configure(basePath: dirname(__DIR__))
             );
         }
 
+        // Every request (incl. /livewire/update) must use the browser host for Filament assets.
+        $middleware->prepend(\App\Http\Middleware\ForceApplicationUrlFromRequest::class);
+
         $middleware->api(prepend: [
             \App\Http\Middleware\EnsureFreshConnections::class,
             EnsureFrontendRequestsAreStateful::class,
@@ -34,7 +37,6 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->web(prepend: [
-            \App\Http\Middleware\ForceApplicationUrlFromRequest::class,
             \App\Http\Middleware\EnsureFreshConnections::class,
         ]);
 
