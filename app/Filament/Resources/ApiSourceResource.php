@@ -71,13 +71,20 @@ class ApiSourceResource extends Resource
                     ->label('Korisničko ime')
                     ->required(fn (Get $get, ?ApiSource $record, string $operation): bool => $operation === 'create'
                         && ($record?->target_system_code ?? $get('target_system_code')) !== 'eline')
+                    ->helperText(fn (?ApiSource $record): ?string => $record?->usesIntegrationApiImport()
+                        ? 'A1 Technoshop API korisnik (npr. bnc) — nije email za BNC admin panel.'
+                        : null)
                     ->visible(fn (Get $get, ?ApiSource $record): bool => ($record?->target_system_code ?? $get('target_system_code')) !== 'eline'),
                 Forms\Components\TextInput::make('password')
                     ->label('Lozinka')
                     ->password()
                     ->revealable()
+                    ->dehydrated(fn (?string $state): bool => filled($state))
                     ->required(fn (Get $get, ?ApiSource $record, string $operation): bool => $operation === 'create'
                         && ($record?->target_system_code ?? $get('target_system_code')) !== 'eline')
+                    ->helperText(fn (string $operation): ?string => $operation === 'edit'
+                        ? 'Ostavite prazno da zadržite postojeću lozinku. Test konekcije koristi sačuvane vrijednosti — prvo kliknite Sačuvaj.'
+                        : null)
                     ->visible(fn (Get $get, ?ApiSource $record): bool => ($record?->target_system_code ?? $get('target_system_code')) !== 'eline'),
                 Forms\Components\Placeholder::make('eline_credentials_hint')
                     ->label('eLine API pristup')
@@ -99,6 +106,18 @@ class ApiSourceResource extends Resource
                     ->label('Veličina stranice')
                     ->numeric()
                     ->default(500),
+                Forms\Components\Placeholder::make('a1_credentials_hint')
+                    ->label('A1 API pristup')
+                    ->content(fn (): HtmlString => new HtmlString(
+                        '<p class="text-sm text-gray-600 dark:text-gray-300">Kredencijale možete unijeti ovdje ili u <code>.env</code> '
+                        .'(A1_API_USERNAME, A1_API_PASSWORD) pa pokrenuti '
+                        .'<code>php artisan db:seed --class=ApiSourceSeeder</code> na serveru. '
+                        .'Sync i test konekcije koriste vrijednosti iz baze, ne direktno iz .env.</p>'
+                        .'<p class="mt-2 text-sm text-gray-600 dark:text-gray-300">Tipično korisničko ime: <strong>bnc</strong> '
+                        .'(lozinku dobijete od A1 tima).</p>'
+                    ))
+                    ->columnSpanFull()
+                    ->visible(fn (?ApiSource $record): bool => $record?->usesIntegrationApiImport() ?? false),
                 Forms\Components\Placeholder::make('a1_sync_hint')
                     ->label('')
                     ->content(fn (): HtmlString => new HtmlString(
@@ -207,6 +226,18 @@ class ApiSourceResource extends Resource
                     ->visible(fn (): bool => auth()->user()?->can('api_sources.update') ?? false)
                     ->action(function (ApiSource $record): void {
                         try {
+                            $record->refresh();
+
+                            if (blank($record->username) || blank($record->password)) {
+                                Notification::make()
+                                    ->title('Kredencijali nisu postavljeni')
+                                    ->body('Unesite korisničko ime i lozinku za A1 API, sačuvajte zapis, pa ponovo testirajte.')
+                                    ->warning()
+                                    ->send();
+
+                                return;
+                            }
+
                             if ($record->target_system_code === 'eline') {
                                 app(ElineSyncOrchestrator::class)->testConnection();
                             } else {

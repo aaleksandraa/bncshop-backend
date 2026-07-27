@@ -46,6 +46,18 @@ class EditApiSource extends EditRecord
                 ->icon('heroicon-o-signal')
                 ->action(function (): void {
                     try {
+                        $this->record->refresh();
+
+                        if (blank($this->record->username) || blank($this->record->password)) {
+                            Notification::make()
+                                ->title('Kredencijali nisu postavljeni')
+                                ->body('Unesite korisničko ime i lozinku za A1 API, sačuvajte zapis, pa ponovo testirajte.')
+                                ->warning()
+                                ->send();
+
+                            return;
+                        }
+
                         IntegrationApiClient::forSource($this->record)->login();
 
                         Notification::make()
