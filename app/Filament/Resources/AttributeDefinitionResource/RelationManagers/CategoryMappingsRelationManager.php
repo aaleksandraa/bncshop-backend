@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\AttributeDefinitionResource\RelationManagers;
 
+use App\Support\CategoryAdminSearch;
+use App\Filament\Forms\CategoryMappingSelect;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -18,11 +20,8 @@ class CategoryMappingsRelationManager extends RelationManager
     {
         return $form
             ->schema([
-                Forms\Components\Select::make('category_id')
+                CategoryMappingSelect::make('category_id')
                     ->label('Kategorija')
-                    ->relationship('category', 'name')
-                    ->searchable()
-                    ->preload()
                     ->required(),
                 Forms\Components\TextInput::make('category_name')
                     ->label('Naziv kategorije (snapshot)')
@@ -43,9 +42,14 @@ class CategoryMappingsRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn ($query) => $query->with(['category' => fn ($q) => $q->withCount('products')]))
             ->columns([
                 Tables\Columns\TextColumn::make('category.name')
-                    ->label('Kategorija'),
+                    ->label('Kategorija')
+                    ->formatStateUsing(fn ($state, $record): string => $record->category !== null
+                        ? CategoryAdminSearch::formatOptionLabel($record->category)
+                        : '—')
+                    ->wrap(),
                 Tables\Columns\IconColumn::make('is_filter_enabled')
                     ->label('Filter')
                     ->boolean(),

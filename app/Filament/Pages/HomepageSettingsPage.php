@@ -268,7 +268,8 @@ class HomepageSettingsPage extends Page implements HasForms
 
         return Category::query()
             ->whereIn('id', $values)
-            ->get(['id', 'name', 'display_name', 'full_slug'])
+            ->withCount('products')
+            ->get(['id', 'name', 'display_name', 'full_slug', 'parent_id', 'depth', 'path'])
             ->mapWithKeys(fn (Category $category): array => [
                 (string) $category->id => CategoryAdminSearch::formatOptionLabel($category),
             ])

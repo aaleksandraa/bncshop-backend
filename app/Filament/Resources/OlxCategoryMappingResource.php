@@ -2,11 +2,12 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Forms\CategoryMappingSelect;
 use App\Filament\Pages\OlxSyncSettingsPage;
 use App\Filament\Resources\OlxCategoryMappingResource\Pages;
-use App\Models\Category;
 use App\Models\OlxCategory;
 use App\Models\OlxCategoryMapping;
+use App\Support\CategoryAdminSearch;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -37,10 +38,8 @@ class OlxCategoryMappingResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Forms\Components\Select::make('category_id')
+            CategoryMappingSelect::make('category_id')
                 ->label('BNC kategorija')
-                ->options(fn (): array => Category::query()->orderBy('name')->pluck('name', 'id')->all())
-                ->searchable()
                 ->required(),
             Forms\Components\Select::make('olx_category_id')
                 ->label('OLX kategorija')
@@ -62,8 +61,15 @@ class OlxCategoryMappingResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn ($query) => $query->with(['category' => fn ($q) => $q->withCount('products')]))
             ->columns([
-                Tables\Columns\TextColumn::make('category.name')->label('BNC')->searchable(),
+                Tables\Columns\TextColumn::make('category.name')
+                    ->label('BNC')
+                    ->formatStateUsing(fn ($state, OlxCategoryMapping $record): string => $record->category !== null
+                        ? CategoryAdminSearch::formatOptionLabel($record->category)
+                        : '—')
+                    ->wrap()
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('olx_category_path')->label('OLX putanja')->wrap(),
                 Tables\Columns\TextColumn::make('olx_category_id')->label('OLX ID'),
                 Tables\Columns\IconColumn::make('is_enabled')->label('Uključeno')->boolean(),

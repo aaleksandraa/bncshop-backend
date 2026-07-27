@@ -2,10 +2,11 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Forms\CategoryMappingSelect;
 use App\Filament\Resources\ElineCategoryMappingResource\Pages;
 use App\Jobs\RunElineSyncJob;
 use App\Models\ApiSource;
-use App\Models\Category;
+use App\Support\CategoryAdminSearch;
 use App\Models\ElineCategoryMapping;
 use App\Services\Eline\ElineCategoryDiscoveryService;
 use Filament\Forms;
@@ -52,13 +53,8 @@ class ElineCategoryMappingResource extends Resource
                 Forms\Components\Placeholder::make('product_count')
                     ->label('Broj proizvoda u feedu')
                     ->content(fn (?ElineCategoryMapping $record): string => (string) ($record?->elineCategory?->product_count ?? 0)),
-                Forms\Components\Select::make('category_id')
+                CategoryMappingSelect::make('category_id')
                     ->label('BNC kategorija')
-                    ->options(fn (): array => Category::query()
-                        ->orderBy('name')
-                        ->pluck('name', 'id')
-                        ->all())
-                    ->searchable()
                     ->nullable(),
                 Forms\Components\Toggle::make('is_enabled')
                     ->label('Uključeno za import')
@@ -82,7 +78,7 @@ class ElineCategoryMappingResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['elineCategory', 'category']))
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['elineCategory', 'category' => fn ($q) => $q->withCount('products')]))
             ->columns([
                 Tables\Columns\TextColumn::make('elineCategory.name')
                     ->label('eLine kategorija')
@@ -93,7 +89,11 @@ class ElineCategoryMappingResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('category.name')
                     ->label('BNC kategorija')
+                    ->formatStateUsing(fn ($state, ElineCategoryMapping $record): string => $record->category !== null
+                        ? CategoryAdminSearch::formatOptionLabel($record->category)
+                        : 'Nije mapirano')
                     ->placeholder('Nije mapirano')
+                    ->wrap()
                     ->sortable(),
                 Tables\Columns\IconColumn::make('is_enabled')
                     ->label('Uključeno')
