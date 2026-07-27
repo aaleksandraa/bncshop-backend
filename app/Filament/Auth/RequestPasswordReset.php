@@ -4,6 +4,7 @@ namespace App\Filament\Auth;
 
 use App\Filament\Auth\Concerns\HasAdminAuthProtectionFields;
 use App\Services\Security\AdminLoginProtection;
+use App\Services\Security\TurnstileVerifier;
 use DanHarrin\LivewireRateLimiting\Exceptions\TooManyRequestsException;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Component;
@@ -59,7 +60,7 @@ class RequestPasswordReset extends BaseRequestPasswordReset
     protected function getTurnstileFormComponent(): Component
     {
         return View::make('filament.admin.turnstile-widget')
-            ->visible(fn (): bool => (bool) config('turnstile.enabled'))
+            ->visible(fn (): bool => app(TurnstileVerifier::class)->isEnabled())
             ->columnSpanFull();
     }
 

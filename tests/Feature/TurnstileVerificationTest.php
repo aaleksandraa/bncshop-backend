@@ -16,6 +16,7 @@ class TurnstileVerificationTest extends TestCase
 
         config([
             'turnstile.enabled' => true,
+            'turnstile.site_key' => 'test-site-key',
             'turnstile.secret_key' => 'test-secret',
         ]);
     }

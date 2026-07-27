@@ -4,6 +4,7 @@ namespace App\Http\Requests\Api\V1\Concerns;
 
 use App\Rules\HoneypotEmpty;
 use App\Rules\TurnstileToken;
+use App\Services\Security\TurnstileVerifier;
 
 trait ValidatesBotProtection
 {
@@ -12,7 +13,7 @@ trait ValidatesBotProtection
      */
     protected function botProtectionRules(): array
     {
-        $turnstileRequired = (bool) config('turnstile.enabled', false);
+        $turnstileRequired = app(TurnstileVerifier::class)->isEnabled();
 
         return [
             'turnstile_token' => [

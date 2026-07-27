@@ -95,8 +95,9 @@ class AdminLoginProtection
         )) {
             $this->recordFailedAttempt(is_string($data['email'] ?? null) ? $data['email'] : null);
 
+            // Surface on email — turnstile_token is a Hidden field and Filament won't show its errors.
             throw ValidationException::withMessages([
-                'data.turnstile_token' => 'Provjera sigurnosti nije uspjela. Pokušajte ponovo.',
+                'data.email' => 'Provjera sigurnosti nije uspjela. Osvežite stranicu i pokušajte ponovo.',
             ]);
         }
     }

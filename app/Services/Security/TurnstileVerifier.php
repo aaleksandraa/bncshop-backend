@@ -9,7 +9,15 @@ class TurnstileVerifier
 {
     public function isEnabled(): bool
     {
-        return (bool) config('turnstile.enabled', false);
+        if (! (bool) config('turnstile.enabled', false)) {
+            return false;
+        }
+
+        $siteKey = config('turnstile.site_key');
+        $secretKey = config('turnstile.secret_key');
+
+        return is_string($siteKey) && trim($siteKey) !== ''
+            && is_string($secretKey) && trim($secretKey) !== '';
     }
 
     public function verify(?string $token, ?string $remoteIp = null): bool
@@ -25,12 +33,6 @@ class TurnstileVerifier
         }
 
         $secret = config('turnstile.secret_key');
-
-        if (! is_string($secret) || $secret === '') {
-            Log::warning('Turnstile verification failed: TURNSTILE_SECRET_KEY is missing while Turnstile is enabled');
-
-            return false;
-        }
 
         $response = Http::asForm()
             ->timeout(5)
