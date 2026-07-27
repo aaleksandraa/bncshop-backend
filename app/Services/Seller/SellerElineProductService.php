@@ -135,11 +135,13 @@ class SellerElineProductService
             ->where('product_id', $product->id)
             ->max('sort_order');
 
+        $absoluteUrl = PublicStorageUrl::absoluteUrl($path);
+
         $image = ProductImage::query()->create([
             'product_id' => $product->id,
             'local_path' => $path,
-            'image_url' => PublicStorageUrl::url($path),
-            'public_url' => PublicStorageUrl::url($path),
+            'image_url' => $absoluteUrl,
+            'public_url' => $absoluteUrl,
             'original_file_name' => $file->getClientOriginalName(),
             'stored_file_name' => $fileName,
             'content_type' => $file->getMimeType(),

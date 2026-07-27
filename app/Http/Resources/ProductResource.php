@@ -79,7 +79,7 @@ class ProductResource extends JsonResource
 
         return [
             'id' => $image->id,
-            'url' => $url,
+            'url' => PublicStorageUrl::absoluteFromResolved($url),
             'width' => $image->width ?? null,
             'height' => $image->height ?? null,
             'is_primary' => $image->is_primary,

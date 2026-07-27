@@ -197,6 +197,38 @@ class SellerProductApiTest extends TestCase
         $this->assertSame(600.0, (float) $product->regular_price);
     }
 
+    public function test_seller_uploaded_image_is_exposed_with_absolute_url_on_product_api(): void
+    {
+        Storage::fake('public');
+
+        $seller = $this->createSeller();
+        $product = $this->createElineProduct([
+            'slug' => 'eline-laptop-test',
+            'is_public' => true,
+            'status' => 'active',
+        ]);
+
+        $this->postJsonStateful('/api/v1/seller/login', [
+            'email' => $seller->email,
+            'password' => 'password123',
+        ])->assertOk();
+
+        $this->postMultipartStateful("/api/v1/seller/products/{$product->id}/images", [
+            'image' => UploadedFile::fake()->image('laptop.jpg'),
+            'is_primary' => true,
+        ])->assertOk();
+
+        $response = $this->getJson("/api/v1/products/{$product->slug}");
+
+        $response->assertOk();
+
+        $imageUrl = $response->json('data.default_image.url');
+
+        $this->assertIsString($imageUrl);
+        $this->assertStringStartsWith('http', $imageUrl);
+        $this->assertStringContainsString('/storage/', $imageUrl);
+    }
+
     private function createSeller(): User
     {
         $role = Role::findOrCreate('Prodavac');
