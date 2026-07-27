@@ -33,7 +33,7 @@ class ProductCardResource extends JsonResource
                 'id' => $this->manufacturer->id,
                 'name' => $this->manufacturer->name,
                 'slug' => $this->manufacturer->slug,
-                'logo_url' => $this->manufacturer->logoUrl(),
+                'logo_url' => PublicStorageUrl::absoluteFromResolved($this->manufacturer->logoUrl()),
             ] : null),
             'category' => $this->whenLoaded('category', fn () => $this->category ? [
                 'id' => $this->category->id,

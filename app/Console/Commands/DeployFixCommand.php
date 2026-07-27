@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Services\Catalog\ProductReadCache;
+use App\Support\PublicStorageUrl;
 use App\Support\StorefrontConfig;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
@@ -75,8 +76,21 @@ class DeployFixCommand extends Command
             $this->error('APP_URL is api.bnc.ba but storage is served from api.bncshop.ba.');
             $this->line('Set ASSET_URL=https://api.bncshop.ba in .env, then run: php artisan bnc:deploy-fix --apply');
             $issues++;
-        } elseif ($assetUrl !== '') {
+        } else        if ($assetUrl !== '') {
             $this->info('ASSET_URL looks OK.');
+        }
+
+        $sample = PublicStorageUrl::absoluteFromResolved(
+            'https://api.bnc.ba/storage/products/deploy-check.jpg',
+        );
+        $this->line('Sample storage URL rewrite: '.$sample);
+
+        if (
+            $env === 'production'
+            && str_contains($sample, 'api.bnc.ba/storage')
+        ) {
+            $this->error('Storage URL rewrite still points to api.bnc.ba — run git pull, then config:cache.');
+            $issues++;
         }
 
         $frontendUrl = StorefrontConfig::frontendUrl();

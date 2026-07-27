@@ -77,4 +77,30 @@ class PublicStorageUrlTest extends TestCase
 
         $this->assertSame('https://api.bncshop.ba', PublicStorageUrl::storageOrigin());
     }
+
+    public function test_rewrite_storage_urls_in_value_rewrites_cached_product_payload(): void
+    {
+        app()['env'] = 'production';
+        config(['app.url' => 'https://api.bnc.ba']);
+
+        $payload = [
+            'default_image' => [
+                'url' => 'https://api.bnc.ba/storage/products/demo/seller-image.jpg',
+            ],
+            'manufacturer' => [
+                'logo_url' => '/storage/manufacturers/logos/demo.webp',
+            ],
+        ];
+
+        $rewritten = PublicStorageUrl::rewriteStorageUrlsInValue($payload);
+
+        $this->assertSame(
+            'https://api.bncshop.ba/storage/products/demo/seller-image.jpg',
+            $rewritten['default_image']['url'],
+        );
+        $this->assertSame(
+            'https://api.bncshop.ba/storage/manufacturers/logos/demo.webp',
+            $rewritten['manufacturer']['logo_url'],
+        );
+    }
 }

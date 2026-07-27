@@ -9,6 +9,7 @@ use App\Services\Catalog\ProductListingService;
 use App\Services\Catalog\ProductReadCache;
 use App\Services\Search\CategorySearchService;
 use App\Services\Search\FilterService;
+use App\Support\PublicStorageUrl;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -40,15 +41,18 @@ class SearchController extends Controller
 
         $categoryLimit = min(max((int) $request->integer('category_limit', 5), 1), 12);
 
-        return $this->success($payload['items'], [
-            'pagination' => [
-                'current_page' => $payload['current_page'],
-                'per_page' => $payload['per_page'],
-                'total' => $payload['total'],
-                'last_page' => $payload['last_page'],
+        return $this->success(
+            PublicStorageUrl::rewriteStorageUrlsInValue($payload['items']),
+            [
+                'pagination' => [
+                    'current_page' => $payload['current_page'],
+                    'per_page' => $payload['per_page'],
+                    'total' => $payload['total'],
+                    'last_page' => $payload['last_page'],
+                ],
+                'categories' => $this->categorySearchService->search($query, $categoryLimit),
             ],
-            'categories' => $this->categorySearchService->search($query, $categoryLimit),
-        ]);
+        );
     }
 
     public function filters(string $categorySlug): JsonResponse

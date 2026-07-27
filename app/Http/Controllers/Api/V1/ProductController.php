@@ -9,6 +9,7 @@ use App\Models\Product;
 use App\Services\Catalog\ProductListingService;
 use App\Services\Catalog\ProductReadCache;
 use App\Services\Pricing\CouponEngine;
+use App\Support\PublicStorageUrl;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -32,14 +33,17 @@ class ProductController extends Controller
             return $this->productListingService->listWithFallback($request, $perPage);
         });
 
-        return $this->success($payload['items'], [
-            'pagination' => [
-                'current_page' => $payload['current_page'],
-                'per_page' => $payload['per_page'],
-                'total' => $payload['total'],
-                'last_page' => $payload['last_page'],
+        return $this->success(
+            PublicStorageUrl::rewriteStorageUrlsInValue($payload['items']),
+            [
+                'pagination' => [
+                    'current_page' => $payload['current_page'],
+                    'per_page' => $payload['per_page'],
+                    'total' => $payload['total'],
+                    'last_page' => $payload['last_page'],
+                ],
             ],
-        ]);
+        );
     }
 
     public function categoryOptions(Request $request): JsonResponse
@@ -89,7 +93,7 @@ class ProductController extends Controller
                 $request->user(),
             );
 
-            return $this->success($payload);
+            return $this->success(PublicStorageUrl::rewriteStorageUrlsInValue($payload));
         }
 
         $payload = $this->productReadCache->rememberProduct($slug, 900, function () use ($slug): array {
@@ -111,7 +115,7 @@ class ProductController extends Controller
             return (new ProductResource($product))->resolve();
         });
 
-        return $this->success($payload);
+        return $this->success(PublicStorageUrl::rewriteStorageUrlsInValue($payload));
     }
 
     private function listCacheTtl(Request $request): int

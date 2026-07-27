@@ -2,8 +2,6 @@
 
 namespace App\Support;
 
-use Illuminate\Support\Facades\Storage;
-
 class PublicStorageUrl
 {
     /**
@@ -30,7 +28,34 @@ class PublicStorageUrl
             return null;
         }
 
-        return Storage::disk('public')->url($path);
+        return self::absoluteFromResolved(self::url($path));
+    }
+
+    /**
+     * Rewrite any /storage/ URLs inside cached API payloads at response time.
+     *
+     * @param  mixed  $value
+     * @return mixed
+     */
+    public static function rewriteStorageUrlsInValue(mixed $value): mixed
+    {
+        if (is_string($value)) {
+            if (! str_contains($value, '/storage/')) {
+                return $value;
+            }
+
+            return self::absoluteFromResolved($value) ?? $value;
+        }
+
+        if (! is_array($value)) {
+            return $value;
+        }
+
+        foreach ($value as $key => $item) {
+            $value[$key] = self::rewriteStorageUrlsInValue($item);
+        }
+
+        return $value;
     }
 
     /**
@@ -100,7 +125,7 @@ class PublicStorageUrl
         $path = (string) ($parts['path'] ?? '');
 
         if (
-            in_array($host, ['localhost', '127.0.0.1'], true)
+            in_array($host, ['localhost', '127.0.0.1', 'api.bnc.ba'], true)
             && str_starts_with($path, '/storage/')
         ) {
             $query = isset($parts['query']) ? '?'.$parts['query'] : '';
