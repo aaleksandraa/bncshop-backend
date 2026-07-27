@@ -65,4 +65,17 @@ class StorefrontConfigTest extends TestCase
             StorefrontConfig::sanctumStatefulDomains(),
         );
     }
+
+    public function test_production_env_recommendations_use_bnc_ba_when_frontend_is_bnc_ba(): void
+    {
+        config(['app.url' => 'https://api.bncshop.ba']);
+        putenv('FRONTEND_URL=https://bnc.ba');
+
+        $lines = StorefrontConfig::productionEnvRecommendations();
+
+        $this->assertContains('APP_URL=https://api.bnc.ba', $lines);
+        $this->assertContains('SESSION_DOMAIN=.bnc.ba', $lines);
+        $this->assertContains('SANCTUM_STATEFUL_DOMAINS=bnc.ba,www.bnc.ba', $lines);
+        $this->assertContains('CORS_ALLOWED_ORIGINS=https://bnc.ba,https://www.bnc.ba', $lines);
+    }
 }

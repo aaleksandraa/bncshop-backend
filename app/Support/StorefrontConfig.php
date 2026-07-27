@@ -92,25 +92,51 @@ class StorefrontConfig
         $lines = [];
 
         $appUrl = rtrim((string) config('app.url'), '/');
-        $frontend = self::frontendUrl() ?? 'https://bncshop.ba';
+        $frontend = self::frontendUrl();
+        $rootDomain = self::deriveStorefrontRootDomain($appUrl, $frontend);
 
-        if ($appUrl !== 'https://api.bncshop.ba') {
-            $lines[] = 'APP_URL=https://api.bncshop.ba';
+        $recommendedAppUrl = 'https://api.'.$rootDomain;
+        $recommendedFrontend = 'https://'.$rootDomain;
+        $recommendedSessionDomain = '.'.$rootDomain;
+        $recommendedSanctum = $rootDomain.',www.'.$rootDomain;
+        $recommendedCors = 'https://'.$rootDomain.',https://www.'.$rootDomain;
+
+        if ($appUrl !== $recommendedAppUrl) {
+            $lines[] = 'APP_URL='.$recommendedAppUrl;
         }
 
-        if (self::nullableEnv('FRONTEND_URL') === null) {
-            $lines[] = 'FRONTEND_URL='.$frontend;
+        if ($frontend === null) {
+            $lines[] = 'FRONTEND_URL='.$recommendedFrontend;
         }
 
         if (self::nullableEnv('SESSION_DOMAIN') === null || self::nullableEnv('SESSION_DOMAIN') === 'null') {
-            $lines[] = 'SESSION_DOMAIN=.bncshop.ba';
+            $lines[] = 'SESSION_DOMAIN='.$recommendedSessionDomain;
         }
 
         $lines[] = 'SESSION_SECURE_COOKIE=true';
-        $lines[] = 'SANCTUM_STATEFUL_DOMAINS=bncshop.ba,www.bncshop.ba';
-        $lines[] = 'CORS_ALLOWED_ORIGINS=https://bncshop.ba,https://www.bncshop.ba';
+        $lines[] = 'SANCTUM_STATEFUL_DOMAINS='.$recommendedSanctum;
+        $lines[] = 'CORS_ALLOWED_ORIGINS='.$recommendedCors;
 
         return array_values(array_unique($lines));
+    }
+
+    private static function deriveStorefrontRootDomain(string $appUrl, ?string $frontendUrl): string
+    {
+        if ($frontendUrl !== null) {
+            $host = self::frontendHost();
+
+            if (is_string($host) && $host !== '') {
+                return str_starts_with($host, 'www.') ? substr($host, 4) : $host;
+            }
+        }
+
+        $appHost = parse_url($appUrl, PHP_URL_HOST);
+
+        if (is_string($appHost) && str_starts_with($appHost, 'api.')) {
+            return substr($appHost, 4);
+        }
+
+        return 'bnc.ba';
     }
 
     /**
