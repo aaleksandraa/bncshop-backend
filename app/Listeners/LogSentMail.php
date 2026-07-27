@@ -9,6 +9,9 @@ use Symfony\Component\Mime\Email;
 
 class LogSentMail
 {
+    /** @var array<string, true> */
+    private static array $loggedKeys = [];
+
     public function __construct(
         private readonly EmailLogService $emailLogs,
     ) {}
@@ -30,6 +33,16 @@ class LogSentMail
         if ($recipient === '') {
             return;
         }
+
+        $subject = (string) $email->getSubject();
+        $messageId = $this->headerValue($email, 'Message-ID') ?? '';
+        $dedupeKey = sha1($messageId.$recipient.$subject);
+
+        if (isset(self::$loggedKeys[$dedupeKey])) {
+            return;
+        }
+
+        self::$loggedKeys[$dedupeKey] = true;
 
         $mailableClass = $this->resolveMailableClass($event, $email);
 

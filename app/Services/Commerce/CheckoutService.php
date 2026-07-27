@@ -22,6 +22,7 @@ use App\Services\Marketing\MarketingContactSyncService;
 use App\Services\Pricing\CouponEngine;
 use App\Services\Pricing\PriceCalculator;
 use App\Services\Shipping\ShippingCalculator;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
@@ -415,24 +416,37 @@ class CheckoutService
     private function sendOrderEmails(Order $order): void
     {
         if ($order->email) {
-            Mail::to($order->email)->queue(new OrderConfirmationCustomer($order));
+            $this->queueOrderMailOnce(
+                "{$order->id}:customer:".strtolower(trim($order->email)),
+                fn () => Mail::to($order->email)->queue(new OrderConfirmationCustomer($order)),
+            );
         }
 
-        $recipients = OrderNotificationMail::recipients();
-
-        foreach ($recipients as $recipient) {
-            Mail::to($recipient)->queue(new TemplatedOrderMail(
-                templateSlug: 'order_notification_seller',
-                order: $order,
-            ));
+        foreach (OrderNotificationMail::recipients() as $recipient) {
+            $this->queueOrderMailOnce(
+                "{$order->id}:admin:{$recipient}",
+                fn () => Mail::to($recipient)->queue(new TemplatedOrderMail(
+                    templateSlug: 'order_notification_seller',
+                    order: $order,
+                )),
+            );
         }
 
-        if ($recipients === []) {
+        if (OrderNotificationMail::recipients() === []) {
             \Illuminate\Support\Facades\Log::warning('Order admin notification skipped: no SELLER_EMAIL or ADMIN_EMAIL configured', [
                 'order_id' => $order->id,
                 'order_number' => $order->order_number,
             ]);
         }
+    }
+
+    private function queueOrderMailOnce(string $key, callable $callback): void
+    {
+        if (! Cache::add('order-email:'.$key, 1, now()->addMinutes(15))) {
+            return;
+        }
+
+        $callback();
     }
 
     private function syncMarketingContact(Order $order): void
