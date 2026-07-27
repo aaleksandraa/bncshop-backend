@@ -242,6 +242,23 @@ ELINE_API_TOKEN=
 
 Tagged product cache **ne radi** bez `CACHE_STORE=redis`.
 
+**Ako storefront koristi `bnc.ba` / `api.bnc.ba`, a `/storage/` fajlovi su na `api.bncshop.ba`:**
+
+```env
+APP_URL=https://api.bnc.ba
+ASSET_URL=https://api.bncshop.ba
+FRONTEND_URL=https://bnc.ba
+```
+
+Bez `ASSET_URL` API vraća slike na `https://api.bnc.ba/storage/...` (403). Nakon promjene:
+
+```bash
+php artisan config:cache
+php artisan bnc:deploy-fix --apply --flush-all
+```
+
+Alternativa: na `api.bnc.ba` nginx serviraj `/storage/` isto kao na `api.bncshop.ba`.
+
 ---
 
 ## Plesk — frontend (Next.js)
