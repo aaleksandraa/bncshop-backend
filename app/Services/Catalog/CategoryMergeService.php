@@ -15,6 +15,7 @@ use App\Models\Product;
 use App\Models\Redirect;
 use App\Models\ShippingRule;
 use App\Models\SupplierCategoryMarginRule;
+use App\Services\Menu\HeaderMenuSyncService;
 use App\Support\Catalog\CategoryScopeResolver;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -77,6 +78,7 @@ class CategoryMergeService
             $this->reassignCategoryReferences($target, $source);
             $this->mergeDiscountCategoryLinks($target, $source);
             $this->mergeMarginRuleTargetLinks($target, $source);
+            $this->cleanupMenuItems($target, $source);
 
             if ($createRedirect && $source->full_slug !== $target->full_slug) {
                 $stats['redirects'] = $this->createSlugRedirect($source, $target);
@@ -95,6 +97,10 @@ class CategoryMergeService
         $cache->flushListAndFilters($target->id);
         $cache->flushListAndFilters($source->id);
         $cache->flushCategories();
+        $cache->flushMenus();
+        $cache->flushLayout();
+
+        app(HeaderMenuSyncService::class)->syncChildrenForCategory($target);
 
         return $stats;
     }
@@ -192,9 +198,32 @@ class CategoryMergeService
         Discount::query()->where('category_id', $source->id)->update(['category_id' => $target->id]);
         ShippingRule::query()->where('category_id', $source->id)->update(['category_id' => $target->id]);
         ElineCategoryMapping::query()->where('category_id', $source->id)->update(['category_id' => $target->id]);
-        MenuItem::query()->where('category_id', $source->id)->update(['category_id' => $target->id]);
         ElineProductOverride::query()->where('category_id', $source->id)->update(['category_id' => $target->id]);
         $this->mergeOlxCategoryMappings($target, $source);
+    }
+
+    private function cleanupMenuItems(Category $target, Category $source): void
+    {
+        MenuItem::query()
+            ->where('category_id', $source->id)
+            ->update(['is_active' => false]);
+
+        $duplicateItems = MenuItem::query()
+            ->where('category_id', $target->id)
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->get()
+            ->groupBy('parent_id');
+
+        foreach ($duplicateItems as $items) {
+            if ($items->count() <= 1) {
+                continue;
+            }
+
+            foreach ($items->slice(1) as $duplicate) {
+                $duplicate->update(['is_active' => false]);
+            }
+        }
     }
 
     private function mergeOlxCategoryMappings(Category $target, Category $source): void

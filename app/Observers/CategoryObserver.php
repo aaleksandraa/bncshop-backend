@@ -16,6 +16,12 @@ class CategoryObserver
     public function saved(Category $category): void
     {
         $this->productReadCache->flushCategories();
+
+        if ($category->wasChanged('status')) {
+            $this->productReadCache->flushMenus();
+            $this->productReadCache->flushLayout();
+        }
+
         $this->pricingCache->flush();
     }
 

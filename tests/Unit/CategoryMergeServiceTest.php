@@ -5,6 +5,8 @@ namespace Tests\Unit;
 use App\Models\AttributeCategoryMapping;
 use App\Models\AttributeDefinition;
 use App\Models\Category;
+use App\Models\Menu;
+use App\Models\MenuItem;
 use App\Models\OlxCategory;
 use App\Models\OlxCategoryMapping;
 use App\Models\Product;
@@ -239,5 +241,51 @@ class CategoryMergeServiceTest extends TestCase
         $this->assertDatabaseMissing('olx_category_mappings', [
             'category_id' => $source->id,
         ]);
+    }
+
+    public function test_merge_deactivates_source_menu_items(): void
+    {
+        $menu = Menu::query()->create([
+            'name' => 'Header',
+            'slug' => 'header',
+            'is_active' => true,
+        ]);
+
+        $target = Category::query()->create([
+            'external_category_id' => 'cat-menu-target',
+            'name' => 'Laptopi',
+            'full_slug' => 'racunari/laptopi',
+            'status' => 'active',
+        ]);
+
+        $source = Category::query()->create([
+            'external_category_id' => 'cat-menu-source',
+            'name' => 'Laptopi',
+            'full_slug' => 'racunari/laptopi/laptopi',
+            'parent_id' => $target->id,
+            'status' => 'active',
+        ]);
+
+        $parentMenuItem = MenuItem::query()->create([
+            'menu_id' => $menu->id,
+            'type' => MenuItem::TYPE_CATEGORY,
+            'category_id' => $target->id,
+            'sort_order' => 1,
+            'is_active' => true,
+        ]);
+
+        $childMenuItem = MenuItem::query()->create([
+            'menu_id' => $menu->id,
+            'parent_id' => $parentMenuItem->id,
+            'type' => MenuItem::TYPE_CATEGORY,
+            'category_id' => $source->id,
+            'sort_order' => 1,
+            'is_active' => true,
+        ]);
+
+        app(CategoryMergeService::class)->merge($target, $source);
+
+        $childMenuItem->refresh();
+        $this->assertFalse($childMenuItem->is_active);
     }
 }

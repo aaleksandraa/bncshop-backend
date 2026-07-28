@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\Category;
 use App\Models\Menu;
 use App\Models\MenuItem;
+use App\Services\Menu\HeaderMenuSyncService;
 use Illuminate\Console\Command;
 
 class EnsureHeaderMenuCommand extends Command
@@ -12,10 +13,6 @@ class EnsureHeaderMenuCommand extends Command
     protected $signature = 'bnc:ensure-header-menu';
 
     protected $description = 'Ensure header menu has main category items and Ostalo (/kategorije)';
-
-    private const HEADER_CHILD_LIMIT = 24;
-
-    private const HEADER_MAX_DEPTH = 3;
 
     /**
      * @var array<int, array{names: array<int, string>, slug_ends: array<int, string>, slug_paths: array<int, string>, label?: string|null}>
@@ -44,6 +41,7 @@ class EnsureHeaderMenuCommand extends Command
             return self::FAILURE;
         }
 
+        $syncService = app(HeaderMenuSyncService::class);
         $sortOrder = (int) $menu->items()->whereNull('parent_id')->max('sort_order');
         $usedCategoryIds = [];
         $lastCategoryItem = null;
@@ -101,7 +99,7 @@ class EnsureHeaderMenuCommand extends Command
             }
 
             $usedCategoryIds[] = $category->id;
-            $this->syncCategoryChildren($menu, $item, $category->id, 2);
+            $syncService->syncCategoryChildren($menu, $item, $category->id, 2);
             $lastCategoryItem = $item;
             $this->line('OK: '.($priority['label'] ?? $category->name).' → '.$category->full_slug);
         }
@@ -140,53 +138,6 @@ class EnsureHeaderMenuCommand extends Command
             'sort_order' => $sortOrder,
             'is_active' => true,
         ]);
-    }
-
-    private function syncCategoryChildren(Menu $menu, MenuItem $parentItem, int $categoryId, int $depth): void
-    {
-        if ($depth > self::HEADER_MAX_DEPTH) {
-            return;
-        }
-
-        $existingChildren = $menu->items()
-            ->where('parent_id', $parentItem->id)
-            ->where('type', MenuItem::TYPE_CATEGORY)
-            ->get()
-            ->keyBy('category_id');
-
-        $children = Category::query()
-            ->active()
-            ->where('parent_id', $categoryId)
-            ->orderByRaw("COALESCE(NULLIF(display_name, ''), name)")
-            ->limit(self::HEADER_CHILD_LIMIT)
-            ->get();
-
-        $sortOrder = 0;
-
-        foreach ($children as $child) {
-            $existing = $existingChildren->get($child->id);
-
-            if ($existing !== null) {
-                $existing->update([
-                    'label' => null,
-                    'sort_order' => $sortOrder++,
-                    'is_active' => true,
-                ]);
-                $childItem = $existing;
-            } else {
-                $childItem = MenuItem::query()->create([
-                    'menu_id' => $menu->id,
-                    'parent_id' => $parentItem->id,
-                    'type' => MenuItem::TYPE_CATEGORY,
-                    'category_id' => $child->id,
-                    'label' => null,
-                    'sort_order' => $sortOrder++,
-                    'is_active' => true,
-                ]);
-            }
-
-            $this->syncCategoryChildren($menu, $childItem, $child->id, $depth + 1);
-        }
     }
 
     /**
