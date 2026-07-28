@@ -159,6 +159,7 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/orders', [SellerOrderController::class, 'index']);
         Route::get('/orders/{id}', [SellerOrderController::class, 'show']);
         Route::patch('/orders/{id}/status', [SellerOrderController::class, 'updateStatus']);
+        Route::get('/products/categories', [SellerProductController::class, 'categories']);
         Route::get('/products', [SellerProductController::class, 'index']);
         Route::get('/products/{id}', [SellerProductController::class, 'show']);
         Route::patch('/products/{id}', [SellerProductController::class, 'update']);

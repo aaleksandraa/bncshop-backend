@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\Concerns\RespondsWithJson;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\UpdateSellerProductRequest;
 use App\Http\Requests\Api\V1\UploadSellerProductImageRequest;
+use App\Models\Category;
 use App\Models\Product;
 use App\Services\Seller\SellerElineProductService;
 use Illuminate\Http\JsonResponse;
@@ -27,7 +28,8 @@ class SellerProductController extends Controller
 
         $query = Product::query()
             ->fromEline()
-            ->with(['defaultImage', 'images'])
+            ->with(['defaultImage', 'images', 'category:id,name,display_name,full_slug'])
+            ->orderByRaw('CASE WHEN available_stock > 0 THEN 0 ELSE 1 END')
             ->orderByDesc('updated_at');
 
         if ($search = trim($request->string('search')->toString())) {
@@ -37,6 +39,18 @@ class SellerProductController extends Controller
                     ->orWhere('sku', 'like', "%{$search}%")
                     ->orWhere('eline_sifra', 'like', "%{$search}%");
             });
+        }
+
+        if ($request->filled('category_id')) {
+            $query->where('category_id', $request->integer('category_id'));
+        }
+
+        if ($request->has('in_stock')) {
+            if ($request->boolean('in_stock')) {
+                $query->where('available_stock', '>', 0);
+            } else {
+                $query->where('available_stock', '<=', 0);
+            }
         }
 
         if ($request->boolean('on_sale')) {
@@ -50,6 +64,28 @@ class SellerProductController extends Controller
             ->all();
 
         return $this->paginated($products, $items);
+    }
+
+    public function categories(Request $request): JsonResponse
+    {
+        if ($response = $this->ensureCanEditProducts($request)) {
+            return $response;
+        }
+
+        $categories = Category::query()
+            ->whereHas('products', fn ($builder) => $builder->fromEline())
+            ->orderBy('name')
+            ->get(['id', 'name', 'display_name', 'full_slug']);
+
+        $items = $categories
+            ->map(fn (Category $category) => [
+                'id' => $category->id,
+                'name' => $category->display_name ?? $category->name,
+                'full_slug' => $category->full_slug,
+            ])
+            ->all();
+
+        return $this->success($items);
     }
 
     public function show(Request $request, int $id): JsonResponse

@@ -53,7 +53,8 @@ class SellerProductApiTest extends TestCase
         $this->getJsonStateful('/api/v1/seller/products')
             ->assertOk()
             ->assertJsonCount(1, 'data')
-            ->assertJsonPath('data.0.name', 'eLine laptop');
+            ->assertJsonPath('data.0.name', 'eLine laptop')
+            ->assertJsonPath('data.0.available_stock', $elineProduct->available_stock);
 
         $this->patchJsonStateful("/api/v1/seller/products/{$elineProduct->id}", [
                 'description' => 'Prodavačev opis',
@@ -69,6 +70,61 @@ class SellerProductApiTest extends TestCase
         $this->assertSame('Prodavačev opis', $elineProduct->description);
         $this->assertTrue($elineProduct->on_sale);
         $this->assertSame(450.0, (float) $elineProduct->display_price);
+    }
+
+    public function test_seller_can_filter_and_sort_eline_products(): void
+    {
+        $seller = $this->createSeller();
+        $laptopCategory = Category::factory()->create(['name' => 'Laptopi']);
+        $monitorCategory = Category::factory()->create(['name' => 'Monitori']);
+
+        $inStockLaptop = $this->createElineProduct([
+            'name' => 'Laptop na stanju',
+            'category_id' => $laptopCategory->id,
+            'available_stock' => 5,
+            'updated_at' => now()->subDay(),
+        ]);
+        $outOfStockLaptop = $this->createElineProduct([
+            'name' => 'Laptop bez zalihe',
+            'category_id' => $laptopCategory->id,
+            'available_stock' => 0,
+            'updated_at' => now(),
+        ]);
+        $inStockMonitor = $this->createElineProduct([
+            'name' => 'Monitor na stanju',
+            'category_id' => $monitorCategory->id,
+            'available_stock' => 2,
+        ]);
+
+        $this->postJsonStateful('/api/v1/seller/login', [
+            'email' => $seller->email,
+            'password' => 'password123',
+        ])->assertOk();
+
+        $this->getJsonStateful('/api/v1/seller/products/categories')
+            ->assertOk()
+            ->assertJsonCount(2, 'data')
+            ->assertJsonPath('data.0.name', 'Laptopi');
+
+        $this->getJsonStateful('/api/v1/seller/products')
+            ->assertOk()
+            ->assertJsonCount(3, 'data')
+            ->assertJsonPath('data.0.id', $inStockMonitor->id)
+            ->assertJsonPath('data.1.id', $inStockLaptop->id)
+            ->assertJsonPath('data.2.id', $outOfStockLaptop->id);
+
+        $this->getJsonStateful('/api/v1/seller/products?category_id='.$laptopCategory->id)
+            ->assertOk()
+            ->assertJsonCount(2, 'data');
+
+        $this->getJsonStateful('/api/v1/seller/products?in_stock=1')
+            ->assertOk()
+            ->assertJsonCount(2, 'data');
+
+        $this->getJsonStateful('/api/v1/seller/products?in_stock=0')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $outOfStockLaptop->id);
     }
 
     public function test_seller_cannot_update_non_eline_product(): void

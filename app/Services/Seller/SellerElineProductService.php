@@ -202,12 +202,15 @@ class SellerElineProductService
             'name' => $product->name,
             'sku' => $product->sku,
             'eline_sifra' => $product->eline_sifra,
+            'category_id' => $product->category_id,
+            'category_name' => $product->category?->display_name ?? $product->category?->name,
             'regular_price' => $product->regular_price,
             'display_price' => $product->display_price,
             'sale_price' => $this->resolveSalePrice($product),
             'on_sale' => (bool) $product->on_sale,
             'status' => $product->status,
             'is_public' => (bool) $product->is_public,
+            'available_stock' => $product->available_stock,
             'primary_image_url' => $primaryImage
                 ? PublicStorageUrl::absoluteFromResolved($this->productImageStorage->resolvedUrl($primaryImage))
                 : null,
