@@ -5,6 +5,8 @@ namespace Tests\Unit;
 use App\Models\AttributeCategoryMapping;
 use App\Models\AttributeDefinition;
 use App\Models\Category;
+use App\Models\OlxCategory;
+use App\Models\OlxCategoryMapping;
 use App\Models\Product;
 use App\Services\Catalog\CategoryMergeService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -181,5 +183,61 @@ class CategoryMergeServiceTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
 
         app(CategoryMergeService::class)->merge($child, $parent);
+    }
+
+    public function test_merge_handles_conflicting_olx_mappings(): void
+    {
+        $target = Category::query()->create([
+            'external_category_id' => 'cat-olx-target',
+            'name' => 'Laptopi',
+            'full_slug' => 'laptopi',
+            'status' => 'active',
+        ]);
+
+        $source = Category::query()->create([
+            'external_category_id' => 'cat-olx-source',
+            'name' => 'Laptopi duplikat',
+            'full_slug' => 'laptopi-duplikat',
+            'status' => 'active',
+        ]);
+
+        OlxCategory::query()->create([
+            'id' => 100,
+            'name' => 'Laptopi OLX',
+            'slug' => 'laptopi',
+            'path' => 'racunari/laptopi',
+        ]);
+
+        OlxCategory::query()->create([
+            'id' => 200,
+            'name' => 'Laptopi OLX alt',
+            'slug' => 'laptopi-alt',
+            'path' => 'racunari/laptopi-alt',
+        ]);
+
+        OlxCategoryMapping::query()->create([
+            'category_id' => $target->id,
+            'olx_category_id' => 100,
+            'olx_category_path' => 'racunari/laptopi',
+            'is_enabled' => true,
+        ]);
+
+        OlxCategoryMapping::query()->create([
+            'category_id' => $source->id,
+            'olx_category_id' => 200,
+            'olx_category_path' => 'racunari/laptopi-alt',
+            'is_enabled' => true,
+        ]);
+
+        app(CategoryMergeService::class)->merge($target, $source);
+
+        $this->assertDatabaseHas('olx_category_mappings', [
+            'category_id' => $target->id,
+            'olx_category_id' => 100,
+        ]);
+
+        $this->assertDatabaseMissing('olx_category_mappings', [
+            'category_id' => $source->id,
+        ]);
     }
 }

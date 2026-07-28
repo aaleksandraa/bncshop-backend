@@ -9,8 +9,10 @@ use App\Support\Catalog\CategoryScopeResolver;
 use Filament\Forms;
 use Filament\Notifications\Notification;
 use Filament\Tables;
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\QueryException;
+use Illuminate\Support\Collection;
 use InvalidArgumentException;
+use Throwable;
 
 trait HasCategoryMergeActions
 {
@@ -46,7 +48,7 @@ trait HasCategoryMergeActions
             ->action(function (Category $record, array $data): void {
                 static::runCategoryMerge(
                     Category::query()->findOrFail((int) $data['target_id']),
-                    collect([$record]),
+                    Collection::make([$record]),
                     $data,
                 );
             });
@@ -130,6 +132,12 @@ trait HasCategoryMergeActions
                 $merged++;
                 $products += $result['products'];
             } catch (InvalidArgumentException $exception) {
+                $errors[] = $source->publicName().': '.$exception->getMessage();
+            } catch (QueryException $exception) {
+                report($exception);
+                $errors[] = $source->publicName().': konflikt u bazi (npr. duplo OLX mapiranje). Pokušajte bez redirecta ili kontaktirajte podršku.';
+            } catch (Throwable $exception) {
+                report($exception);
                 $errors[] = $source->publicName().': '.$exception->getMessage();
             }
         }

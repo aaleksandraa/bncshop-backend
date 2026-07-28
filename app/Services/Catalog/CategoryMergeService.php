@@ -73,7 +73,10 @@ class CategoryMergeService
 
             $stats['mappings'] = $this->mergeAttributeMappings($target, $source);
             $this->mergeMarginRules($target, $source);
+            $this->mergeSupplierMarginRules($target, $source);
             $this->reassignCategoryReferences($target, $source);
+            $this->mergeDiscountCategoryLinks($target, $source);
+            $this->mergeMarginRuleTargetLinks($target, $source);
 
             if ($createRedirect && $source->full_slug !== $target->full_slug) {
                 $stats['redirects'] = $this->createSlugRedirect($source, $target);
@@ -162,15 +165,118 @@ class CategoryMergeService
         $sourceRule->delete();
     }
 
+    private function mergeSupplierMarginRules(Category $target, Category $source): void
+    {
+        $sourceRules = SupplierCategoryMarginRule::query()
+            ->where('category_id', $source->id)
+            ->get();
+
+        foreach ($sourceRules as $sourceRule) {
+            $targetRule = SupplierCategoryMarginRule::query()
+                ->where('supplier_id', $sourceRule->supplier_id)
+                ->where('category_id', $target->id)
+                ->first();
+
+            if ($targetRule === null) {
+                $sourceRule->update(['category_id' => $target->id]);
+
+                continue;
+            }
+
+            $sourceRule->delete();
+        }
+    }
+
     private function reassignCategoryReferences(Category $target, Category $source): void
     {
         Discount::query()->where('category_id', $source->id)->update(['category_id' => $target->id]);
         ShippingRule::query()->where('category_id', $source->id)->update(['category_id' => $target->id]);
-        SupplierCategoryMarginRule::query()->where('category_id', $source->id)->update(['category_id' => $target->id]);
         ElineCategoryMapping::query()->where('category_id', $source->id)->update(['category_id' => $target->id]);
-        OlxCategoryMapping::query()->where('category_id', $source->id)->update(['category_id' => $target->id]);
         MenuItem::query()->where('category_id', $source->id)->update(['category_id' => $target->id]);
         ElineProductOverride::query()->where('category_id', $source->id)->update(['category_id' => $target->id]);
+        $this->mergeOlxCategoryMappings($target, $source);
+    }
+
+    private function mergeOlxCategoryMappings(Category $target, Category $source): void
+    {
+        $sourceMapping = OlxCategoryMapping::query()->where('category_id', $source->id)->first();
+
+        if ($sourceMapping === null) {
+            return;
+        }
+
+        $targetMapping = OlxCategoryMapping::query()->where('category_id', $target->id)->first();
+
+        if ($targetMapping === null) {
+            $sourceMapping->update(['category_id' => $target->id]);
+
+            return;
+        }
+
+        $sourceMapping->delete();
+    }
+
+    private function mergeDiscountCategoryLinks(Category $target, Category $source): void
+    {
+        $discountIds = DB::table('discount_category')
+            ->where('category_id', $source->id)
+            ->pluck('discount_id');
+
+        foreach ($discountIds as $discountId) {
+            DB::table('discount_category')->insertOrIgnore([
+                'discount_id' => $discountId,
+                'category_id' => $target->id,
+            ]);
+        }
+
+        DB::table('discount_category')
+            ->where('category_id', $source->id)
+            ->delete();
+    }
+
+    private function mergeMarginRuleTargetLinks(Category $target, Category $source): void
+    {
+        $this->mergeTargetPivotRows(
+            'category_margin_rule_targets',
+            'category_margin_rule_id',
+            $target->id,
+            $source->id,
+        );
+
+        $this->mergeTargetPivotRows(
+            'supplier_category_margin_rule_targets',
+            'supplier_category_margin_rule_id',
+            $target->id,
+            $source->id,
+        );
+    }
+
+    private function mergeTargetPivotRows(
+        string $table,
+        string $ruleColumn,
+        int $targetCategoryId,
+        int $sourceCategoryId,
+    ): void {
+        $rows = DB::table($table)
+            ->where('category_id', $sourceCategoryId)
+            ->get();
+
+        foreach ($rows as $row) {
+            $conflict = DB::table($table)
+                ->where($ruleColumn, $row->{$ruleColumn})
+                ->where('category_id', $targetCategoryId)
+                ->exists();
+
+            if ($conflict) {
+                DB::table($table)->where('id', $row->id)->delete();
+
+                continue;
+            }
+
+            DB::table($table)
+                ->where('id', $row->id)
+                ->update(['category_id' => $targetCategoryId]);
+        }
     }
 
     private function createSlugRedirect(Category $source, Category $target): int
