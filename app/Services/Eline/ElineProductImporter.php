@@ -2,12 +2,16 @@
 
 namespace App\Services\Eline;
 
+use App\Models\ApiImportJob;
 use App\Models\ApiSource;
 use App\Models\ElineCategoryMapping;
 use App\Models\ElineProductOverride;
 use App\Models\Product;
 use App\Services\Pricing\PriceCalculator;
 use App\Services\Sync\FieldLockService;
+use App\Services\Sync\ImportJobChangeLogger;
+use App\Services\Sync\ProductImportChangeTracker;
+use App\Services\Sync\ProductUpsertResult;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
@@ -28,6 +32,8 @@ class ElineProductImporter
         Collection $mappingsByCategory,
         ApiSource $source,
         ?array $allFeedSifre = null,
+        ?ApiImportJob $job = null,
+        ?ImportJobChangeLogger $changeLogger = null,
     ): array {
         $stats = [
             'created' => 0,
@@ -40,12 +46,20 @@ class ElineProductImporter
             try {
                 $result = $this->importOne($item, $mappingsByCategory, $source);
 
-                if ($result === 'created') {
-                    $stats['created']++;
-                } elseif ($result === 'updated') {
-                    $stats['updated']++;
-                } else {
+                if ($result === null) {
                     $stats['skipped']++;
+
+                    continue;
+                }
+
+                match ($result->action) {
+                    'inserted' => $stats['created']++,
+                    'updated' => $stats['updated']++,
+                    default => $stats['skipped']++,
+                };
+
+                if ($job !== null && $changeLogger !== null) {
+                    $changeLogger->log($result, $job);
                 }
             } catch (\Throwable $e) {
                 $stats['errors'][] = sprintf(
@@ -53,7 +67,19 @@ class ElineProductImporter
                     (string) ($item['sifra'] ?? '?'),
                     $e->getMessage(),
                 );
+
+                if ($job !== null && $changeLogger !== null) {
+                    $changeLogger->logError(
+                        ElineSupport::externalProductId((string) ($item['sifra'] ?? 'unknown')),
+                        $e->getMessage(),
+                        $job,
+                    );
+                }
             }
+        }
+
+        if ($changeLogger !== null) {
+            $changeLogger->flush();
         }
 
         if ($allFeedSifre !== null) {
@@ -67,29 +93,29 @@ class ElineProductImporter
      * @param  array<string, mixed>  $item
      * @param  Collection<string, ElineCategoryMapping>  $mappingsByCategory
      */
-    private function importOne(
+    public function importOne(
         array $item,
         Collection $mappingsByCategory,
         ApiSource $source,
-    ): string {
+    ): ?ProductUpsertResult {
         $sifra = (string) $item['sifra'];
         $elineCategory = trim((string) ($item['eline_category'] ?? ''));
 
         if ($elineCategory === '') {
-            return 'skipped';
+            return null;
         }
 
         /** @var ElineCategoryMapping|null $mapping */
         $mapping = $mappingsByCategory->get($elineCategory);
 
         if ($mapping === null || ! $mapping->is_enabled || $mapping->category_id === null) {
-            return 'skipped';
+            return null;
         }
 
         $override = ElineProductOverride::query()->where('eline_sifra', $sifra)->first();
 
         if ($override !== null && ! $override->is_enabled) {
-            return 'skipped';
+            return null;
         }
 
         $condition = $override?->product_condition
@@ -100,9 +126,10 @@ class ElineProductImporter
         $externalId = ElineSupport::externalProductId($sifra);
 
         $product = Product::query()->firstOrNew(['external_product_id' => $externalId]);
-        $wasRecentlyCreated = ! $product->exists;
+        $wasExisting = $product->exists;
+        $snapshot = $wasExisting ? ProductImportChangeTracker::snapshot($product) : [];
 
-        if ($wasRecentlyCreated) {
+        if (! $wasExisting) {
             $product->first_imported_at = now();
         }
 
@@ -145,7 +172,16 @@ class ElineProductImporter
         $product->save();
         $this->priceCalculator->recalculateAndPersist($product->fresh());
 
-        return $wasRecentlyCreated ? 'created' : 'updated';
+        $freshProduct = $product->fresh();
+        $changedFields = $wasExisting
+            ? ProductImportChangeTracker::diff($snapshot, $freshProduct)
+            : [];
+
+        return new ProductUpsertResult(
+            action: $wasExisting ? 'updated' : 'inserted',
+            product: $freshProduct,
+            changedFields: $changedFields,
+        );
     }
 
     private function applyLockedField(Product $product, string $field, mixed $newValue): void

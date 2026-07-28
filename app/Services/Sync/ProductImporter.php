@@ -34,6 +34,7 @@ class ProductImporter
         $product = Product::query()->firstOrNew(['external_product_id' => $externalId]);
         $wasExisting = $product->exists;
         $wasPublic = $wasExisting ? (bool) $product->is_public : null;
+        $snapshot = $wasExisting ? ProductImportChangeTracker::snapshot($product) : [];
 
         if (! $wasExisting) {
             $product->first_imported_at = now();
@@ -45,30 +46,21 @@ class ProductImporter
             $product->import_source = $source->target_system_code ?? $source->name ?? 'api';
         }
 
-        $changedFields = $this->applyScalarFields($product, $payload);
+        $this->applyScalarFields($product, $payload);
 
-        $newManufacturerId = $this->resolveManufacturer($payload['manufacturer'] ?? null)?->id;
-        if ($wasExisting && $product->manufacturer_id !== $newManufacturerId) {
-            $changedFields[] = 'manufacturer_id';
-        }
-        $product->manufacturer_id = $newManufacturerId;
-
-        $newCategoryId = $this->resolveCategory($payload['category'] ?? null)?->id;
-        if ($wasExisting && $product->category_id !== $newCategoryId) {
-            $changedFields[] = 'category_id';
-        }
-        $product->category_id = $newCategoryId;
+        $product->manufacturer_id = $this->resolveManufacturer($payload['manufacturer'] ?? null)?->id;
+        $product->category_id = $this->resolveCategory($payload['category'] ?? null)?->id;
 
         $product->save();
 
-        $this->syncAttributes($product, $payload['attributes'] ?? []);
-        $this->syncImages(
+        $attributesChanged = $this->syncAttributes($product, $payload['attributes'] ?? []);
+        $imagesChanged = $this->syncImages(
             $product,
             $payload['gallery'] ?? [],
             (string) ($payload['defaultImageId'] ?? ''),
             (string) ($payload['defaultImageUrl'] ?? ''),
         );
-        $this->syncSupplierOffers($product, $payload['supplierOffers'] ?? $payload['supplier_offers'] ?? []);
+        $offersChanged = $this->syncSupplierOffers($product, $payload['supplierOffers'] ?? $payload['supplier_offers'] ?? []);
         $this->syncSeo($product, $payload['seoFields'] ?? $payload['seo'] ?? []);
 
         $this->recalculateStock($product);
@@ -78,6 +70,23 @@ class ProductImporter
             'sync_status' => 'synced',
             'marked_missing_at' => null,
         ]);
+
+        $freshProduct = $product->fresh();
+        $changedFields = $wasExisting
+            ? ProductImportChangeTracker::diff($snapshot, $freshProduct)
+            : [];
+
+        if ($attributesChanged) {
+            $changedFields[] = 'attributes';
+        }
+
+        if ($imagesChanged) {
+            $changedFields[] = 'images';
+        }
+
+        if ($offersChanged) {
+            $changedFields[] = 'supplier_offers';
+        }
 
         $payloadIsPublic = (bool) ($payload['isPublic'] ?? false);
 
@@ -89,7 +98,7 @@ class ProductImporter
 
         return new ProductUpsertResult(
             action: $action,
-            product: $product->fresh(),
+            product: $freshProduct,
             changedFields: array_values(array_unique($changedFields)),
         );
     }
@@ -115,10 +124,8 @@ class ProductImporter
      * @param  array<string, mixed>  $payload
      * @return list<string>
      */
-    private function applyScalarFields(Product $product, array $payload): array
+    private function applyScalarFields(Product $product, array $payload): void
     {
-        $changedFields = [];
-
         $fieldMap = [
             'name' => fn (): mixed => trim((string) ($payload['name'] ?? '')),
             'slug' => fn (): string => $this->resolveSlug($product, (string) ($payload['slug'] ?? '')),
@@ -152,10 +159,6 @@ class ProductImporter
             $currentValue = $product->{$field};
 
             if ($this->fieldLockService->shouldApply($product, $field, $newValue, $currentValue)) {
-                if ($currentValue != $newValue) {
-                    $changedFields[] = $field;
-                }
-
                 $product->{$field} = $newValue;
             }
         }
@@ -163,8 +166,6 @@ class ProductImporter
         if ($product->status === null) {
             $product->status = 'active';
         }
-
-        return $changedFields;
     }
 
     /**
@@ -253,8 +254,9 @@ class ProductImporter
     /**
      * @param  array<int, array<string, mixed>>  $attributes
      */
-    private function syncAttributes(Product $product, array $attributes): void
+    private function syncAttributes(Product $product, array $attributes): bool
     {
+        $changed = false;
         $seenDefinitionIds = [];
 
         foreach ($attributes as $attributePayload) {
@@ -295,6 +297,14 @@ class ProductImporter
                 continue;
             }
 
+            if (
+                ! $existing
+                || $existing->raw_value !== $rawValue
+                || $existing->normalized_value !== $normalized['normalized_value']
+            ) {
+                $changed = true;
+            }
+
             ProductAttributeValue::query()->updateOrCreate(
                 [
                     'product_id' => $product->id,
@@ -310,11 +320,13 @@ class ProductImporter
             );
         }
 
-        ProductAttributeValue::query()
+        $deletedCount = ProductAttributeValue::query()
             ->where('product_id', $product->id)
             ->whereNotIn('attribute_definition_id', AttributeDefinition::expandedDefinitionIds(...$seenDefinitionIds))
             ->where('is_locked', false)
             ->delete();
+
+        return $changed || $deletedCount > 0;
     }
 
     /**
@@ -325,16 +337,22 @@ class ProductImporter
         array $gallery,
         string $defaultImageId = '',
         string $defaultImageUrl = '',
-    ): void {
+    ): bool {
+        $changed = false;
+
         if ($gallery === []) {
-            ProductImage::query()
+            $removedCount = ProductImage::query()
                 ->where('product_id', $product->id)
                 ->where('status', 'active')
                 ->update(['status' => 'removed']);
 
+            if ($removedCount > 0 || $product->default_image_id !== null) {
+                $changed = true;
+            }
+
             $product->update(['default_image_id' => null]);
 
-            return;
+            return $changed;
         }
 
         $seenExternalIds = [];
@@ -355,6 +373,11 @@ class ProductImporter
             $isPrimary = (bool) ($imagePayload['isPrimary'] ?? false)
                 || ($defaultImageId !== '' && $externalImageId === $defaultImageId)
                 || ($index === 0 && $defaultImageId === '');
+
+            $existingImage = ProductImage::query()
+                ->where('product_id', $product->id)
+                ->where('external_image_id', $externalImageId ?: null)
+                ->first();
 
             $image = ProductImage::query()->updateOrCreate(
                 [
@@ -381,6 +404,16 @@ class ProductImporter
                     'status' => 'active',
                 ]
             );
+
+            if (
+                ! $existingImage
+                || $existingImage->sort_order !== $index
+                || $existingImage->is_primary !== $isPrimary
+                || $existingImage->status !== 'active'
+                || $existingImage->image_url !== $resolvedUrl
+            ) {
+                $changed = true;
+            }
 
             if (config('bnc.product_image_download_on_import', true)) {
                 $this->productImageStorage->storeFromRemote($image, $product);
@@ -413,11 +446,17 @@ class ProductImporter
                 ->update(['is_primary' => false]);
 
             $defaultImageRecord->update(['is_primary' => true]);
+
+            if ($product->default_image_id !== $defaultImageRecord->id) {
+                $changed = true;
+            }
+
             $product->update(['default_image_id' => $defaultImageRecord->id]);
         }
 
-        if ($defaultImageUrl !== '') {
+        if ($defaultImageUrl !== '' && $product->api_default_image_url !== $defaultImageUrl) {
             $product->update(['api_default_image_url' => $defaultImageUrl]);
+            $changed = true;
         }
 
         $activeExternalIds = array_values(array_filter(
@@ -426,20 +465,24 @@ class ProductImporter
         ));
 
         if ($activeExternalIds === []) {
-            return;
+            return $changed;
         }
 
-        ProductImage::query()
+        $removedCount = ProductImage::query()
             ->where('product_id', $product->id)
             ->whereNotIn('external_image_id', $activeExternalIds)
             ->update(['status' => 'removed']);
+
+        return $changed || $removedCount > 0;
     }
 
     /**
      * @param  array<int, array<string, mixed>>  $offers
      */
-    private function syncSupplierOffers(Product $product, array $offers): void
+    private function syncSupplierOffers(Product $product, array $offers): bool
     {
+        $changed = false;
+
         foreach ($offers as $offerPayload) {
             $supplierExternalId = (string) ($offerPayload['supplierId'] ?? '');
             $supplierName = (string) ($offerPayload['supplierName'] ?? 'Supplier');
@@ -458,19 +501,38 @@ class ProductImporter
 
             $supplier->save();
 
+            $existingOffer = ProductSupplierOffer::query()
+                ->where('product_id', $product->id)
+                ->where('supplier_id', $supplier->id)
+                ->first();
+
+            $offerAttributes = [
+                'supplier_sku' => $offerPayload['supplierSku'] ?? null,
+                'supplier_price' => $offerPayload['supplierPrice'] ?? null,
+                'supplier_stock' => (int) ($offerPayload['supplierStock'] ?? 0),
+                'is_selected_price_source' => (bool) ($offerPayload['isSelectedPriceSource'] ?? false),
+            ];
+
+            if (
+                ! $existingOffer
+                || $existingOffer->supplier_sku !== $offerAttributes['supplier_sku']
+                || (float) $existingOffer->supplier_price !== (float) ($offerAttributes['supplier_price'] ?? 0)
+                || $existingOffer->supplier_stock !== $offerAttributes['supplier_stock']
+                || $existingOffer->is_selected_price_source !== $offerAttributes['is_selected_price_source']
+            ) {
+                $changed = true;
+            }
+
             ProductSupplierOffer::query()->updateOrCreate(
                 [
                     'product_id' => $product->id,
                     'supplier_id' => $supplier->id,
                 ],
-                [
-                    'supplier_sku' => $offerPayload['supplierSku'] ?? null,
-                    'supplier_price' => $offerPayload['supplierPrice'] ?? null,
-                    'supplier_stock' => (int) ($offerPayload['supplierStock'] ?? 0),
-                    'is_selected_price_source' => (bool) ($offerPayload['isSelectedPriceSource'] ?? false),
-                ]
+                $offerAttributes
             );
         }
+
+        return $changed;
     }
 
     /**

@@ -84,5 +84,6 @@ class SyncOrchestratorChangeLogTest extends TestCase
         $this->assertCount(2, $changes);
         $this->assertSame('inserted', $changes[0]->action);
         $this->assertSame('updated', $changes[1]->action);
+        $this->assertContains('name', $changes[1]->changed_fields ?? []);
     }
 }

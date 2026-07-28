@@ -7,6 +7,7 @@ use App\Models\ApiImportJob;
 use App\Models\ApiSource;
 use App\Models\Product;
 use App\Services\Catalog\ProductReadCache;
+use App\Services\Sync\ImportJobChangeLogger;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Throwable;
@@ -19,6 +20,7 @@ class ElineSyncOrchestrator
         private readonly ElineChangeDetector $changeDetector,
         private readonly ElineProductImporter $productImporter,
         private readonly ProductReadCache $productReadCache,
+        private readonly ImportJobChangeLogger $changeLogger,
     ) {}
 
     /**
@@ -113,6 +115,8 @@ class ElineSyncOrchestrator
                 $mappings,
                 $source,
                 $allFeedSifre,
+                $job,
+                $this->changeLogger,
             );
 
             DB::transaction(function () use ($source, $syncStartedAt, $job, $stats): void {
@@ -146,6 +150,8 @@ class ElineSyncOrchestrator
 
             return $stats;
         } catch (Throwable $e) {
+            $this->changeLogger->flush();
+
             $source->update([
                 'connection_status' => 'error',
                 'last_error' => $e->getMessage(),
