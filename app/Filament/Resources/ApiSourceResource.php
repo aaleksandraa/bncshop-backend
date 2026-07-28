@@ -228,26 +228,26 @@ class ApiSourceResource extends Resource
                         try {
                             $record->refresh();
 
-                            $hasCredentials = filled($record->username) && filled($record->password);
-
-                            if (! $hasCredentials && $record->usesIntegrationApiImport()) {
-                                $hasCredentials = filled(config('bnc.a1_api_username'))
-                                    && filled(config('bnc.a1_api_password'));
-                            }
-
-                            if (! $hasCredentials) {
-                                Notification::make()
-                                    ->title('Kredencijali nisu postavljeni')
-                                    ->body('Unesite korisničko ime i lozinku za A1 API, sačuvajte zapis, ili postavite A1_API_* u .env i pokrenite php artisan bnc:a1-sync-credentials.')
-                                    ->warning()
-                                    ->send();
-
-                                return;
-                            }
-
                             if ($record->target_system_code === 'eline') {
                                 app(ElineSyncOrchestrator::class)->testConnection();
                             } else {
+                                $hasCredentials = filled($record->username) && filled($record->password);
+
+                                if (! $hasCredentials && $record->usesIntegrationApiImport()) {
+                                    $hasCredentials = filled(config('bnc.a1_api_username'))
+                                        && filled(config('bnc.a1_api_password'));
+                                }
+
+                                if (! $hasCredentials) {
+                                    Notification::make()
+                                        ->title('Kredencijali nisu postavljeni')
+                                        ->body('Unesite korisničko ime i lozinku za A1 API, sačuvajte zapis, ili postavite A1_API_* u .env i pokrenite php artisan bnc:a1-sync-credentials.')
+                                        ->warning()
+                                        ->send();
+
+                                    return;
+                                }
+
                                 IntegrationApiClient::forSource($record)->login();
                             }
 
