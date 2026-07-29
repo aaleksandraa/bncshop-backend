@@ -36,6 +36,14 @@ class SellerElineProductService
             ->findOrFail($id);
     }
 
+    public function findCatalogProduct(int $id): Product
+    {
+        return Product::query()
+            ->notFromEline()
+            ->with(['images', 'defaultImage', 'category:id,name,display_name,full_slug'])
+            ->findOrFail($id);
+    }
+
     /**
      * @param  array<string, mixed>  $data
      */
@@ -247,7 +255,7 @@ class SellerElineProductService
             ->first();
     }
 
-    private function setPrimaryImage(Product $product, int $imageId): void
+    public function setPrimaryImage(Product $product, int $imageId): void
     {
         $image = ProductImage::query()
             ->where('product_id', $product->id)

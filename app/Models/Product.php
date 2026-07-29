@@ -275,4 +275,13 @@ class Product extends Model
     {
         return $query->where('import_source', 'eline');
     }
+
+    public function scopeNotFromEline(Builder $query): Builder
+    {
+        return $query->where(function (Builder $builder): void {
+            $builder
+                ->where('import_source', '!=', 'eline')
+                ->orWhereNull('import_source');
+        });
+    }
 }

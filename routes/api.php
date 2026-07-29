@@ -29,6 +29,7 @@ use App\Http\Controllers\Api\V1\RedirectController;
 use App\Http\Controllers\Api\V1\SearchController;
 use App\Http\Controllers\Api\V1\SellerAuthController;
 use App\Http\Controllers\Api\V1\SellerOrderController;
+use App\Http\Controllers\Api\V1\SellerCatalogProductController;
 use App\Http\Controllers\Api\V1\SellerProductController;
 use App\Http\Controllers\Api\V1\SettingsController;
 use App\Http\Controllers\Api\V1\SitemapController;
@@ -165,6 +166,12 @@ Route::prefix('v1')->group(function (): void {
         Route::patch('/products/{id}', [SellerProductController::class, 'update']);
         Route::post('/products/{id}/images', [SellerProductController::class, 'storeImage']);
         Route::delete('/products/{id}/images/{imageId}', [SellerProductController::class, 'destroyImage']);
+        Route::get('/catalog-products/categories', [SellerCatalogProductController::class, 'categories']);
+        Route::get('/catalog-products', [SellerCatalogProductController::class, 'index']);
+        Route::get('/catalog-products/{id}', [SellerCatalogProductController::class, 'show']);
+        Route::patch('/catalog-products/{id}', [SellerCatalogProductController::class, 'update']);
+        Route::post('/catalog-products/{id}/images', [SellerCatalogProductController::class, 'storeImage']);
+        Route::delete('/catalog-products/{id}/images/{imageId}', [SellerCatalogProductController::class, 'destroyImage']);
     });
 
     Route::middleware(['auth:sanctum', 'throttle:api-admin', 'permission:manage_sync|view_sync'])->prefix('admin/sync')->group(function (): void {
