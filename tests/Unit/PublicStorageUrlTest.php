@@ -83,6 +83,26 @@ class PublicStorageUrlTest extends TestCase
         );
     }
 
+    public function test_absolute_from_resolved_uses_app_url_when_file_exists_locally(): void
+    {
+        config([
+            'app.url' => 'https://api.bnc.ba',
+            'bnc.legacy_storage_url' => 'https://api.bncshop.ba',
+        ]);
+
+        $relativePath = 'products/demo/63780a32-1a4f-4356-9f49-24bbfbc594bf.webp';
+        \Illuminate\Support\Facades\Storage::disk('public')->put($relativePath, 'fake-image');
+
+        $url = PublicStorageUrl::absoluteFromResolved(
+            '/storage/'.$relativePath,
+        );
+
+        $this->assertSame(
+            'https://api.bnc.ba/storage/'.$relativePath,
+            $url,
+        );
+    }
+
     public function test_absolute_from_resolved_rewrites_wrong_host_for_seller_uploads(): void
     {
         config([

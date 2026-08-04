@@ -2,6 +2,8 @@
 
 namespace App\Support;
 
+use Illuminate\Support\Facades\Storage;
+
 class PublicStorageUrl
 {
     /**
@@ -124,7 +126,29 @@ class PublicStorageUrl
             return self::appStorageOrigin();
         }
 
+        if (self::existsOnAppPublicDisk($storagePath)) {
+            return self::appStorageOrigin();
+        }
+
         return self::legacyStorageOrigin();
+    }
+
+    /**
+     * Whether the file for a /storage/... URL exists on this app's public disk.
+     */
+    public static function existsOnAppPublicDisk(string $storagePath): bool
+    {
+        if (! str_starts_with($storagePath, '/storage/')) {
+            return false;
+        }
+
+        $relativePath = ltrim(substr($storagePath, strlen('/storage/')), '/');
+
+        if ($relativePath === '') {
+            return false;
+        }
+
+        return Storage::disk('public')->exists($relativePath);
     }
 
     public static function isSellerManagedStoragePath(string $storagePath): bool

@@ -114,14 +114,8 @@ class ProductImageStorageService
 
     private function resolveUrlWithoutCache(ProductImage $image): ?string
     {
-        if (filled($image->local_path)) {
-            if ((bool) config('bnc.trust_local_image_path', true)) {
-                return PublicStorageUrl::url((string) $image->local_path);
-            }
-
-            if (Storage::disk('public')->exists($image->local_path)) {
-                return PublicStorageUrl::url((string) $image->local_path);
-            }
+        if (filled($image->local_path) && Storage::disk('public')->exists($image->local_path)) {
+            return PublicStorageUrl::url((string) $image->local_path);
         }
 
         return $image->public_url ?: $image->image_url ?: $image->source_url;
