@@ -22,6 +22,12 @@ class MigrateMediaToR2Command extends Command
 
     public function handle(MediaMigrationService $migration): int
     {
+        $memoryLimit = (string) config('bnc.media_migration_memory_limit', '512M');
+
+        if ($memoryLimit !== '' && $memoryLimit !== '-1') {
+            ini_set('memory_limit', $memoryLimit);
+        }
+
         $type = (string) $this->option('type');
         $limit = max(1, (int) $this->option('limit'));
         $force = (bool) $this->option('force');
@@ -88,6 +94,9 @@ class MigrateMediaToR2Command extends Command
                 $totals['failed']++;
                 $this->warn("product_image #{$image->id}: {$result['message']}");
             }
+
+            unset($image, $result);
+            gc_collect_cycles();
         }
     }
 

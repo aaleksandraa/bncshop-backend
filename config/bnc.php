@@ -67,6 +67,10 @@ return [
     /** @var list<int> Responsive variant widths uploaded alongside the master. */
     'media_variant_widths' => [320, 640, 1280],
 
+    'media_migration_memory_limit' => env('BNC_MEDIA_MIGRATION_MEMORY_LIMIT', '512M'),
+
+    'media_migration_max_source_bytes' => (int) env('BNC_MEDIA_MIGRATION_MAX_SOURCE_BYTES', 20 * 1024 * 1024),
+
     'seller_notification_email' => env('SELLER_EMAIL', env('ADMIN_EMAIL', env('MAIL_FROM_ADDRESS'))),
     'admin_notification_email' => env('ADMIN_EMAIL', env('MAIL_FROM_ADDRESS')),
 

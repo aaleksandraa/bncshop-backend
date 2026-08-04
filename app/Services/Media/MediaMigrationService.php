@@ -37,6 +37,12 @@ class MediaMigrationService
             return ['success' => false, 'message' => 'source unavailable'];
         }
 
+        $maxBytes = (int) config('bnc.media_migration_max_source_bytes', 20 * 1024 * 1024);
+
+        if (strlen($contents) > $maxBytes) {
+            return ['success' => false, 'message' => 'source too large'];
+        }
+
         $targetKey = $this->targetKeyForProductImage($image);
 
         $stored = $this->mediaStorage->storeOptimized(
@@ -44,6 +50,7 @@ class MediaMigrationService
             $contents,
             $image->local_path !== $targetKey ? $image->local_path : null,
         );
+        unset($contents);
 
         if ($image->local_path && $image->local_path !== $stored->key) {
             $this->mediaStorage->deleteFromAnyDisk($image->local_path, $image->storage_disk);
@@ -294,6 +301,16 @@ class MediaMigrationService
 
         $body = $response->body();
 
-        return $body !== '' ? $body : null;
+        if ($body === '') {
+            return null;
+        }
+
+        $maxBytes = (int) config('bnc.media_migration_max_source_bytes', 20 * 1024 * 1024);
+
+        if (strlen($body) > $maxBytes) {
+            return null;
+        }
+
+        return $body;
     }
 }

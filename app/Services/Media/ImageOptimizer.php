@@ -38,6 +38,8 @@ class ImageOptimizer
         }
 
         $image = $this->manager->read($contents);
+        unset($contents);
+
         $image->orient();
 
         $masterMaxWidth = (int) config('bnc.media_master_max_width', 1600);
@@ -56,10 +58,13 @@ class ImageOptimizer
                 continue;
             }
 
-            $variantImage = $this->manager->read($masterContents);
+            $variantImage = clone $image;
             $variantImage->scaleDown(width: $variantWidth);
             $variants[$variantWidth] = (string) $variantImage->toWebp(quality: $quality);
+            unset($variantImage);
         }
+
+        unset($image);
 
         return new OptimizedImageSet(
             masterKey: $masterKey,

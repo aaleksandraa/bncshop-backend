@@ -70,6 +70,7 @@ class MediaStorage
     public function storeOptimized(string $targetKey, string $contents, ?string $previousKey = null): StoredMediaResult
     {
         $set = $this->optimizer->optimize($contents, $targetKey);
+        unset($contents);
 
         if ($previousKey !== null && $previousKey !== $set->masterKey) {
             $this->delete($previousKey);
