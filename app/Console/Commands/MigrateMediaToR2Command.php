@@ -15,7 +15,8 @@ class MigrateMediaToR2Command extends Command
                             {--type=all : products|logos|blog|b2b|all}
                             {--limit=100 : Max records per type}
                             {--force : Re-upload even when already on R2}
-                            {--dry-run : List candidates without uploading}';
+                            {--dry-run : List candidates without uploading}
+                            {--all-records : Include already migrated records instead of pending only}';
 
     protected $description = 'Migrate legacy media files to optimized R2 storage';
 
@@ -25,6 +26,7 @@ class MigrateMediaToR2Command extends Command
         $limit = max(1, (int) $this->option('limit'));
         $force = (bool) $this->option('force');
         $dryRun = (bool) $this->option('dry-run');
+        $pendingOnly = ! $force && ! (bool) $this->option('all-records');
 
         $types = $type === 'all'
             ? ['products', 'logos', 'blog', 'b2b']
@@ -34,10 +36,10 @@ class MigrateMediaToR2Command extends Command
 
         foreach ($types as $selectedType) {
             match ($selectedType) {
-                'products' => $this->migrateProducts($migration, $limit, $force, $dryRun, $totals),
-                'logos' => $this->migrateManufacturers($migration, $limit, $force, $dryRun, $totals),
-                'blog' => $this->migrateBlogPosts($migration, $limit, $force, $dryRun, $totals),
-                'b2b' => $this->migrateB2bImages($migration, $limit, $force, $dryRun, $totals),
+                'products' => $this->migrateProducts($migration, $limit, $force, $dryRun, $pendingOnly, $totals),
+                'logos' => $this->migrateManufacturers($migration, $limit, $force, $dryRun, $pendingOnly, $totals),
+                'blog' => $this->migrateBlogPosts($migration, $limit, $force, $dryRun, $pendingOnly, $totals),
+                'b2b' => $this->migrateB2bImages($migration, $limit, $force, $dryRun, $pendingOnly, $totals),
                 default => $this->error("Unknown type [{$selectedType}]"),
             };
         }
@@ -50,14 +52,24 @@ class MigrateMediaToR2Command extends Command
     /**
      * @param  array{migrated:int,skipped:int,failed:int}  $totals
      */
-    private function migrateProducts(MediaMigrationService $migration, int $limit, bool $force, bool $dryRun, array &$totals): void
+    private function migrateProducts(MediaMigrationService $migration, int $limit, bool $force, bool $dryRun, bool $pendingOnly, array &$totals): void
     {
-        $images = ProductImage::query()
+        $query = ProductImage::query()
             ->where('status', 'active')
             ->with('product:id,external_product_id')
-            ->orderBy('id')
-            ->limit($limit)
-            ->get();
+            ->orderBy('id');
+
+        if ($pendingOnly) {
+            $targetDisk = (string) config('bnc.media_disk', 'r2');
+            $query->where(function ($builder) use ($targetDisk): void {
+                $builder
+                    ->whereNull('optimized_at')
+                    ->orWhereNull('storage_disk')
+                    ->orWhere('storage_disk', '!=', $targetDisk);
+            });
+        }
+
+        $images = $query->limit($limit)->get();
 
         foreach ($images as $image) {
             if ($dryRun) {
@@ -82,15 +94,25 @@ class MigrateMediaToR2Command extends Command
     /**
      * @param  array{migrated:int,skipped:int,failed:int}  $totals
      */
-    private function migrateManufacturers(MediaMigrationService $migration, int $limit, bool $force, bool $dryRun, array &$totals): void
+    private function migrateManufacturers(MediaMigrationService $migration, int $limit, bool $force, bool $dryRun, bool $pendingOnly, array &$totals): void
     {
-        $items = Manufacturer::query()
-            ->where(function ($query): void {
-                $query->whereNotNull('logo_path')->orWhereNotNull('logo_url');
+        $query = Manufacturer::query()
+            ->where(function ($builder): void {
+                $builder->whereNotNull('logo_path')->orWhereNotNull('logo_url');
             })
-            ->orderBy('id')
-            ->limit($limit)
-            ->get();
+            ->orderBy('id');
+
+        if ($pendingOnly) {
+            $targetDisk = (string) config('bnc.media_disk', 'r2');
+            $query->where(function ($builder) use ($targetDisk): void {
+                $builder
+                    ->whereNull('optimized_at')
+                    ->orWhereNull('storage_disk')
+                    ->orWhere('storage_disk', '!=', $targetDisk);
+            });
+        }
+
+        $items = $query->limit($limit)->get();
 
         foreach ($items as $manufacturer) {
             if ($dryRun) {
@@ -115,15 +137,25 @@ class MigrateMediaToR2Command extends Command
     /**
      * @param  array{migrated:int,skipped:int,failed:int}  $totals
      */
-    private function migrateBlogPosts(MediaMigrationService $migration, int $limit, bool $force, bool $dryRun, array &$totals): void
+    private function migrateBlogPosts(MediaMigrationService $migration, int $limit, bool $force, bool $dryRun, bool $pendingOnly, array &$totals): void
     {
-        $items = BlogPost::query()
-            ->where(function ($query): void {
-                $query->whereNotNull('featured_image_path')->orWhereNotNull('featured_image_url');
+        $query = BlogPost::query()
+            ->where(function ($builder): void {
+                $builder->whereNotNull('featured_image_path')->orWhereNotNull('featured_image_url');
             })
-            ->orderBy('id')
-            ->limit($limit)
-            ->get();
+            ->orderBy('id');
+
+        if ($pendingOnly) {
+            $targetDisk = (string) config('bnc.media_disk', 'r2');
+            $query->where(function ($builder) use ($targetDisk): void {
+                $builder
+                    ->whereNull('optimized_at')
+                    ->orWhereNull('storage_disk')
+                    ->orWhere('storage_disk', '!=', $targetDisk);
+            });
+        }
+
+        $items = $query->limit($limit)->get();
 
         foreach ($items as $post) {
             if ($dryRun) {
@@ -148,12 +180,21 @@ class MigrateMediaToR2Command extends Command
     /**
      * @param  array{migrated:int,skipped:int,failed:int}  $totals
      */
-    private function migrateB2bImages(MediaMigrationService $migration, int $limit, bool $force, bool $dryRun, array &$totals): void
+    private function migrateB2bImages(MediaMigrationService $migration, int $limit, bool $force, bool $dryRun, bool $pendingOnly, array &$totals): void
     {
-        $items = B2bProductImage::query()
-            ->orderBy('id')
-            ->limit($limit)
-            ->get();
+        $query = B2bProductImage::query()->orderBy('id');
+
+        if ($pendingOnly) {
+            $targetDisk = (string) config('bnc.media_disk', 'r2');
+            $query->where(function ($builder) use ($targetDisk): void {
+                $builder
+                    ->whereNull('optimized_at')
+                    ->orWhereNull('storage_disk')
+                    ->orWhere('storage_disk', '!=', $targetDisk);
+            });
+        }
+
+        $items = $query->limit($limit)->get();
 
         foreach ($items as $image) {
             if ($dryRun) {
