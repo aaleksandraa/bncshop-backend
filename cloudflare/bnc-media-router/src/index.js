@@ -63,7 +63,12 @@ export default {
     }
 
     const url = new URL(request.url);
-    const key = decodeURIComponent(url.pathname.slice(1));
+    let key = decodeURIComponent(url.pathname.slice(1));
+
+    // Accept both /products/... and legacy /storage/products/... URLs.
+    if (key.startsWith("storage/")) {
+      key = key.slice("storage/".length);
+    }
 
     if (!key || key.includes("..")) {
       return new Response("Not found", { status: 404 });
