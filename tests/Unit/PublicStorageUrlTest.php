@@ -4,6 +4,7 @@ namespace Tests\Unit;
 
 use App\Support\PublicStorageUrl;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class PublicStorageUrlTest extends TestCase
@@ -156,6 +157,36 @@ class PublicStorageUrlTest extends TestCase
         $this->assertSame(
             'https://api.bncshop.ba/storage/manufacturers/logos/demo.webp',
             $rewritten['manufacturer']['logo_url'],
+        );
+    }
+
+    public function test_absolute_from_resolved_uses_media_origin_when_configured(): void
+    {
+        config([
+            'app.url' => 'https://api.bnc.ba',
+            'bnc.legacy_storage_url' => 'https://api.bncshop.ba',
+            'bnc.media_origin' => 'https://images.bnc.ba',
+        ]);
+
+        $url = PublicStorageUrl::absoluteFromResolved('/storage/products/demo/image.webp');
+
+        $this->assertSame(
+            'https://images.bnc.ba/products/demo/image.webp',
+            $url,
+        );
+    }
+
+    public function test_absolute_from_resolved_preserves_width_query_on_media_origin(): void
+    {
+        config([
+            'bnc.media_origin' => 'https://images.bnc.ba',
+        ]);
+
+        $url = PublicStorageUrl::absoluteFromResolved('/storage/products/demo/image.webp?w=640');
+
+        $this->assertSame(
+            'https://images.bnc.ba/products/demo/image.webp?w=640',
+            $url,
         );
     }
 }

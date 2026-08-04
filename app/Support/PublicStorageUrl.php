@@ -62,9 +62,6 @@ class PublicStorageUrl
 
     /**
      * Normalize a resolved image URL for API consumers.
-     *
-     * Legacy synced assets are served from ASSET_URL (api.bncshop.ba). Seller
-     * uploads are stored on the active APP_URL host (api.bnc.ba).
      */
     public static function absoluteFromResolved(?string $url): ?string
     {
@@ -81,6 +78,20 @@ class PublicStorageUrl
         }
 
         return self::absoluteUrl($url);
+    }
+
+    /**
+     * CDN origin for optimized media (images.bnc.ba). Null keeps legacy routing.
+     */
+    public static function mediaOrigin(): ?string
+    {
+        $origin = config('bnc.media_origin');
+
+        if (! is_string($origin) || trim($origin) === '') {
+            return null;
+        }
+
+        return rtrim(trim($origin), '/');
     }
 
     /**
@@ -122,6 +133,10 @@ class PublicStorageUrl
 
     public static function storageOriginForPath(string $storagePath): string
     {
+        if ($mediaOrigin = self::mediaOrigin()) {
+            return $mediaOrigin;
+        }
+
         if (self::isSellerManagedStoragePath($storagePath)) {
             return self::appStorageOrigin();
         }
@@ -166,6 +181,12 @@ class PublicStorageUrl
         }
 
         $query = isset($parts['query']) ? '?'.$parts['query'] : '';
+
+        if ($mediaOrigin = self::mediaOrigin()) {
+            $relativePath = ltrim(substr($path, strlen('/storage/')), '/');
+
+            return $mediaOrigin.'/'.$relativePath.$query;
+        }
 
         return self::storageOriginForPath($path).$path.$query;
     }

@@ -15,6 +15,8 @@
         "laravel/sanctum": "^4.3",
         "laravel/scout": "^11.3",
         "laravel/tinker": "^2.10.1",
+        "league/flysystem-aws-s3-v3": "^3.29",
+        "intervention/image": "^3.11",
         "meilisearch/meilisearch-php": "^1.16",
         "sentry/sentry-laravel": "^4.26",
         "spatie/laravel-activitylog": "^4.12",

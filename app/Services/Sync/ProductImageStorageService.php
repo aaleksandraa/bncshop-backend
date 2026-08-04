@@ -2,8 +2,10 @@
 
 namespace App\Services\Sync;
 
+use App\Jobs\OptimizeAndUploadImage;
 use App\Models\Product;
 use App\Models\ProductImage;
+use App\Services\Media\MediaStorage;
 use App\Support\PublicStorageUrl;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -13,8 +15,12 @@ use Throwable;
 
 class ProductImageStorageService
 {
+    public function __construct(
+        private readonly MediaStorage $mediaStorage,
+    ) {}
+
     /**
-     * Download a remote product image and persist it on the public disk.
+     * Download a remote product image and queue optimization/upload to media storage.
      */
     public function storeFromRemote(ProductImage $image, Product $product, bool $force = false): bool
     {
@@ -27,7 +33,7 @@ class ProductImageStorageService
         if (
             ! $force
             && filled($image->local_path)
-            && Storage::disk('public')->exists($image->local_path)
+            && $this->mediaExists($image)
             && $this->remoteUrlUnchanged($image, $remoteUrl)
         ) {
             return true;
@@ -54,27 +60,21 @@ class ProductImageStorageService
             return false;
         }
 
-        $extension = $this->resolveExtension($image, $remoteUrl, $response->header('Content-Type'));
-        $fileName = $this->resolveFileName($image, $extension);
+        $fileName = $this->resolveFileName($image);
         $directory = 'products/'.Str::slug((string) $product->external_product_id, '_');
         $path = $directory.'/'.$fileName;
 
-        if ($image->local_path && $image->local_path !== $path) {
-            Storage::disk('public')->delete($image->local_path);
-        }
+        $tempPath = 'temp/media-jobs/product-image-'.$image->id.'-'.Str::uuid()->toString().'.bin';
+        Storage::disk('local')->put($tempPath, $contents);
 
-        Storage::disk('public')->put($path, $contents);
-
-        [$width, $height] = $this->resolveDimensions($contents);
-
-        $image->forceFill([
-            'local_path' => $path,
-            'image_url' => PublicStorageUrl::url($path),
-            'file_size_bytes' => strlen($contents),
-            'width' => $width,
-            'height' => $height,
-            'file_extension' => $extension,
-        ])->save();
+        OptimizeAndUploadImage::dispatch(
+            modelType: 'product_image',
+            modelId: (int) $image->id,
+            tempPath: $tempPath,
+            targetKey: $path,
+            previousKey: $image->local_path,
+            previousDisk: $image->storage_disk,
+        );
 
         $this->forgetResolvedUrlCache($image);
 
@@ -114,11 +114,24 @@ class ProductImageStorageService
 
     private function resolveUrlWithoutCache(ProductImage $image): ?string
     {
-        if (filled($image->local_path) && Storage::disk('public')->exists($image->local_path)) {
+        if (filled($image->local_path) && $this->mediaExists($image)) {
             return PublicStorageUrl::url((string) $image->local_path);
         }
 
         return $image->public_url ?: $image->image_url ?: $image->source_url;
+    }
+
+    private function mediaExists(ProductImage $image): bool
+    {
+        if (blank($image->local_path)) {
+            return false;
+        }
+
+        if ($image->storage_disk === 'r2' || ($image->storage_disk === null && $this->mediaStorage->usesR2())) {
+            return $this->mediaStorage->exists((string) $image->local_path);
+        }
+
+        return Storage::disk('public')->exists((string) $image->local_path);
     }
 
     private function resolvedUrlCacheKey(ProductImage $image): ?string
@@ -150,51 +163,12 @@ class ProductImageStorageService
         return $tracked === '' || $tracked === $remoteUrl;
     }
 
-    private function resolveExtension(ProductImage $image, string $remoteUrl, ?string $contentType): string
-    {
-        if (filled($image->file_extension)) {
-            return Str::lower((string) $image->file_extension);
-        }
-
-        $pathExtension = Str::lower((string) pathinfo(parse_url($remoteUrl, PHP_URL_PATH) ?? '', PATHINFO_EXTENSION));
-
-        if (in_array($pathExtension, ['jpg', 'jpeg', 'png', 'webp', 'gif', 'avif'], true)) {
-            return $pathExtension === 'jpeg' ? 'jpg' : $pathExtension;
-        }
-
-        return match (Str::lower((string) $contentType)) {
-            'image/jpeg', 'image/jpg' => 'jpg',
-            'image/png' => 'png',
-            'image/webp' => 'webp',
-            'image/gif' => 'gif',
-            'image/avif' => 'avif',
-            default => 'jpg',
-        };
-    }
-
-    private function resolveFileName(ProductImage $image, string $extension): string
+    private function resolveFileName(ProductImage $image): string
     {
         $base = filled($image->external_image_id)
             ? (string) $image->external_image_id
             : 'image-'.$image->id;
 
-        return $base.'.'.$extension;
-    }
-
-    /**
-     * @return array{0: ?int, 1: ?int}
-     */
-    private function resolveDimensions(string $contents): array
-    {
-        $info = @getimagesizefromstring($contents);
-
-        if (! is_array($info)) {
-            return [null, null];
-        }
-
-        return [
-            isset($info[0]) ? (int) $info[0] : null,
-            isset($info[1]) ? (int) $info[1] : null,
-        ];
+        return $base.'.webp';
     }
 }

@@ -52,6 +52,21 @@ return [
     */
     'legacy_storage_url' => env('LEGACY_STORAGE_URL', env('ASSET_URL')),
 
+    /*
+    | CDN origin for optimized media (Cloudflare R2 via images.bnc.ba).
+    | When empty, PublicStorageUrl keeps legacy split-host behaviour.
+    */
+    'media_origin' => env('BNC_MEDIA_ORIGIN'),
+
+    'media_disk' => env('BNC_MEDIA_DISK', 'r2'),
+
+    'media_master_max_width' => (int) env('BNC_MEDIA_MASTER_MAX_WIDTH', 1600),
+
+    'media_webp_quality' => (int) env('BNC_MEDIA_WEBP_QUALITY', 82),
+
+    /** @var list<int> Responsive variant widths uploaded alongside the master. */
+    'media_variant_widths' => [320, 640, 1280],
+
     'seller_notification_email' => env('SELLER_EMAIL', env('ADMIN_EMAIL', env('MAIL_FROM_ADDRESS'))),
     'admin_notification_email' => env('ADMIN_EMAIL', env('MAIL_FROM_ADDRESS')),
 

@@ -7,6 +7,7 @@ use App\Filament\Concerns\HasSeoFormFields;
 use App\Filament\Resources\ManufacturerResource\Pages;
 use App\Models\Manufacturer;
 use App\Support\PublicStorageUrl;
+use App\Filament\Support\OptimizedMediaUpload;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -74,17 +75,16 @@ class ManufacturerResource extends Resource
                 Forms\Components\Section::make('Logotip')
                     ->description('Upload ima prioritet nad eksternim URL-om. Sync iz izvora ažurira samo eksterni URL.')
                     ->schema([
-                        Forms\Components\FileUpload::make('logo_path')
-                            ->label('Upload logotipa')
-                            ->helperText('PNG, JPG, WebP ili SVG. Maks. 2 MB. Prikazuje se na /brendovi i stranici brenda.')
-                            ->image()
-                            ->disk('public')
-                            ->directory('manufacturers/logos')
-                            ->visibility('public')
-                            ->maxSize(2048)
-                            ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'])
-                            ->imagePreviewHeight('120')
-                            ->columnSpanFull(),
+                        OptimizedMediaUpload::configure(
+                            Forms\Components\FileUpload::make('logo_path')
+                                ->label('Upload logotipa')
+                                ->helperText('PNG, JPG, WebP ili SVG. Maks. 2 MB. Prikazuje se na /brendovi i stranici brenda.')
+                                ->image()
+                                ->maxSize(2048)
+                                ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'])
+                                ->imagePreviewHeight('120'),
+                            'manufacturers/logos',
+                        )->columnSpanFull(),
                         Forms\Components\TextInput::make('logo_url')
                             ->label('Eksterni URL logotipa')
                             ->helperText('URL iz synca ili ručno unesen. Koristi se ako nema uploadanog fajla.')

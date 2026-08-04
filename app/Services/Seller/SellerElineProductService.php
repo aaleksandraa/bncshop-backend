@@ -6,6 +6,7 @@ use App\Models\Discount;
 use App\Models\Product;
 use App\Models\ProductImage;
 use App\Models\User;
+use App\Services\Media\MediaStorage;
 use App\Services\Pricing\PriceCalculator;
 use App\Services\Sync\FieldLockService;
 use App\Services\Sync\ProductImageStorageService;
@@ -26,6 +27,7 @@ class SellerElineProductService
         private readonly FieldLockService $fieldLockService,
         private readonly PriceCalculator $priceCalculator,
         private readonly ProductImageStorageService $productImageStorage,
+        private readonly MediaStorage $mediaStorage,
     ) {}
 
     public function findElineProduct(int $id): Product
@@ -131,32 +133,35 @@ class SellerElineProductService
 
     public function storeImage(Product $product, UploadedFile $file, bool $isPrimary = false): ProductImage
     {
-        $extension = Str::lower($file->getClientOriginalExtension() ?: 'jpg');
         $directory = 'products/'.Str::slug((string) $product->external_product_id, '_');
-        $fileName = 'seller-'.Str::uuid()->toString().'.'.$extension;
-        $path = $file->storeAs($directory, $fileName, 'public');
+        $fileName = 'seller-'.Str::uuid()->toString();
+        $targetKey = $directory.'/'.$fileName.'.webp';
 
-        $contents = (string) file_get_contents($file->getRealPath());
-        [$width, $height] = $this->resolveDimensions($contents);
+        $stored = $this->mediaStorage->storeOptimized(
+            $targetKey,
+            (string) file_get_contents($file->getRealPath()),
+        );
 
         $maxSort = (int) ProductImage::query()
             ->where('product_id', $product->id)
             ->max('sort_order');
 
-        $absoluteUrl = PublicStorageUrl::url($path);
+        $absoluteUrl = PublicStorageUrl::url($stored->key);
 
         $image = ProductImage::query()->create([
             'product_id' => $product->id,
-            'local_path' => $path,
+            'local_path' => $stored->key,
+            'storage_disk' => $stored->disk,
+            'optimized_at' => now(),
             'image_url' => $absoluteUrl,
             'public_url' => $absoluteUrl,
             'original_file_name' => $file->getClientOriginalName(),
-            'stored_file_name' => $fileName,
-            'content_type' => $file->getMimeType(),
-            'file_extension' => $extension,
-            'file_size_bytes' => $file->getSize(),
-            'width' => $width,
-            'height' => $height,
+            'stored_file_name' => basename($stored->key),
+            'content_type' => 'image/webp',
+            'file_extension' => 'webp',
+            'file_size_bytes' => $stored->bytes,
+            'width' => $stored->width,
+            'height' => $stored->height,
             'is_primary' => $isPrimary,
             'sort_order' => $maxSort + 1,
             'status' => 'active',
@@ -178,7 +183,7 @@ class SellerElineProductService
             ->firstOrFail();
 
         if ($image->local_path) {
-            \Illuminate\Support\Facades\Storage::disk('public')->delete($image->local_path);
+            $this->mediaStorage->deleteFromAnyDisk($image->local_path, $image->storage_disk);
         }
 
         $wasPrimary = (int) $product->default_image_id === (int) $image->id;

@@ -2,11 +2,11 @@
 
 namespace App\Models;
 
+use App\Services\Media\MediaStorage;
 use App\Support\PublicStorageUrl;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class BlogPost extends Model
@@ -17,6 +17,7 @@ class BlogPost extends Model
         'excerpt',
         'featured_image_url',
         'featured_image_path',
+        'storage_disk',
         'intro',
         'content_blocks',
         'status',
@@ -32,6 +33,7 @@ class BlogPost extends Model
         return [
             'content_blocks' => 'array',
             'published_at' => 'datetime',
+            'optimized_at' => 'datetime',
         ];
     }
 
@@ -39,7 +41,17 @@ class BlogPost extends Model
     {
         static::deleting(function (BlogPost $post): void {
             if ($post->featured_image_path) {
-                Storage::disk('public')->delete($post->featured_image_path);
+                app(MediaStorage::class)->deleteFromAnyDisk(
+                    $post->featured_image_path,
+                    $post->storage_disk,
+                );
+            }
+        });
+
+        static::saving(function (BlogPost $post): void {
+            if ($post->isDirty('featured_image_path') && filled($post->featured_image_path)) {
+                $post->storage_disk = app(MediaStorage::class)->diskName();
+                $post->optimized_at = now();
             }
         });
     }

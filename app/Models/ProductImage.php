@@ -16,6 +16,8 @@ class ProductImage extends Model
         'source_url',
         'public_url',
         'local_path',
+        'storage_disk',
+        'optimized_at',
         'storage_key',
         'original_file_name',
         'stored_file_name',
@@ -43,6 +45,7 @@ class ProductImage extends Model
             'height' => 'integer',
             'is_primary' => 'boolean',
             'sort_order' => 'integer',
+            'optimized_at' => 'datetime',
         ];
     }
 

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Support\OptimizedMediaUpload;
 use App\Filament\Concerns\AuthorizesWithPermissions;
 use App\Filament\Resources\BlogPostResource\Pages;
 use App\Models\BlogPost;
@@ -144,17 +145,16 @@ class BlogPostResource extends Resource
                             ]),
                         Forms\Components\Section::make('Naslovna slika')
                             ->schema([
-                                Forms\Components\FileUpload::make('featured_image_path')
-                                    ->label('Upload slike')
-                                    ->image()
-                                    ->disk('public')
-                                    ->directory('blog/featured')
-                                    ->visibility('public')
-                                    ->maxSize(4096)
-                                    ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/webp'])
-                                    ->imagePreviewHeight('180')
-                                    ->helperText('Preporučeno 1200×630 px. Koristi se kao thumbnail i OG slika.')
-                                    ->columnSpanFull(),
+                                OptimizedMediaUpload::configure(
+                                    Forms\Components\FileUpload::make('featured_image_path')
+                                        ->label('Upload slike')
+                                        ->image()
+                                        ->maxSize(4096)
+                                        ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/webp'])
+                                        ->imagePreviewHeight('180')
+                                        ->helperText('Preporučeno 1200×630 px. Koristi se kao thumbnail i OG slika.'),
+                                    'blog/featured',
+                                )->columnSpanFull(),
                                 Forms\Components\TextInput::make('featured_image_url')
                                     ->label('Ili eksterni URL slike')
                                     ->url()

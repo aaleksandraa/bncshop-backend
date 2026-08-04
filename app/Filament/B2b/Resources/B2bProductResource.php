@@ -2,6 +2,7 @@
 
 namespace App\Filament\B2b\Resources;
 
+use App\Filament\Support\OptimizedMediaUpload;
 use App\Filament\B2b\Resources\B2bProductResource\Pages;
 use App\Filament\B2b\Concerns\BuildsB2bProductAttributeFields;
 use App\Filament\Concerns\AuthorizesWithPermissions;
@@ -97,12 +98,13 @@ class B2bProductResource extends Resource
                     ->relationship()
                     ->label('Slike proizvoda')
                     ->schema([
-                        Forms\Components\FileUpload::make('path')
-                            ->label('Slika')
-                            ->disk('public')
-                            ->directory('b2b-products')
-                            ->image()
-                            ->required(),
+                        OptimizedMediaUpload::configure(
+                            Forms\Components\FileUpload::make('path')
+                                ->label('Slika')
+                                ->image()
+                                ->required(),
+                            'b2b-products',
+                        ),
                         Forms\Components\Toggle::make('is_primary')
                             ->label('Primarna'),
                         Forms\Components\TextInput::make('sort_order')

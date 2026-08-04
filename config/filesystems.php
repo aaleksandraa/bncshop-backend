@@ -61,6 +61,22 @@ return [
             'report' => false,
         ],
 
+        /*
+        | Cloudflare R2 (S3-compatible). Do NOT set visibility — R2 rejects ACL headers.
+        */
+        'r2' => [
+            'driver' => 's3',
+            'key' => env('R2_ACCESS_KEY_ID'),
+            'secret' => env('R2_SECRET_ACCESS_KEY'),
+            'region' => 'auto',
+            'bucket' => env('R2_BUCKET', 'bnc-media'),
+            'url' => env('R2_PUBLIC_URL', 'https://images.bnc.ba'),
+            'endpoint' => env('R2_ENDPOINT'),
+            'use_path_style_endpoint' => true,
+            'throw' => false,
+            'report' => false,
+        ],
+
     ],
 
     /*

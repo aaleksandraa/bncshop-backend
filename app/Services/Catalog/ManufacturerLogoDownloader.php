@@ -3,15 +3,19 @@
 namespace App\Services\Catalog;
 
 use App\Models\Manufacturer;
+use App\Services\Media\MediaStorage;
 use App\Support\PublicStorageUrl;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Throwable;
 
 class ManufacturerLogoDownloader
 {
+    public function __construct(
+        private readonly MediaStorage $mediaStorage,
+    ) {}
+
     /**
      * Resolve missing logo URLs from A1 storefront, then download into logo_path.
      *
@@ -288,7 +292,7 @@ class ManufacturerLogoDownloader
         if (
             ! $force
             && filled($manufacturer->logo_path)
-            && Storage::disk('public')->exists($manufacturer->logo_path)
+            && $this->mediaStorage->existsOnAnyDisk($manufacturer->logo_path, $manufacturer->storage_disk)
         ) {
             return null;
         }
@@ -326,13 +330,15 @@ class ManufacturerLogoDownloader
             filled($manufacturer->logo_path)
             && $manufacturer->logo_path !== $path
         ) {
-            Storage::disk('public')->delete($manufacturer->logo_path);
+            $this->mediaStorage->deleteFromAnyDisk($manufacturer->logo_path, $manufacturer->storage_disk);
         }
 
-        Storage::disk('public')->put($path, $contents);
+        $stored = $this->mediaStorage->storeOptimized($path, $contents, $manufacturer->logo_path);
 
         $manufacturer->forceFill([
-            'logo_path' => $path,
+            'logo_path' => $stored->key,
+            'storage_disk' => $stored->disk,
+            'optimized_at' => now(),
             'logo_url' => $remoteUrl,
         ])->save();
 

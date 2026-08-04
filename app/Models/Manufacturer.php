@@ -2,12 +2,12 @@
 
 namespace App\Models;
 
+use App\Services\Media\MediaStorage;
 use App\Support\PublicStorageUrl;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
-use Illuminate\Support\Facades\Storage;
 
 class Manufacturer extends Model
 {
@@ -26,6 +26,7 @@ class Manufacturer extends Model
         'meta_description',
         'logo_url',
         'logo_path',
+        'storage_disk',
     ];
 
     protected function casts(): array
@@ -35,6 +36,7 @@ class Manufacturer extends Model
             'system' => 'boolean',
             'featured' => 'boolean',
             'sort_order' => 'integer',
+            'optimized_at' => 'datetime',
         ];
     }
 
@@ -42,7 +44,17 @@ class Manufacturer extends Model
     {
         static::deleting(function (Manufacturer $manufacturer): void {
             if ($manufacturer->logo_path) {
-                Storage::disk('public')->delete($manufacturer->logo_path);
+                app(MediaStorage::class)->deleteFromAnyDisk(
+                    $manufacturer->logo_path,
+                    $manufacturer->storage_disk,
+                );
+            }
+        });
+
+        static::saving(function (Manufacturer $manufacturer): void {
+            if ($manufacturer->isDirty('logo_path') && filled($manufacturer->logo_path)) {
+                $manufacturer->storage_disk = app(MediaStorage::class)->diskName();
+                $manufacturer->optimized_at = now();
             }
         });
     }
