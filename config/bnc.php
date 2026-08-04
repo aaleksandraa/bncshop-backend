@@ -60,6 +60,7 @@ return [
         'u_obradi',
         'potvrđena',
         'spakovano',
+        'spremno_za_preuzimanje',
         'poslano',
         'isporučeno',
         'otkazano',

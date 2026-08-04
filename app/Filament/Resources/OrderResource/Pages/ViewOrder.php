@@ -5,6 +5,7 @@ namespace App\Filament\Resources\OrderResource\Pages;
 use App\Filament\Resources\OrderResource;
 use App\Models\Order;
 use App\Services\Commerce\OrderService;
+use App\Support\OrderDisplayLabels;
 use App\Support\OrderStatus;
 use Filament\Actions;
 use Filament\Forms;
@@ -36,16 +37,20 @@ class ViewOrder extends ViewRecord
     public function getSubheading(): string | Htmlable | null
     {
         $status = OrderStatus::normalize($this->record->status);
-        $label = OrderStatus::label($status);
+        $label = OrderDisplayLabels::statusLabel($status, $this->record);
         $colorClass = match ($status) {
             'isporučeno' => 'order-page-status order-page-status--success',
             'otkazano', 'vraćeno', 'neuspjela_dostava' => 'order-page-status order-page-status--danger',
-            'potvrđena', 'spakovano', 'poslano' => 'order-page-status order-page-status--amber',
+            'potvrđena', 'spakovano', 'poslano', 'spremno_za_preuzimanje' => 'order-page-status order-page-status--amber',
             default => 'order-page-status order-page-status--neutral',
         };
 
+        $pickupBadge = OrderDisplayLabels::isPickup($this->record)
+            ? ' · <strong style="color:#b45309;">Preuzimanje u poslovnici</strong>'
+            : '';
+
         return new HtmlString(
-            '<span class="'.$colorClass.'">Trenutni status: <strong>'.$label.'</strong></span>'
+            '<span class="'.$colorClass.'">Trenutni status: <strong>'.$label.'</strong>'.$pickupBadge.'</span>'
         );
     }
 
@@ -80,6 +85,7 @@ class ViewOrder extends ViewRecord
                     ->label('Označi kao spakovano')
                     ->icon('heroicon-o-archive-box')
                     ->visible(fn (Order $record): bool => OrderResource::canManageStatus()
+                        && ! OrderDisplayLabels::isPickup($record)
                         && OrderResource::canTransitionTo($record, 'spakovano'))
                     ->form([
                         Forms\Components\Textarea::make('note')
@@ -88,6 +94,22 @@ class ViewOrder extends ViewRecord
                     ])
                     ->action(function (Order $record, array $data): void {
                         if (OrderResource::applyStatusChange($record, ['status' => 'spakovano', 'note' => $data['note'] ?? null])) {
+                            $this->refreshOrderRecord();
+                        }
+                    }),
+                Actions\Action::make('markReadyForPickup')
+                    ->label('Označi kao spremno za preuzimanje')
+                    ->icon('heroicon-o-building-storefront')
+                    ->color('success')
+                    ->visible(fn (Order $record): bool => OrderResource::canManageStatus()
+                        && $orderService->canMarkReadyForPickup($record))
+                    ->form([
+                        Forms\Components\Textarea::make('note')
+                            ->label('Napomena (opcionalno)')
+                            ->rows(2),
+                    ])
+                    ->action(function (Order $record, array $data): void {
+                        if (OrderResource::applyMarkReadyForPickup($record, $data['note'] ?? null)) {
                             $this->refreshOrderRecord();
                         }
                     }),
@@ -108,18 +130,24 @@ class ViewOrder extends ViewRecord
                         }
                     }),
                 Actions\Action::make('markDelivered')
-                    ->label('Označi kao isporučeno')
+                    ->label(fn (Order $record): string => OrderDisplayLabels::isPickup($record)
+                        ? 'Označi kao preuzeto'
+                        : 'Označi kao isporučeno')
                     ->icon('heroicon-o-check-badge')
                     ->color('success')
                     ->visible(fn (Order $record): bool => OrderResource::canManageStatus()
-                        && OrderResource::canTransitionTo($record, 'isporučeno'))
+                        && (OrderResource::canTransitionTo($record, 'isporučeno') || $orderService->canMarkPickedUp($record)))
                     ->form([
                         Forms\Components\Textarea::make('note')
                             ->label('Napomena (opcionalno)')
                             ->rows(2),
                     ])
-                    ->action(function (Order $record, array $data): void {
-                        if (OrderResource::applyStatusChange($record, ['status' => 'isporučeno', 'note' => $data['note'] ?? null])) {
+                    ->action(function (Order $record, array $data) use ($orderService): void {
+                        $success = OrderDisplayLabels::isPickup($record) && $orderService->canMarkPickedUp($record)
+                            ? OrderResource::applyMarkPickedUp($record, $data['note'] ?? null)
+                            : OrderResource::applyStatusChange($record, ['status' => 'isporučeno', 'note' => $data['note'] ?? null]);
+
+                        if ($success) {
                             $this->refreshOrderRecord();
                         }
                     }),
@@ -153,6 +181,8 @@ class ViewOrder extends ViewRecord
                     }
 
                     return $orderService->canMarkShipped($record)
+                        || $orderService->canMarkReadyForPickup($record)
+                        || $orderService->canMarkPickedUp($record)
                         || OrderResource::canTransitionTo($record, 'potvrđena')
                         || OrderResource::canTransitionTo($record, 'spakovano')
                         || OrderResource::canTransitionTo($record, 'isporučeno')

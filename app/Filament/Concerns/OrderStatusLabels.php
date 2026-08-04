@@ -14,6 +14,7 @@ trait OrderStatusLabels
             'u_obradi' => 'U obradi',
             'potvrđena' => 'Potvrđena',
             'spakovano' => 'Spakovano',
+            'spremno_za_preuzimanje' => 'Spremno za preuzimanje',
             'poslano' => 'Poslano',
             'isporučeno' => 'Isporučeno',
             'otkazano' => 'Otkazano',
@@ -30,6 +31,7 @@ trait OrderStatusLabels
             'u_obradi' => 'gray',
             'potvrđena' => 'warning',
             'spakovano' => 'warning',
+            'spremno_za_preuzimanje' => 'success',
             'poslano' => 'warning',
             'isporučeno' => 'success',
             'otkazano' => 'danger',
@@ -68,8 +70,8 @@ trait OrderStatusLabels
     protected static function shippingMethodOptions(): array
     {
         return [
-            'delivery' => 'Dostava',
-            'pickup' => 'Preuzimanje u radnji',
+            'delivery' => 'Dostava na adresu',
+            'pickup' => 'Preuzimanje u poslovnici',
         ];
     }
 

@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\UpdateSellerOrderStatusRequest;
 use App\Models\Order;
 use App\Services\Commerce\OrderService;
+use App\Support\OrderDisplayLabels;
 use App\Support\OrderStatus;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -77,6 +78,16 @@ class SellerOrderController extends Controller
                     $request->user(),
                     $validated['note'] ?? null,
                 ),
+                'spremno_za_preuzimanje' => $this->orderService->markReadyForPickupForSeller(
+                    $order,
+                    $request->user(),
+                    $validated['note'] ?? null,
+                ),
+                'isporučeno' => $this->orderService->markPickedUpForSeller(
+                    $order,
+                    $request->user(),
+                    $validated['note'] ?? null,
+                ),
                 'otkazano' => $this->orderService->cancelForSeller(
                     $order,
                     $request->user(),
@@ -102,14 +113,19 @@ class SellerOrderController extends Controller
             'id' => $order->id,
             'order_number' => $order->order_number,
             'status' => $order->status,
-            'status_label' => OrderStatus::label($order->status),
+            'status_label' => OrderDisplayLabels::statusLabel((string) $order->status, $order),
             'total' => $order->total,
             'items_count' => $order->items_count,
             'customer_name' => trim("{$order->first_name} {$order->last_name}"),
             'phone' => $order->phone,
             'email' => $order->email,
             'created_at' => $order->created_at,
+            'shipping_method' => $order->shipping_method,
+            'shipping_method_label' => OrderDisplayLabels::shippingMethodLabel((string) $order->shipping_method),
+            'is_pickup' => OrderDisplayLabels::isPickup($order),
             'can_mark_shipped' => $this->orderService->canMarkShipped($order),
+            'can_mark_ready_for_pickup' => $this->orderService->canMarkReadyForPickup($order),
+            'can_mark_picked_up' => $this->orderService->canMarkPickedUp($order),
             'can_cancel' => $this->orderService->canCancel($order),
         ];
     }
@@ -133,8 +149,8 @@ class SellerOrderController extends Controller
             'subtotal' => $order->subtotal,
             'discount_total' => $order->discount_total,
             'shipping_fee' => $order->shipping_fee,
-            'shipping_method' => $order->shipping_method,
             'payment_method' => $order->payment_method,
+            'payment_method_label' => OrderDisplayLabels::paymentMethodLabelForOrder($order),
             'items' => $order->items->map(fn ($item) => [
                 'id' => $item->id,
                 'product_id' => $item->product_id,
@@ -149,9 +165,9 @@ class SellerOrderController extends Controller
                 ->map(fn ($entry) => [
                     'id' => $entry->id,
                     'old_status' => $entry->old_status,
-                    'old_status_label' => OrderStatus::label((string) $entry->old_status),
+                    'old_status_label' => OrderDisplayLabels::statusLabel((string) $entry->old_status, $order),
                     'new_status' => $entry->new_status,
-                    'new_status_label' => OrderStatus::label((string) $entry->new_status),
+                    'new_status_label' => OrderDisplayLabels::statusLabel((string) $entry->new_status, $order),
                     'note' => $entry->note,
                     'changed_by' => $entry->changedByUser?->name,
                     'created_at' => $entry->created_at,

@@ -14,6 +14,7 @@ class OrderStatus
             'u_obradi' => 'U obradi',
             'potvrđena' => 'Potvrđena',
             'spakovano' => 'Spakovano',
+            'spremno_za_preuzimanje' => 'Spremno za preuzimanje',
             'poslano' => 'Poslano',
             'isporučeno' => 'Isporučeno',
             'otkazano' => 'Otkazano',

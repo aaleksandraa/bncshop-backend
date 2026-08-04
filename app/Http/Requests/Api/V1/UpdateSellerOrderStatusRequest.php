@@ -17,7 +17,7 @@ class UpdateSellerOrderStatusRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'status' => ['required', 'string', 'in:poslano,otkazano'],
+            'status' => ['required', 'string', 'in:poslano,otkazano,spremno_za_preuzimanje,isporučeno'],
             'note' => ['nullable', 'string', 'max:1000'],
         ];
     }

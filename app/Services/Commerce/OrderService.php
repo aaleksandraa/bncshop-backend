@@ -8,6 +8,7 @@ use App\Models\Order;
 use App\Models\OrderStatusHistory;
 use App\Models\User;
 use App\Services\Loyalty\LoyaltyService;
+use App\Support\OrderDisplayLabels;
 use App\Support\OrderNotificationMail;
 use App\Support\OrderStatus;
 use Illuminate\Support\Facades\DB;
@@ -17,7 +18,7 @@ use RuntimeException;
 class OrderService
 {
     /** @var array<string, array<int, string>> */
-    private const TRANSITIONS = [
+    private const DELIVERY_TRANSITIONS = [
         'nova' => ['u_obradi', 'potvrđena', 'otkazano'],
         'u_obradi' => ['potvrđena', 'otkazano'],
         'potvrđena' => ['spakovano', 'otkazano'],
@@ -25,6 +26,18 @@ class OrderService
         'poslano' => ['isporučeno', 'neuspjela_dostava', 'otkazano'],
         'isporučeno' => ['vraćeno', 'arhivirano'],
         'neuspjela_dostava' => ['u_obradi', 'otkazano', 'arhivirano'],
+        'vraćeno' => ['arhivirano'],
+        'otkazano' => ['arhivirano'],
+        'arhivirano' => [],
+    ];
+
+    /** @var array<string, array<int, string>> */
+    private const PICKUP_TRANSITIONS = [
+        'nova' => ['u_obradi', 'potvrđena', 'otkazano'],
+        'u_obradi' => ['potvrđena', 'otkazano'],
+        'potvrđena' => ['spremno_za_preuzimanje', 'otkazano'],
+        'spremno_za_preuzimanje' => ['isporučeno', 'otkazano'],
+        'isporučeno' => ['vraćeno', 'arhivirano'],
         'vraćeno' => ['arhivirano'],
         'otkazano' => ['arhivirano'],
         'arhivirano' => [],
@@ -39,6 +52,13 @@ class OrderService
         'neuspjela_dostava' => ['u_obradi', 'potvrđena', 'spakovano', 'poslano'],
     ];
 
+    /** @var array<string, array<int, string>> */
+    private const PICKUP_READY_PATHS = [
+        'nova' => ['potvrđena', 'spremno_za_preuzimanje'],
+        'u_obradi' => ['potvrđena', 'spremno_za_preuzimanje'],
+        'potvrđena' => ['spremno_za_preuzimanje'],
+    ];
+
     public function __construct(
         private readonly StockService $stockService,
         private readonly LoyaltyService $loyaltyService,
@@ -47,13 +67,19 @@ class OrderService
     /**
      * @return array<int, string>
      */
-    public function allowedTransitions(?string $status): array
+    public function allowedTransitions(?string $status, ?Order $order = null): array
     {
-        return self::TRANSITIONS[$this->normalizeStatus($status)] ?? [];
+        $transitions = $this->transitionsFor($order);
+
+        return $transitions[$this->normalizeStatus($status)] ?? [];
     }
 
     public function canMarkShipped(Order $order): bool
     {
+        if (OrderDisplayLabels::isPickup($order)) {
+            return false;
+        }
+
         $status = $this->normalizeStatus($order->status);
 
         if (in_array($status, ['poslano', 'isporučeno', 'otkazano', 'arhivirano', 'vraćeno'], true)) {
@@ -63,14 +89,38 @@ class OrderService
         return isset(self::SHIPPING_PATHS[$status]);
     }
 
+    public function canMarkReadyForPickup(Order $order): bool
+    {
+        if (! OrderDisplayLabels::isPickup($order)) {
+            return false;
+        }
+
+        $status = $this->normalizeStatus($order->status);
+
+        if (in_array($status, ['spremno_za_preuzimanje', 'isporučeno', 'otkazano', 'arhivirano', 'vraćeno'], true)) {
+            return false;
+        }
+
+        return isset(self::PICKUP_READY_PATHS[$status]);
+    }
+
+    public function canMarkPickedUp(Order $order): bool
+    {
+        if (! OrderDisplayLabels::isPickup($order)) {
+            return false;
+        }
+
+        return $this->normalizeStatus($order->status) === 'spremno_za_preuzimanje';
+    }
+
     public function canCancel(Order $order): bool
     {
-        return in_array('otkazano', $this->allowedTransitions($order->status), true);
+        return in_array('otkazano', $this->allowedTransitions($order->status, $order), true);
     }
 
     public function transition(Order $order, string $newStatus, ?User $changedBy = null, ?string $note = null, bool $restoreStockOnReturn = false): Order
     {
-        $allowed = self::TRANSITIONS[$this->normalizeStatus($order->status)] ?? [];
+        $allowed = $this->allowedTransitions($order->status, $order);
 
         if (! in_array($newStatus, $allowed, true)) {
             throw new RuntimeException("Status transition from {$order->status} to {$newStatus} is not allowed.");
@@ -124,6 +174,42 @@ class OrderService
         });
     }
 
+    public function markReadyForPickupForSeller(Order $order, ?User $changedBy = null, ?string $note = null): Order
+    {
+        if ($this->normalizeStatus($order->status) === 'spremno_za_preuzimanje') {
+            return $order->fresh(['items', 'statusHistory']);
+        }
+
+        if (! $this->canMarkReadyForPickup($order)) {
+            throw new RuntimeException('Narudžba se ne može označiti kao spremna za preuzimanje u trenutnom statusu.');
+        }
+
+        $path = self::PICKUP_READY_PATHS[$this->normalizeStatus($order->status)] ?? [];
+
+        return DB::transaction(function () use ($order, $path, $changedBy, $note): Order {
+            $current = $order->fresh(['items.product']);
+
+            foreach ($path as $nextStatus) {
+                $current = $this->transition($current, $nextStatus, $changedBy, $note);
+            }
+
+            return $current->fresh(['items', 'statusHistory']);
+        });
+    }
+
+    public function markPickedUpForSeller(Order $order, ?User $changedBy = null, ?string $note = null): Order
+    {
+        if ($this->normalizeStatus($order->status) === 'isporučeno') {
+            return $order->fresh(['items', 'statusHistory']);
+        }
+
+        if (! $this->canMarkPickedUp($order)) {
+            throw new RuntimeException('Narudžba se ne može označiti kao preuzeta u trenutnom statusu.');
+        }
+
+        return $this->transition($order, 'isporučeno', $changedBy, $note);
+    }
+
     public function cancelForSeller(Order $order, ?User $changedBy = null, ?string $note = null): Order
     {
         if (! $this->canCancel($order)) {
@@ -148,17 +234,20 @@ class OrderService
 
     private function sendStatusEmail(Order $order, string $oldStatus, string $newStatus): void
     {
-        if (in_array($newStatus, ['poslano', 'otkazano', 'isporučeno'], true) && $order->email) {
+        $customerStatuses = ['poslano', 'otkazano', 'isporučeno', 'spremno_za_preuzimanje'];
+
+        if (in_array($newStatus, $customerStatuses, true) && $order->email) {
             Mail::to($order->email)->queue(new OrderStatusChanged($order, $oldStatus, $newStatus));
         }
 
         $statusVariables = [
-            'old_status' => OrderStatus::label($oldStatus),
-            'new_status' => OrderStatus::label($newStatus),
+            'old_status' => OrderDisplayLabels::statusLabel($oldStatus, $order),
+            'new_status' => OrderDisplayLabels::statusLabel($newStatus, $order),
         ];
 
         $sellerTemplate = match ($newStatus) {
             'poslano' => 'order_shipped_seller',
+            'spremno_za_preuzimanje' => 'order_ready_for_pickup_seller',
             'otkazano' => 'order_cancelled_seller',
             default => 'order_status_changed_seller',
         };
@@ -170,6 +259,18 @@ class OrderService
                 extraVariables: $statusVariables,
             ));
         }
+    }
+
+    /**
+     * @return array<string, array<int, string>>
+     */
+    private function transitionsFor(?Order $order): array
+    {
+        if ($order !== null && OrderDisplayLabels::isPickup($order)) {
+            return self::PICKUP_TRANSITIONS;
+        }
+
+        return self::DELIVERY_TRANSITIONS;
     }
 
     private function normalizeStatus(?string $status): string
@@ -184,8 +285,10 @@ class OrderService
     private function applyStockEffects(Order $order, string $from, string $to, bool $restoreStockOnReturn): void
     {
         $order->loadMissing('items.product');
+        $isPickup = OrderDisplayLabels::isPickup($order);
+        $shipStatus = $isPickup ? 'spremno_za_preuzimanje' : 'poslano';
 
-        if ($to === 'otkazano' && ! in_array($from, ['poslano', 'isporučeno', 'vraćeno'], true)) {
+        if ($to === 'otkazano' && ! in_array($from, [$shipStatus, 'isporučeno', 'vraćeno'], true)) {
             foreach ($order->items as $item) {
                 if ($item->product) {
                     $this->stockService->release($item->product, (int) $item->quantity);
@@ -193,7 +296,7 @@ class OrderService
             }
         }
 
-        if ($to === 'poslano' && $from !== 'poslano') {
+        if ($to === $shipStatus && $from !== $shipStatus) {
             foreach ($order->items as $item) {
                 if ($item->product) {
                     $this->stockService->deduct($item->product, (int) $item->quantity);

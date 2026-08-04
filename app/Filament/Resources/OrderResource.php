@@ -68,7 +68,7 @@ class OrderResource extends Resource
     public static function changeStatusForm(Order $record): array
     {
         $service = app(OrderService::class);
-        $allowed = $service->allowedTransitions(static::orderCurrentStatus($record));
+        $allowed = $service->allowedTransitions(static::orderCurrentStatus($record), $record);
         $options = array_intersect_key(static::orderStatusOptions(), array_flip($allowed));
 
         return [
@@ -90,7 +90,7 @@ class OrderResource extends Resource
      */
     public static function customerEmailStatuses(): array
     {
-        return ['poslano', 'isporučeno', 'otkazano'];
+        return ['poslano', 'isporučeno', 'otkazano', 'spremno_za_preuzimanje'];
     }
 
     public static function statusChangeSuccessBody(string $newStatus): ?string
@@ -101,7 +101,8 @@ class OrderResource extends Resource
 
         return match ($newStatus) {
             'poslano' => 'Kupcu je poslan e-mail da je narudžba poslana.',
-            'isporučeno' => 'Kupcu je poslan e-mail da je narudžba isporučena.',
+            'spremno_za_preuzimanje' => 'Kupcu je poslan e-mail da je narudžba spremna za preuzimanje.',
+            'isporučeno' => 'Kupcu je poslan e-mail o završetku narudžbe.',
             'otkazano' => 'Kupcu je poslan e-mail o otkazivanju narudžbe.',
             default => null,
         };
@@ -167,6 +168,60 @@ class OrderResource extends Resource
         }
     }
 
+    public static function applyMarkReadyForPickup(Order $record, ?string $note = null): bool
+    {
+        try {
+            app(OrderService::class)->markReadyForPickupForSeller(
+                $record,
+                auth()->user(),
+                $note,
+            );
+
+            Notification::make()
+                ->title('Narudžba spremna za preuzimanje')
+                ->body(static::statusChangeSuccessBody('spremno_za_preuzimanje'))
+                ->success()
+                ->send();
+
+            return true;
+        } catch (\Throwable $e) {
+            Notification::make()
+                ->title('Greška')
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+
+            return false;
+        }
+    }
+
+    public static function applyMarkPickedUp(Order $record, ?string $note = null): bool
+    {
+        try {
+            app(OrderService::class)->markPickedUpForSeller(
+                $record,
+                auth()->user(),
+                $note,
+            );
+
+            Notification::make()
+                ->title('Narudžba preuzeta')
+                ->body(static::statusChangeSuccessBody('isporučeno'))
+                ->success()
+                ->send();
+
+            return true;
+        } catch (\Throwable $e) {
+            Notification::make()
+                ->title('Greška')
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+
+            return false;
+        }
+    }
+
     public static function applyCancel(Order $record, ?string $note = null): bool
     {
         try {
@@ -198,7 +253,7 @@ class OrderResource extends Resource
     {
         return in_array(
             $status,
-            app(OrderService::class)->allowedTransitions(static::orderCurrentStatus($record)),
+            app(OrderService::class)->allowedTransitions(static::orderCurrentStatus($record), $record),
             true,
         );
     }
@@ -253,9 +308,9 @@ class OrderResource extends Resource
                             ->dateTime('d.m.Y H:i'),
                         Infolists\Components\TextEntry::make('payment_method')
                             ->label('Način plaćanja')
-                            ->formatStateUsing(fn (?string $state): string => static::paymentMethodLabel($state)),
+                            ->formatStateUsing(fn (?string $state, Order $record): string => \App\Support\OrderDisplayLabels::paymentMethodLabel($state, $record->shipping_method)),
                         Infolists\Components\TextEntry::make('shipping_method')
-                            ->label('Dostava')
+                            ->label('Način isporuke / preuzimanja')
                             ->formatStateUsing(fn (?string $state): string => static::shippingMethodLabel($state)),
                         Infolists\Components\TextEntry::make('tracking_token')
                             ->label('Tracking link')
@@ -423,10 +478,10 @@ class OrderResource extends Resource
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('payment_method')
                     ->label('Plaćanje')
-                    ->formatStateUsing(fn (?string $state): string => static::paymentMethodLabel($state))
+                    ->formatStateUsing(fn (?string $state, Order $record): string => \App\Support\OrderDisplayLabels::paymentMethodLabel($state, $record->shipping_method))
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('shipping_method')
-                    ->label('Dostava')
+                    ->label('Isporuka / preuzimanje')
                     ->formatStateUsing(fn (?string $state): string => static::shippingMethodLabel($state))
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('total')

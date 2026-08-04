@@ -1,24 +1,16 @@
 @php
+    use App\Support\OrderDisplayLabels;
     use App\Support\OrderStatus;
 
     $currency = config('bnc.currency_symbol', 'KM');
-    $paymentLabels = [
-        'pay_on_delivery' => 'Plaćanje pouzećem',
-        'cod' => 'Plaćanje pouzećem',
-        'bank_transfer' => 'Virman',
-        'card' => 'Kartica',
-    ];
-    $shippingLabels = [
-        'delivery' => 'Dostava',
-        'pickup' => 'Preuzimanje u radnji',
-    ];
+    $isPickup = OrderDisplayLabels::isPickup($order);
 
     $currentStatus = OrderStatus::normalize($order->status);
-    $statusLabel = OrderStatus::label($currentStatus);
+    $statusLabel = OrderDisplayLabels::statusLabel($currentStatus, $order);
     $statusHeroClass = match ($currentStatus) {
         'isporučeno' => 'order-status-hero--success',
         'otkazano', 'vraćeno', 'neuspjela_dostava' => 'order-status-hero--danger',
-        'potvrđena', 'spakovano', 'poslano' => 'order-status-hero--amber',
+        'potvrđena', 'spakovano', 'poslano', 'spremno_za_preuzimanje' => 'order-status-hero--amber',
         default => 'order-status-hero--neutral',
     };
     $latestStatusChange = $order->statusHistory->sortByDesc('created_at')->first();
@@ -452,6 +444,27 @@
     .dark .order-summary__total span:last-child {
         color: rgb(251 191 36);
     }
+
+    .order-meta-pickup {
+        font-weight: 700;
+        color: rgb(180 83 9);
+    }
+
+    .order-pickup-banner {
+        padding: 0.875rem 1.25rem;
+        border-radius: 0.75rem;
+        border: 1px solid rgb(251 191 36);
+        background: rgb(255 251 235);
+        color: rgb(120 53 15);
+        font-size: 0.875rem;
+        line-height: 1.5;
+    }
+
+    .dark .order-pickup-banner {
+        border-color: rgb(180 83 9);
+        background: rgb(69 26 3);
+        color: rgb(253 230 138);
+    }
 </style>
 
 <div class="order-view">
@@ -489,11 +502,17 @@
     <div class="order-meta-bar">
         <div class="order-meta-items">
             <span>{{ $order->created_at?->format('d.m.Y H:i') }}</span>
-            <span>{{ $paymentLabels[$order->payment_method] ?? $order->payment_method ?? '—' }}</span>
-            <span>{{ $shippingLabels[$order->shipping_method] ?? $order->shipping_method ?? '—' }}</span>
+            <span>{{ OrderDisplayLabels::paymentMethodLabelForOrder($order) }}</span>
+            <span @class(['order-meta-pickup' => $isPickup])>{{ OrderDisplayLabels::shippingMethodLabel($order->shipping_method) }}</span>
             <span>{{ $order->items_count }} stavki</span>
         </div>
     </div>
+
+    @if($isPickup)
+        <div class="order-pickup-banner">
+            <strong>Preuzimanje u poslovnici</strong> — kupac preuzima narudžbu u radnji, ne šalje se kurirskom službom.
+        </div>
+    @endif
 
     {{-- 1. Kupac --}}
     <section class="order-panel">

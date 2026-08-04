@@ -27,6 +27,7 @@ class EmailTemplatesSeeder extends Seeder
 {$summary}
 <p style="margin:0 0 8px;font-size:15px;font-weight:bold;color:#111111;">Stavke narudžbe</p>
 {{items_table}}
+{{order_totals_box}}
 <p style="margin:16px 0 0;font-size:14px;line-height:1.6;color:#474747;">
     Status narudžbe možete pratiti putem linka ispod.
 </p>
@@ -146,6 +147,63 @@ HTML,
     Hvala vam što kupujete kod nas!
 </p>
 {$summary}
+{{order_totals_box}}
+<p style="margin:0 0 16px;font-size:14px;line-height:1.6;color:#474747;">
+    Ako imate primjedbe ili trebate podršku, slobodno nas kontaktirajte.
+</p>
+HTML,
+                    withTrackingButton: true,
+                ),
+                'variables' => $this->statusVariables(),
+            ],
+            'order_ready_for_pickup_customer' => [
+                'subject' => 'Narudžba {{order_number}} je spremna za preuzimanje',
+                'body_html' => EmailTemplateLayouts::wrap(
+                    'Spremno za preuzimanje',
+                    <<<HTML
+<p style="margin:0 0 16px;font-size:16px;line-height:1.5;">Poštovani {{first_name}},</p>
+<p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#474747;">
+    Vaša narudžba <strong>{{order_number}}</strong> je spremna za preuzimanje u našoj poslovnici.
+    Molimo vas da je preuzmete u što kraćem roku.
+</p>
+{$summary}
+{{order_totals_box}}
+<p style="margin:0 0 16px;font-size:14px;line-height:1.6;color:#474747;">
+    Ponesite broj narudžbe ili ovu e-mail poruku pri preuzimanju.
+    Status možete pratiti putem linka ispod.
+</p>
+HTML,
+                    withTrackingButton: true,
+                ),
+                'variables' => $this->statusVariables(),
+            ],
+            'order_ready_for_pickup_seller' => [
+                'subject' => 'Narudžba {{order_number}} spremna za preuzimanje',
+                'body_html' => EmailTemplateLayouts::wrap(
+                    'Spremno za preuzimanje',
+                    <<<HTML
+<p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#474747;">
+    Narudžba <strong>{{order_number}}</strong> je označena kao spremna za preuzimanje u poslovnici.
+    Status: <strong>{{new_status}}</strong>.
+</p>
+{$customer}
+{$summary}
+HTML,
+                ),
+                'variables' => $this->statusVariables(),
+            ],
+            'order_picked_up_customer' => [
+                'subject' => 'Narudžba {{order_number}} je preuzeta',
+                'body_html' => EmailTemplateLayouts::wrap(
+                    'Narudžba preuzeta',
+                    <<<HTML
+<p style="margin:0 0 16px;font-size:16px;line-height:1.5;">Poštovani {{first_name}},</p>
+<p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#474747;">
+    Vaša narudžba <strong>{{order_number}}</strong> je uspješno preuzeta u poslovnici.
+    Hvala vam što kupujete kod nas!
+</p>
+{$summary}
+{{order_totals_box}}
 <p style="margin:0 0 16px;font-size:14px;line-height:1.6;color:#474747;">
     Ako imate primjedbe ili trebate podršku, slobodno nas kontaktirajte.
 </p>
@@ -286,6 +344,11 @@ HTML,
             'order_date',
             'payment_method',
             'shipping_method',
+            'shipping_method_label',
+            'shipping_summary_label',
+            'shipping_fee_display',
+            'pickup_notice',
+            'order_totals_box',
             'subtotal',
             'discount_total',
             'shipping_fee',

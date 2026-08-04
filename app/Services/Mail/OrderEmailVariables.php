@@ -2,8 +2,8 @@
 
 namespace App\Services\Mail;
 
-use App\Models\EmailTemplate;
 use App\Models\Order;
+use App\Support\OrderDisplayLabels;
 use App\Support\OrderStatus;
 
 class OrderEmailVariables
@@ -20,6 +20,7 @@ class OrderEmailVariables
         $storeName = (string) config('mail.from.name', 'BNC Shop');
         $trackingUrl = rtrim((string) config('bnc.frontend_url', config('app.url')), '/')
             .'/narudzba/'.$order->tracking_token;
+        $isPickup = OrderDisplayLabels::isPickup($order);
 
         return array_merge([
             'order_number' => $order->order_number,
@@ -40,8 +41,16 @@ class OrderEmailVariables
             'currency' => $currency,
             'items_count' => (string) $order->items_count,
             'items_table' => self::buildItemsTable($order, $currency),
-            'payment_method' => self::paymentMethodLabel((string) $order->payment_method),
-            'shipping_method' => (string) $order->shipping_method,
+            'payment_method' => OrderDisplayLabels::paymentMethodLabelForOrder($order),
+            'shipping_method' => OrderDisplayLabels::shippingMethodLabel((string) $order->shipping_method),
+            'shipping_method_label' => OrderDisplayLabels::shippingMethodLabel((string) $order->shipping_method),
+            'shipping_summary_label' => OrderDisplayLabels::shippingSummaryLabel($order),
+            'shipping_fee_display' => OrderDisplayLabels::shippingFeeDisplay($order),
+            'is_pickup' => $isPickup ? '1' : '0',
+            'pickup_notice' => $isPickup
+                ? '<p style="margin:16px 0;padding:12px 16px;background:#fff8e6;border:1px solid #f0d48a;border-radius:8px;font-size:14px;line-height:1.6;color:#5c4a00;"><strong>Preuzimanje u poslovnici.</strong> Proizvod preuzimate u našoj poslovnici. Obavijestit ćemo vas e-mailom kada narudžba bude spremna.</p>'
+                : '',
+            'order_totals_box' => self::buildOrderTotalsBox($order, $currency),
             'tracking_url' => $trackingUrl,
             'store_name' => $storeName,
             'order_date' => $order->created_at?->format('d.m.Y H:i') ?? now()->format('d.m.Y H:i'),
@@ -83,24 +92,56 @@ HTML;
 HTML;
     }
 
+    public static function buildOrderTotalsBox(Order $order, ?string $currency = null): string
+    {
+        $currency ??= (string) config('bnc.currency_symbol', 'KM');
+        $subtotal = number_format((float) $order->subtotal, 2, ',', '.');
+        $discount = (float) $order->discount_total;
+        $shippingLabel = OrderDisplayLabels::isPickup($order) ? 'Preuzimanje u poslovnici' : 'Trošak dostave';
+        $shippingDisplay = OrderDisplayLabels::shippingFeeDisplay($order);
+        $total = number_format((float) $order->total, 2, ',', '.');
+
+        $discountRow = $discount > 0
+            ? '<tr><td style="padding:8px 0;font-size:14px;color:#666666;">Popust</td><td style="padding:8px 0;text-align:right;font-size:14px;color:#666666;">-'
+                .number_format($discount, 2, ',', '.')." {$currency}</td></tr>"
+            : '';
+
+        return <<<HTML
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:20px 0;background:#fbfbfb;border:1px solid #ebebeb;border-radius:8px;">
+    <tr>
+        <td style="padding:16px;">
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                <tr>
+                    <td style="padding:8px 0;font-size:14px;color:#666666;">Međuzbir</td>
+                    <td style="padding:8px 0;text-align:right;font-size:14px;color:#333333;">{$subtotal} {$currency}</td>
+                </tr>
+                {$discountRow}
+                <tr>
+                    <td style="padding:8px 0;font-size:14px;color:#666666;">{$shippingLabel}</td>
+                    <td style="padding:8px 0;text-align:right;font-size:14px;color:#333333;">{$shippingDisplay}</td>
+                </tr>
+                <tr>
+                    <td colspan="2" style="padding:12px 0 0;border-top:1px solid #ebebeb;"></td>
+                </tr>
+                <tr>
+                    <td style="padding:8px 0;font-size:16px;font-weight:bold;color:#111111;">Ukupno</td>
+                    <td style="padding:8px 0;text-align:right;font-size:16px;font-weight:bold;color:#111111;">{$total} {$currency}</td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+HTML;
+    }
+
     /**
      * @return array<string, string>
      */
     public static function forStatusChange(Order $order, string $oldStatus, string $newStatus): array
     {
         return self::from($order, [
-            'old_status' => OrderStatus::label($oldStatus),
-            'new_status' => OrderStatus::label($newStatus),
+            'old_status' => OrderDisplayLabels::statusLabel($oldStatus, $order),
+            'new_status' => OrderDisplayLabels::statusLabel($newStatus, $order),
         ]);
-    }
-
-    private static function paymentMethodLabel(string $method): string
-    {
-        return match ($method) {
-            'cod', 'pay_on_delivery' => 'Plaćanje pouzećem',
-            'card' => 'Kartica',
-            'bank_transfer' => 'Virman',
-            default => $method,
-        };
     }
 }

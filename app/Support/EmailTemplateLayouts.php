@@ -57,14 +57,15 @@ HTML;
     public static function summaryBox(): string
     {
         return <<<'HTML'
+{{pickup_notice}}
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:20px 0;background:#fbfbfb;border:1px solid #ebebeb;border-radius:8px;">
     <tr>
         <td style="padding:16px;font-size:14px;line-height:1.8;color:#333333;">
             <strong>Broj narudžbe:</strong> {{order_number}}<br>
             <strong>Datum:</strong> {{order_date}}<br>
             <strong>Način plaćanja:</strong> {{payment_method}}<br>
-            <strong>Dostava:</strong> {{shipping_method}}<br>
-            <strong>Ukupno:</strong> {{total}} {{currency}}
+            <strong>{{shipping_summary_label}}:</strong> {{shipping_method_label}}<br>
+            <strong>Trošak dostave / preuzimanja:</strong> {{shipping_fee_display}}
         </td>
     </tr>
 </table>
