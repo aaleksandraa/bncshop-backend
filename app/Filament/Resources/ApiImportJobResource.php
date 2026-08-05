@@ -148,10 +148,12 @@ class ApiImportJobResource extends Resource
                 Tables\Columns\TextColumn::make('started_at')
                     ->label('Početak')
                     ->dateTime('d.m.Y H:i')
+                    ->timezone(config('app.timezone'))
                     ->sortable(),
                 Tables\Columns\TextColumn::make('completed_at')
                     ->label('Kraj')
-                    ->dateTime('d.m.Y H:i'),
+                    ->dateTime('d.m.Y H:i')
+                    ->timezone(config('app.timezone')),
                 Tables\Columns\TextColumn::make('stats.products.created')
                     ->label('Ubačeno')
                     ->state(fn (ApiImportJob $record): ?string => isset($record->stats['products']['created'])

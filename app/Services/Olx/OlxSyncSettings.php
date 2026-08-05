@@ -149,6 +149,17 @@ class OlxSyncSettings
         );
     }
 
+    public function hasRunningBulkSyncJob(?int $sourceId = null): bool
+    {
+        $sourceId ??= $this->resolveSource()->id;
+
+        return ApiImportJob::query()
+            ->where('api_source_id', $sourceId)
+            ->whereIn('type', ['olx_incremental', 'olx_full'])
+            ->where('status', 'running')
+            ->exists();
+    }
+
     /**
      * @return array<string, mixed>
      */

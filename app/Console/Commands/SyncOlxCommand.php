@@ -32,6 +32,13 @@ class SyncOlxCommand extends Command
 
         $fullSync = (bool) $this->option('full');
         $productId = $this->option('product') !== null ? (int) $this->option('product') : null;
+
+        if ($productId === null && $settings->hasRunningBulkSyncJob()) {
+            $this->warn('OLX sync već radi — preskačem dispatch. Provjerite Import jobove.');
+
+            return self::SUCCESS;
+        }
+
         $maxCreatesPerRun = $this->resolveMaxCreatesPerRun($createLimiter);
 
         if ($maxCreatesPerRun !== null) {

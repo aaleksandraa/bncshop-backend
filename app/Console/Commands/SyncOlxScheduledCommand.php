@@ -3,7 +3,6 @@
 namespace App\Console\Commands;
 
 use App\Jobs\RunOlxSyncJob;
-use App\Models\ApiImportJob;
 use App\Services\Olx\OlxSyncSettings;
 use Illuminate\Console\Command;
 
@@ -23,7 +22,7 @@ class SyncOlxScheduledCommand extends Command
 
         $source = $settings->apiSource();
 
-        if ($source !== null && $this->hasRunningOlxJob($source->id)) {
+        if ($source !== null && $settings->hasRunningBulkSyncJob($source->id)) {
             $this->line('OLX sync already running — skipping dispatch.');
 
             return self::SUCCESS;
@@ -33,14 +32,5 @@ class SyncOlxScheduledCommand extends Command
         $this->info('OLX incremental sync dispatched.');
 
         return self::SUCCESS;
-    }
-
-    private function hasRunningOlxJob(int $sourceId): bool
-    {
-        return ApiImportJob::query()
-            ->where('api_source_id', $sourceId)
-            ->whereIn('type', ['olx_incremental', 'olx_full'])
-            ->where('status', 'running')
-            ->exists();
     }
 }

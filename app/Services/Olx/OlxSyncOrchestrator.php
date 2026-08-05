@@ -31,6 +31,15 @@ class OlxSyncOrchestrator
         }
 
         $source = $this->settings->resolveSource();
+
+        if ($productId === null && $this->settings->hasRunningBulkSyncJob($source->id)) {
+            return [
+                'skipped' => true,
+                'reason' => 'concurrent_running',
+                'message' => 'Another OLX sync job is already running.',
+            ];
+        }
+
         $syncStartedAt = now();
 
         $job = ApiImportJob::query()->create([
