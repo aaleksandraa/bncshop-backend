@@ -16,6 +16,7 @@ class OlxAttributeResolver
         private readonly OlxWarrantyMapper $warrantyMapper,
         private readonly OlxAttributeNormalizer $normalizer,
         private readonly OlxOsValueNormalizer $osValueNormalizer,
+        private readonly OlxProcessorValueNormalizer $processorValueNormalizer,
     ) {}
 
     /**
@@ -225,6 +226,7 @@ class OlxAttributeResolver
         $text = $product->name.' '.(string) $product->description;
 
         return match ($olxAttributeId) {
+            238, 261, 5255, 5060 => $parsed['os'] ?? $parsed['smartwatch_os'],
             264, 246 => $parsed['ram'],
             4784, 4785 => $parsed['ssd_gb'],
             265, 3457, 1143, 5067 => $parsed['display_inch'],
@@ -262,8 +264,12 @@ class OlxAttributeResolver
         ?OlxAttributeMapping $mapping,
         string $internalType = 'text',
     ): ?string {
-        if (in_array((int) $meta->olx_attribute_id, [238, 261], true)) {
+        if (in_array((int) $meta->olx_attribute_id, [238, 261, 5255, 5060], true)) {
             $raw = $this->osValueNormalizer->normalize($raw);
+        }
+
+        if (in_array((int) $meta->olx_attribute_id, [245, 262], true)) {
+            $raw = $this->processorValueNormalizer->normalize($raw);
         }
 
         $value = $this->normalizeValue($raw, $mapping, $internalType);
@@ -273,7 +279,13 @@ class OlxAttributeResolver
         }
 
         if ($meta->input_type === 'select' || ! empty($meta->options_json)) {
-            return $this->normalizer->snapToSelectOption($value, $meta);
+            $snapped = $this->normalizer->snapToSelectOption($value, $meta);
+
+            if (! $this->normalizer->isValidOption($snapped, $meta)) {
+                return null;
+            }
+
+            return $snapped;
         }
 
         return $value;
@@ -294,6 +306,21 @@ class OlxAttributeResolver
         foreach ($mappings as $from => $to) {
             if (strcasecmp($raw, (string) $from) === 0) {
                 return (string) $to;
+            }
+        }
+
+        if ($mappings !== []) {
+            $partialKeys = array_keys($mappings);
+            usort($partialKeys, fn ($a, $b): int => strlen((string) $b) <=> strlen((string) $a));
+
+            foreach ($partialKeys as $from) {
+                if ($from === '' || ! is_string($from)) {
+                    continue;
+                }
+
+                if (stripos($raw, $from) !== false) {
+                    return (string) $mappings[$from];
+                }
             }
         }
 

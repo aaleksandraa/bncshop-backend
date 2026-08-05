@@ -9,7 +9,7 @@
 return [
     // Monitori
     163 => [
-        ['olx_attribute_id' => 1143, 'attribute_definition_id' => 349, 'bnc_attribute_aliases' => ['Dijagonala ekrana', 'Dijagonala', 'Display', 'Ekran', 'Veličina ekrana', 'Veličina monitora', 'Veličina (inch)'], 'is_required_for_publish' => true],
+        ['olx_attribute_id' => 1143, 'attribute_definition_id' => 349, 'bnc_attribute_aliases' => ['Dijagonala (inch)', 'Dijagonala ekrana', 'Dijagonala', 'Display', 'Ekran', 'Veličina ekrana', 'Veličina monitora', 'Veličina (inch)'], 'is_required_for_publish' => true],
         ['olx_attribute_id' => 369, 'bnc_attribute_aliases' => ['Vrsta panela', 'Tip panela', 'Vrsta ekrana', 'Panel'], 'default_value' => 'LED', 'is_required_for_publish' => true, 'value_mappings' => ['IPS' => 'LCD', 'VA' => 'LCD', 'TN' => 'LCD', 'LED' => 'LED', 'OLED' => 'OLED', 'QLED' => 'LED']],
         ['olx_attribute_id' => 6671, 'bnc_attribute_aliases' => ['Rezolucija', 'Maksimalna rezolucija'], 'value_mappings' => ['1920x1080' => 'Full HD', '3840x2160' => '4K', '2560x1440' => '2K']],
         ['olx_attribute_id' => 5197, 'bnc_attribute_aliases' => ['Refresh rate', 'Osvežavanje', 'Frekvencija']],
@@ -20,7 +20,9 @@ return [
 
     // Desktop računari
     38 => [
-        ['olx_attribute_id' => 245, 'bnc_attribute_aliases' => ['Procesor', 'CPU'], 'is_required_for_publish' => true],
+        ['olx_attribute_id' => 245, 'bnc_attribute_aliases' => ['Procesor', 'CPU'], 'is_required_for_publish' => true, 'value_mappings' => [
+            'Intel' => 'Intel', 'AMD' => 'AMD', 'Apple' => 'Apple', 'Ryzen' => 'AMD', 'Core i3' => 'Intel', 'Core i5' => 'Intel', 'Core i7' => 'Intel', 'Core i9' => 'Intel',
+        ]],
         ['olx_attribute_id' => 1156, 'bnc_attribute_aliases' => ['Brzina procesora', 'Brzina procesora (GHz)', 'GHz'], 'default_value' => '2.5', 'is_required_for_publish' => true],
         ['olx_attribute_id' => 238, 'attribute_definition_id' => 1170, 'bnc_attribute_aliases' => ['Operativni sistem', 'Operativni Sustav', 'Operativni sistem - uređaj', 'Operativni Sustavi', 'OS'], 'is_required_for_publish' => true, 'value_mappings' => [
             'FreeDOS' => 'Nema', 'DOS' => 'Nema', 'Bez OS-a' => 'Nema', 'Bez OS' => 'Nema', 'Without OS' => 'Nema', 'No OS' => 'Nema',
@@ -44,8 +46,10 @@ return [
         ]],
         ['olx_attribute_id' => 4784, 'bnc_attribute_aliases' => ['SSD', 'Kapacitet SSD', 'SSD (GB)', 'SSD kapacitet']],
         ['olx_attribute_id' => 2465, 'bnc_attribute_aliases' => ['SSD'], 'default_value' => 'Ne'],
-        ['olx_attribute_id' => 265, 'attribute_definition_id' => 349, 'bnc_attribute_aliases' => ['Dijagonala ekrana', 'Dijagonala', 'Display', 'Ekran', 'Veličina ekrana', 'Veličina (inch)'], 'is_required_for_publish' => true],
-        ['olx_attribute_id' => 262, 'bnc_attribute_aliases' => ['Procesor', 'CPU'], 'is_required_for_publish' => true],
+        ['olx_attribute_id' => 265, 'attribute_definition_id' => 349, 'bnc_attribute_aliases' => ['Dijagonala (inch)', 'Dijagonala ekrana', 'Dijagonala', 'Display', 'Ekran', 'Veličina ekrana', 'Veličina (inch)'], 'is_required_for_publish' => true],
+        ['olx_attribute_id' => 262, 'bnc_attribute_aliases' => ['Procesor', 'CPU'], 'is_required_for_publish' => true, 'value_mappings' => [
+            'Intel' => 'Intel', 'AMD' => 'AMD', 'Apple' => 'Apple', 'Ryzen' => 'AMD', 'Core i3' => 'Intel', 'Core i5' => 'Intel', 'Core i7' => 'Intel', 'Core i9' => 'Intel',
+        ]],
         ['olx_attribute_id' => 3872, 'bnc_attribute_aliases' => ['Vrsta graficke', 'Grafička kartica tip'], 'default_value' => 'Integrisana', 'is_required_for_publish' => true],
         ['olx_attribute_id' => 1159, 'bnc_attribute_aliases' => ['Brzina procesora', 'Brzina procesora (GHz)']],
         ['olx_attribute_id' => 5054, 'bnc_attribute_aliases' => ['Model procesora', 'CPU model']],
@@ -124,7 +128,7 @@ return [
     // Televizori
     1748 => [
         ['olx_attribute_id' => 7525, 'bnc_attribute_aliases' => ['Tip panela', 'Tehnologija', 'Tip ekrana', 'Display tehnologija'], 'default_value' => 'LED LCD', 'is_required_for_publish' => true, 'value_mappings' => ['LED' => 'LED LCD', 'LCD' => 'LED LCD', 'QLED' => 'QLED', 'OLED' => 'OLED', 'Mini LED' => 'MINI LED']],
-        ['olx_attribute_id' => 3457, 'attribute_definition_id' => 352, 'bnc_attribute_aliases' => ['Dijagonala TV-a (inch)', 'Dijagonala ekrana', 'Dijagonala', 'Veličina ekrana', 'Display', 'Veličina (inch)'], 'is_required_for_publish' => true],
+        ['olx_attribute_id' => 3457, 'attribute_definition_id' => 352, 'bnc_attribute_aliases' => ['Dijagonala (inch)', 'Dijagonala TV-a (inch)', 'Dijagonala ekrana', 'Dijagonala', 'Veličina ekrana', 'Display', 'Veličina (inch)'], 'is_required_for_publish' => true],
         ['olx_attribute_id' => 3459, 'bnc_attribute_aliases' => ['Rezolucija', 'Native rezolucija'], 'default_value' => '4K', 'is_required_for_publish' => true, 'value_mappings' => ['3840x2160' => '4K', '1920x1080' => '1080p (full HD)', '1366x768' => '768p', 'UHD' => '4K', 'Full HD' => '1080p (full HD)', 'FHD' => '1080p (full HD)']],
         ['olx_attribute_id' => 7526, 'bnc_attribute_aliases' => ['Smart TV', 'Smart'], 'value_mappings' => ['Da' => 'Smart', 'Ne' => 'Non Smart']],
         ['olx_attribute_id' => 5255, 'bnc_attribute_aliases' => ['Operativni sistem', 'OS', 'Smart platforma'], 'value_mappings' => ['Android' => 'Android TV', 'Google TV' => 'Google TV', 'WebOS' => 'WebOS', 'Tizen' => 'Tizen']],
@@ -141,7 +145,7 @@ return [
     2076 => [
         ['olx_attribute_id' => 5060, 'bnc_attribute_aliases' => ['Operativni sistem', 'OS', 'Platforma'], 'default_value' => 'Android', 'is_required_for_publish' => true, 'value_mappings' => ['watchOS' => 'iOS', 'Apple' => 'iOS', 'iPhone' => 'iOS']],
         ['olx_attribute_id' => 5058, 'bnc_attribute_aliases' => ['Boja kaiša', 'Boja narukvice', 'Boja'], 'default_value' => 'Crna', 'is_required_for_publish' => true],
-        ['olx_attribute_id' => 5067, 'attribute_definition_id' => 349, 'bnc_attribute_aliases' => ['Dijagonala ekrana', 'Dijagonala', 'Display', 'Veličina ekrana', 'Veličina (inch)']],
+        ['olx_attribute_id' => 5067, 'attribute_definition_id' => 349, 'bnc_attribute_aliases' => ['Dijagonala (inch)', 'Dijagonala ekrana', 'Dijagonala', 'Display', 'Veličina ekrana', 'Veličina (inch)']],
         ['olx_attribute_id' => 5069, 'bnc_attribute_aliases' => ['Kapacitet baterije', 'Baterija (mAh)']],
         ['olx_attribute_id' => 5071, 'bnc_attribute_aliases' => ['Vodootporan', 'Waterproof', 'IP']],
     ],

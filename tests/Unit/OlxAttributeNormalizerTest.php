@@ -19,4 +19,17 @@ class OlxAttributeNormalizerTest extends TestCase
 
         $this->assertSame('27', $normalizer->snapToSelectOption('27.0', $meta));
     }
+
+    public function test_is_valid_option_matches_select_values(): void
+    {
+        $meta = new OlxCategoryAttribute([
+            'input_type' => 'select',
+            'options_json' => ['Intel', 'AMD'],
+        ]);
+
+        $normalizer = new OlxAttributeNormalizer;
+
+        $this->assertTrue($normalizer->isValidOption('Intel', $meta));
+        $this->assertFalse($normalizer->isValidOption('Intel Core i5', $meta));
+    }
 }

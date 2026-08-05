@@ -82,12 +82,24 @@ class OlxAttributeParser
             return 'Win 10';
         }
 
+        if (preg_match('/\b(freedos|free\s+dos|bez\s+os|without\s+os|no\s+os|nema\s+os)\b/i', $text)) {
+            return 'Nema';
+        }
+
+        if (preg_match('/\bDOS\b/i', $text) && ! preg_match('/Win(?:dows)?/i', $text)) {
+            return 'Nema';
+        }
+
         if (preg_match('/\bLinux\b/i', $text)) {
             return 'Linux';
         }
 
-        if (preg_match('/\bMac\s*OS\b/i', $text)) {
+        if (preg_match('/\b(mac\s*os|macos|apple\s+os)\b/i', $text)) {
             return 'Mac OS';
+        }
+
+        if (preg_match('/\b(chrome\s*os|chromebook)\b/i', $text)) {
+            return 'Linux';
         }
 
         return null;
@@ -95,11 +107,23 @@ class OlxAttributeParser
 
     public function parseDisplayInch(string $text): ?string
     {
+        if (preg_match('/Dijagonala\s*\(inch\)\s*:?\s*(\d+(?:[.,]\d+)?)/iu', $text, $m)) {
+            return $this->normalizeInch(str_replace(',', '.', $m[1]));
+        }
+
+        if (preg_match('/Veličina\s*\(inch\)\s*:?\s*(\d+(?:[.,]\d+)?)/iu', $text, $m)) {
+            return $this->normalizeInch(str_replace(',', '.', $m[1]));
+        }
+
         if (preg_match('/(\d+(?:\.\d+)?)\s*["\']/', $text, $m)) {
             return $this->normalizeInch($m[1]);
         }
 
-        if (preg_match('/(\d+(?:\.\d+)?)\s*inch/i', $text, $m)) {
+        if (preg_match('/(\d+(?:[.,]\d+)?)\s*inch/i', $text, $m)) {
+            return $this->normalizeInch(str_replace(',', '.', $m[1]));
+        }
+
+        if (preg_match('/\b(\d+(?:\.\d+)?)\s*in\b/i', $text, $m)) {
             return $this->normalizeInch($m[1]);
         }
 
@@ -108,6 +132,10 @@ class OlxAttributeParser
 
     public function parseProcessorBrand(string $text): ?string
     {
+        if (preg_match('/\bApple\b|\bM[1-9]\b|\bMacBook\b/i', $text)) {
+            return 'Apple';
+        }
+
         if (preg_match('/\bIntel\b/i', $text)) {
             return 'Intel';
         }
@@ -121,6 +149,10 @@ class OlxAttributeParser
         }
 
         if (preg_match('/\bCore\s*i[3579]/i', $text)) {
+            return 'Intel';
+        }
+
+        if (preg_match('/\bCeleron\b|\bPentium\b|\bXeon\b/i', $text)) {
             return 'Intel';
         }
 

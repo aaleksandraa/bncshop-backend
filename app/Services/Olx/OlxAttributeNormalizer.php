@@ -46,13 +46,37 @@ class OlxAttributeNormalizer
         }
 
         foreach ($options as $option) {
-            if (str_contains($this->normalizeKey($option), $normalized)
-                || str_contains($normalized, $this->normalizeKey($option))) {
+            $optionKey = $this->normalizeKey($option);
+
+            if ($optionKey === '' || $normalized === '') {
+                continue;
+            }
+
+            if (str_contains($optionKey, $normalized) || str_contains($normalized, $optionKey)) {
                 return $option;
             }
         }
 
         return $value;
+    }
+
+    public function isValidOption(string $value, OlxCategoryAttribute $meta): bool
+    {
+        $options = $this->optionValues($meta);
+
+        if ($options === []) {
+            return trim($value) !== '';
+        }
+
+        $trimmed = trim($value);
+
+        foreach ($options as $option) {
+            if (strcasecmp($trimmed, $option) === 0) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

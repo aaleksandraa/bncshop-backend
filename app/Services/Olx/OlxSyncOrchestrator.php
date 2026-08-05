@@ -169,8 +169,11 @@ class OlxSyncOrchestrator
                                     continue;
                                 }
 
-                                if (str_contains($message, 'Nedostaju obavezni OLX atributi')) {
+                                if (str_contains($message, 'Nedostaju obavezni OLX atributi')
+                                    || str_contains($message, 'validation_failed')) {
                                     $stats['actions']['skipped_validation']++;
+
+                                    continue;
                                 }
 
                                 $stats['actions']['errors'][] = [

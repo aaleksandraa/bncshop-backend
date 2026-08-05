@@ -51,8 +51,17 @@ class OlxAttributeParserTest extends TestCase
     {
         $parser = new OlxAttributeParser;
 
-        $this->assertNull($parser->parseOs('HP 290 G9 i3/8G/512G/DOS'));
-        $this->assertNull($parser->parseOs('Laptop bez OS, 16GB RAM'));
+        $this->assertSame('Nema', $parser->parseOs('HP 290 G9 i3/8G/512G/DOS'));
+        $this->assertSame('Nema', $parser->parseOs('Laptop bez OS, 16GB RAM'));
+        $this->assertSame('Nema', $parser->parseOs('Desktop FreeDOS 16GB RAM'));
+    }
+
+    public function test_parses_structured_diagonal_from_description(): void
+    {
+        $parser = new OlxAttributeParser;
+
+        $this->assertSame('24', $parser->parseDisplayInch("Dijagonala (inch): 24\nVrsta: IPS"));
+        $this->assertSame('27.5', $parser->parseDisplayInch('Veličina (inch): 27,5'));
     }
 
     public function test_maps_boolean_to_da_ne(): void

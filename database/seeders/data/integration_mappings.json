@@ -679,7 +679,16 @@
             ],
             "parser_pattern": null,
             "default_value": null,
-            "value_mappings": null,
+            "value_mappings": {
+                "Intel": "Intel",
+                "AMD": "AMD",
+                "Apple": "Apple",
+                "Ryzen": "AMD",
+                "Core i3": "Intel",
+                "Core i5": "Intel",
+                "Core i7": "Intel",
+                "Core i9": "Intel"
+            },
             "is_required_for_publish": true
         },
         {
@@ -796,7 +805,16 @@
             ],
             "parser_pattern": null,
             "default_value": null,
-            "value_mappings": null,
+            "value_mappings": {
+                "Intel": "Intel",
+                "AMD": "AMD",
+                "Apple": "Apple",
+                "Ryzen": "AMD",
+                "Core i3": "Intel",
+                "Core i5": "Intel",
+                "Core i7": "Intel",
+                "Core i9": "Intel"
+            },
             "is_required_for_publish": true
         },
         {
@@ -1494,6 +1512,7 @@
             "olx_attribute_id": 1143,
             "attribute_external_id": "642cd3c9-58bb-4431-9605-9ca9d97ece7d",
             "bnc_attribute_aliases": [
+                "Dijagonala (inch)",
                 "Dijagonala ekrana",
                 "Dijagonala",
                 "Display",
