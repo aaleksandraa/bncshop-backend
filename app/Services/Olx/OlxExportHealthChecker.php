@@ -204,8 +204,12 @@ class OlxExportHealthChecker
             if ($olxJobSinceDue === null) {
                 $issues[] = 'OLX export je zakasnio i nijedan OLX job nije pokrenut nakon planiranog termina — provjerite da li cron pokreće schedule:run i da li Horizon/worker sluša sync red.';
             } elseif ($olxJobSinceDue->status === 'failed') {
-                $issues[] = 'Zadnji OLX job nakon planiranog termina nije uspio: #'
+                $issues[] = 'Zadnji OLX job nije uspio: #'
                     .$olxJobSinceDue->id.' — '.($olxJobSinceDue->error_message ?? 'nema poruke');
+
+                if (str_contains((string) ($olxJobSinceDue->error_message ?? ''), 'attempted too many times')) {
+                    $issues[] = 'Queue lock/retry problem — pokrenite: php artisan bnc:sync-olx-reset, zatim php artisan bnc:sync-olx --sync --full-quota';
+                }
             } else {
                 $issues[] = 'OLX export je zakasnio — provjerite da li cron pokreće bnc:sync-olx-scheduled i da li queue worker radi na sync redu.';
             }
