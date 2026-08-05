@@ -44,11 +44,11 @@ echo json_encode([
     'detection' => [
         'scanned' => $detection['scanned'],
         'unchanged' => $detection['unchanged'],
-        'create' => $detection['create']->count(),
-        'update' => $detection['update']->count(),
-        'hide' => $detection['hide']->count(),
-        'unhide' => $detection['unhide']->count(),
-        'create_sample_ids' => $detection['create']->take(5)->pluck('id')->values()->all(),
+        'create' => count($detection['create']),
+        'update' => count($detection['update']),
+        'hide' => count($detection['hide']),
+        'unhide' => count($detection['unhide']),
+        'create_sample_ids' => array_slice($detection['create'], 0, 5),
     ],
     'latest_job' => $latestJob ? [
         'id' => $latestJob->id,

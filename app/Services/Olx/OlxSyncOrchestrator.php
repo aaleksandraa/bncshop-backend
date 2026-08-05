@@ -26,6 +26,11 @@ class OlxSyncOrchestrator
             @set_time_limit(0);
         }
 
+        $memoryLimit = config('bnc.olx_sync_memory_limit', '512M');
+        if ($memoryLimit !== '' && $memoryLimit !== false) {
+            @ini_set('memory_limit', (string) $memoryLimit);
+        }
+
         if (! $this->settings->isEnabled()) {
             throw new \RuntimeException('OLX export is disabled in settings.');
         }
@@ -68,6 +73,8 @@ class OlxSyncOrchestrator
 
         $createQuota = (int) ($stats['limits']['allowed_this_run'] ?? 0);
 
+        $this->registerFatalShutdownHandler($job);
+
         try {
             $this->client->authenticate();
 
@@ -96,13 +103,14 @@ class OlxSyncOrchestrator
                 $stats['scan'] = [
                     'scanned' => $detection['scanned'],
                     'unchanged' => $detection['unchanged'],
-                    'pending_create' => $detection['create']->count(),
-                    'pending_update' => $detection['update']->count(),
+                    'pending_create' => count($detection['create']),
+                    'pending_update' => count($detection['update']),
                 ];
                 $this->flushJobStats($job, $stats);
 
                 $batchSize = max(1, (int) ($this->settings->all()['batch_size'] ?? 20));
                 $flushEvery = 5;
+                $productRelations = ['category.parent', 'images', 'attributeValues.attributeDefinition', 'manufacturer'];
 
                 foreach ([
                     'create' => 'created',
@@ -110,11 +118,23 @@ class OlxSyncOrchestrator
                     'hide' => 'hidden',
                     'unhide' => 'unhidden',
                 ] as $setKey => $statKey) {
-                    /** @var \Illuminate\Support\Collection<int, Product> $items */
-                    $items = $detection[$setKey];
+                    /** @var list<int> $productIds */
+                    $productIds = $detection[$setKey];
 
-                    foreach ($items->chunk($batchSize) as $chunk) {
-                        foreach ($chunk as $product) {
+                    foreach (array_chunk($productIds, $batchSize) as $idChunk) {
+                        $products = Product::query()
+                            ->with($productRelations)
+                            ->whereIn('id', $idChunk)
+                            ->get()
+                            ->keyBy('id');
+
+                        foreach ($idChunk as $id) {
+                            $product = $products->get($id);
+
+                            if ($product === null) {
+                                continue;
+                            }
+
                             if ($setKey === 'create' && $createQuota <= 0) {
                                 $stats['actions']['skipped_quota']++;
 
@@ -160,6 +180,8 @@ class OlxSyncOrchestrator
                                 ];
                             }
                         }
+
+                        unset($products);
                     }
                 }
             }
@@ -204,5 +226,31 @@ class OlxSyncOrchestrator
     private function flushJobStats(ApiImportJob $job, array $stats): void
     {
         $job->update(['stats' => $stats]);
+    }
+
+    private function registerFatalShutdownHandler(ApiImportJob $job): void
+    {
+        $jobId = $job->id;
+
+        register_shutdown_function(static function () use ($jobId): void {
+            $error = error_get_last();
+
+            if ($error === null || ! in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true)) {
+                return;
+            }
+
+            if (! str_contains($error['message'], 'Allowed memory size')) {
+                return;
+            }
+
+            ApiImportJob::query()
+                ->whereKey($jobId)
+                ->where('status', 'running')
+                ->update([
+                    'status' => 'failed',
+                    'completed_at' => now(),
+                    'error_message' => 'PHP fatal: '.$error['message'],
+                ]);
+        });
     }
 }

@@ -29,8 +29,8 @@ $detectionFull = $detector->detect(true);
 echo "scoped_categories=".count($scopedIds).PHP_EOL;
 echo "managed_with_listing={$managedWithListing} total_managed={$totalManaged}".PHP_EOL;
 echo "eligible_in_stock_no_listing={$eligibleInStockNoListing}".PHP_EOL;
-echo "incremental: create={$detection['create']->count()} update={$detection['update']->count()} scanned={$detection['scanned']}".PHP_EOL;
-echo "full: create={$detectionFull['create']->count()} update={$detectionFull['update']->count()}".PHP_EOL;
+echo "incremental: create=".count($detection['create'])." update=".count($detection['update'])." scanned={$detection['scanned']}".PHP_EOL;
+echo "full: create=".count($detectionFull['create'])." update=".count($detectionFull['update']).PHP_EOL;
 
 $sample = Product::query()
     ->with('category')

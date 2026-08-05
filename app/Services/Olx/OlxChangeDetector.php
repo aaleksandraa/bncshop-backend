@@ -3,7 +3,6 @@
 namespace App\Services\Olx;
 
 use App\Models\Product;
-use Illuminate\Support\Collection;
 
 class OlxChangeDetector
 {
@@ -13,21 +12,28 @@ class OlxChangeDetector
     ) {}
 
     /**
+     * Scan eligible products and return product IDs grouped by action.
+     * Stores IDs only (not full models) to keep memory bounded on large catalogs.
+     *
      * @return array{
-     *     create: Collection<int, Product>,
-     *     update: Collection<int, Product>,
-     *     hide: Collection<int, Product>,
-     *     unhide: Collection<int, Product>,
+     *     create: list<int>,
+     *     update: list<int>,
+     *     hide: list<int>,
+     *     unhide: list<int>,
      *     unchanged: int,
      *     scanned: int
      * }
      */
     public function detect(bool $forceAll = false): array
     {
-        $create = collect();
-        $update = collect();
-        $hide = collect();
-        $unhide = collect();
+        /** @var list<int> $create */
+        $create = [];
+        /** @var list<int> $update */
+        $update = [];
+        /** @var list<int> $hide */
+        $hide = [];
+        /** @var list<int> $unhide */
+        $unhide = [];
         $unchanged = 0;
         $scanned = 0;
 
@@ -42,7 +48,7 @@ class OlxChangeDetector
             ->whereIn('category_id', $eligibleIds)
             ->where('is_public', true)
             ->where('status', 'active')
-            ->chunkById(100, function ($products) use (&$create, &$update, &$hide, &$unhide, &$unchanged, &$scanned, $forceAll): void {
+            ->chunkById(50, function ($products) use (&$create, &$update, &$hide, &$unhide, &$unchanged, &$scanned, $forceAll): void {
                 foreach ($products as $product) {
                     $scanned++;
 
@@ -62,24 +68,24 @@ class OlxChangeDetector
 
                     if (! $hasListing) {
                         if ($product->available_stock > 0) {
-                            $create->push($product);
+                            $create[] = (int) $product->id;
                         }
 
                         continue;
                     }
 
                     if ($product->available_stock <= 0 && $product->olx_listing_status !== 'hidden') {
-                        $hide->push($product);
+                        $hide[] = (int) $product->id;
 
                         continue;
                     }
 
                     if ($product->available_stock > 0 && $product->olx_listing_status === 'hidden') {
-                        $unhide->push($product);
+                        $unhide[] = (int) $product->id;
                     }
 
                     if ($forceAll || $product->olx_export_hash !== $hash) {
-                        $update->push($product);
+                        $update[] = (int) $product->id;
 
                         continue;
                     }

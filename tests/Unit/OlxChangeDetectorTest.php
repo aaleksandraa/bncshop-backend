@@ -28,9 +28,9 @@ class OlxChangeDetectorTest extends TestCase
         $result = $detector->detect();
 
         $this->assertSame(0, $result['scanned']);
-        $this->assertTrue($result['create']->isEmpty());
-        $this->assertTrue($result['update']->isEmpty());
-        $this->assertTrue($result['hide']->isEmpty());
-        $this->assertTrue($result['unhide']->isEmpty());
+        $this->assertSame([], $result['create']);
+        $this->assertSame([], $result['update']);
+        $this->assertSame([], $result['hide']);
+        $this->assertSame([], $result['unhide']);
     }
 }
