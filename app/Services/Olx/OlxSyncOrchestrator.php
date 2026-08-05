@@ -96,9 +96,13 @@ class OlxSyncOrchestrator
                 $stats['scan'] = [
                     'scanned' => $detection['scanned'],
                     'unchanged' => $detection['unchanged'],
+                    'pending_create' => $detection['create']->count(),
+                    'pending_update' => $detection['update']->count(),
                 ];
+                $this->flushJobStats($job, $stats);
 
                 $batchSize = max(1, (int) ($this->settings->all()['batch_size'] ?? 20));
+                $flushEvery = 5;
 
                 foreach ([
                     'create' => 'created',
@@ -126,6 +130,11 @@ class OlxSyncOrchestrator
                                     $this->createLimiter->recordCreate();
                                     $createQuota--;
                                     $stats['actions']['created']++;
+
+                                    if ($stats['actions']['created'] % $flushEvery === 0) {
+                                        $stats['limits'] = $this->createLimiter->snapshot($maxCreatesPerRun);
+                                        $this->flushJobStats($job, $stats);
+                                    }
                                 } else {
                                     $stats['actions'][$statKey]++;
                                 }
@@ -187,5 +196,13 @@ class OlxSyncOrchestrator
 
             throw $e;
         }
+    }
+
+    /**
+     * @param  array<string, mixed>  $stats
+     */
+    private function flushJobStats(ApiImportJob $job, array $stats): void
+    {
+        $job->update(['stats' => $stats]);
     }
 }

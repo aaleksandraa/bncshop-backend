@@ -36,7 +36,7 @@ class OlxExportHealthChecker
             : null;
 
         $reference = $source?->last_successful_sync_at ?? now();
-        $nextScheduledAt = $this->nextScheduledAtAfter($reference);
+        $nextScheduledAt = $this->nextScheduledAtAfter(now());
         $isOverdue = $this->isOverdue($source, $runningJob !== null);
         $staleImportPipelineError = $this->isStaleImportPipelineError($source?->last_error);
         $wrongPipelineJobs = $source ? $this->wrongPipelineJobsSince($source, $reference) : collect();
@@ -65,6 +65,7 @@ class OlxExportHealthChecker
                 'type' => $runningJob->type,
                 'started_at' => $runningJob->started_at,
                 'running_for' => $runningJob->started_at?->diffForHumans(now(), true),
+                'stats' => $runningJob->stats,
             ] : null,
             'latest_job' => $latestJob ? [
                 'id' => $latestJob->id,

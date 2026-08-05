@@ -111,7 +111,7 @@ class SyncHealthChecker
             'analytics_queue_size' => $analyticsQueueSize,
             'scheduler_command' => 'bnc:sync-scheduled',
             'scheduler_interval' => 'every 5 minutes (requires cron schedule:run)',
-            'worker_recommendation' => 'php artisan queue:work redis --queue=sync,default,scout,analytics --timeout=7200',
+            'worker_recommendation' => 'php artisan queue:work redis --queue=sync,default,scout,analytics --timeout=14400',
         ];
     }
 
