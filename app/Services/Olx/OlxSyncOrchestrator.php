@@ -14,6 +14,7 @@ class OlxSyncOrchestrator
         private readonly OlxApiClient $client,
         private readonly OlxChangeDetector $changeDetector,
         private readonly OlxListingExporter $listingExporter,
+        private readonly OlxDailyCreateLimiter $createLimiter,
     ) {}
 
     /**
@@ -50,9 +51,13 @@ class OlxSyncOrchestrator
                 'unhidden' => 0,
                 'skipped_legacy' => 0,
                 'skipped_validation' => 0,
+                'skipped_quota' => 0,
                 'errors' => [],
             ],
+            'limits' => $this->createLimiter->snapshot(),
         ];
+
+        $createQuota = (int) ($stats['limits']['allowed_this_run'] ?? 0);
 
         try {
             $this->client->authenticate();
@@ -60,8 +65,23 @@ class OlxSyncOrchestrator
             if ($productId !== null) {
                 $product = Product::query()->with(['category.parent', 'images', 'attributeValues.attributeDefinition', 'manufacturer'])->findOrFail($productId);
                 $action = filled($product->olx_listing_id) ? 'update' : 'create';
+
+                if ($action === 'create' && ! $this->createLimiter->canCreate()) {
+                    throw new \RuntimeException(sprintf(
+                        'Dnevni limit OLX objava dostignut (%d/%d). Pokušajte sutra ili povećajte max_creates_per_run.',
+                        $this->createLimiter->createsToday(),
+                        $this->createLimiter->dailyLimit(),
+                    ));
+                }
+
                 $result = $this->listingExporter->export($product, $action);
-                $stats['actions'][$result['action'] === 'create' ? 'created' : 'updated'] = 1;
+
+                if ($result['action'] === 'create') {
+                    $this->createLimiter->recordCreate();
+                    $stats['actions']['created'] = 1;
+                } else {
+                    $stats['actions']['updated'] = 1;
+                }
             } else {
                 $detection = $this->changeDetector->detect($fullSync);
                 $stats['scan'] = [
@@ -82,16 +102,34 @@ class OlxSyncOrchestrator
 
                     foreach ($items->chunk($batchSize) as $chunk) {
                         foreach ($chunk as $product) {
+                            if ($setKey === 'create' && $createQuota <= 0) {
+                                $stats['actions']['skipped_quota']++;
+
+                                continue;
+                            }
+
                             try {
                                 $result = $this->listingExporter->export($product, $setKey === 'unhide' ? 'unhide' : ($setKey === 'hide' ? 'hide' : $setKey));
 
                                 if ($result['action'] === 'skipped_legacy') {
                                     $stats['actions']['skipped_legacy']++;
+                                } elseif ($setKey === 'create' && $result['action'] === 'create') {
+                                    $this->createLimiter->recordCreate();
+                                    $createQuota--;
+                                    $stats['actions']['created']++;
                                 } else {
                                     $stats['actions'][$statKey]++;
                                 }
                             } catch (Throwable $e) {
                                 $message = $e->getMessage();
+
+                                if (OlxDailyCreateLimiter::isDailyLimitError($message)) {
+                                    $createQuota = 0;
+                                    $stats['actions']['skipped_quota']++;
+                                    $stats['limits'] = $this->createLimiter->snapshot();
+
+                                    continue;
+                                }
 
                                 if (str_contains($message, 'Nedostaju obavezni OLX atributi')) {
                                     $stats['actions']['skipped_validation']++;
@@ -107,6 +145,8 @@ class OlxSyncOrchestrator
                     }
                 }
             }
+
+            $stats['limits'] = $this->createLimiter->snapshot();
 
             DB::transaction(function () use ($source, $syncStartedAt, $job, $stats): void {
                 $source->update([

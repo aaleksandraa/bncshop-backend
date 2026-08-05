@@ -120,6 +120,16 @@ class OlxSyncSettingsPage extends Page implements HasForms
                             ->label('Batch veličina')
                             ->numeric()
                             ->default(20),
+                        TextInput::make('daily_create_limit')
+                            ->label('Dnevni limit novih OLX objava')
+                            ->numeric()
+                            ->default(350)
+                            ->helperText('OLX API limit je 350 objava po danu (provjereno).'),
+                        TextInput::make('max_creates_per_run')
+                            ->label('Max novih objava po sync run-u')
+                            ->numeric()
+                            ->default(150)
+                            ->helperText('Inkrementalni sync kreira najviše ovoliko novih listinga po pokretanju.'),
                     ])
                     ->columns(2),
                 Section::make('Lokacija oglasa')

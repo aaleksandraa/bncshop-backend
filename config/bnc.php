@@ -116,6 +116,8 @@ return [
     'olx_image_upload_timeout' => (int) env('OLX_IMAGE_UPLOAD_TIMEOUT', 60),
     'olx_image_download_timeout' => (int) env('OLX_IMAGE_DOWNLOAD_TIMEOUT', 30),
     'olx_max_images_per_listing' => (int) env('OLX_MAX_IMAGES_PER_LISTING', 8),
+    'olx_daily_create_limit' => (int) env('OLX_DAILY_CREATE_LIMIT', 350),
+    'olx_max_creates_per_run' => (int) env('OLX_MAX_CREATES_PER_RUN', 150),
     'olx_platform_max_images_per_listing' => (int) env('OLX_PLATFORM_MAX_IMAGES_PER_LISTING', 25),
     'olx_image_watermark_enabled' => env('OLX_IMAGE_WATERMARK_ENABLED', true),
     'olx_image_watermark_path' => env('OLX_IMAGE_WATERMARK_PATH', resource_path('olx/bnc-logo.png')),
