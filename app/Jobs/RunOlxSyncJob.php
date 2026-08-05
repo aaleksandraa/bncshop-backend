@@ -5,18 +5,19 @@ namespace App\Jobs;
 use App\Models\ApiImportJob;
 use App\Services\Olx\OlxSyncOrchestrator;
 use App\Services\Olx\OlxSyncSettings;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Throwable;
 
-class RunOlxSyncJob implements ShouldBeUnique, ShouldQueue
+class RunOlxSyncJob implements ShouldQueue
 {
     use Queueable;
 
     public int $timeout = 7200;
 
-    public int $uniqueFor = 3600;
+    public int $tries = 1;
+
+    public int $maxExceptions = 1;
 
     public function __construct(
         public bool $fullSync = false,
@@ -28,11 +29,6 @@ class RunOlxSyncJob implements ShouldBeUnique, ShouldQueue
         if ($maxCreatesPerRun !== null && $maxCreatesPerRun >= 300) {
             $this->timeout = 14400;
         }
-    }
-
-    public function uniqueId(): string
-    {
-        return 'olx-sync-'.($this->productId ?? 'all').'-'.($this->fullSync ? 'full' : 'incremental');
     }
 
     public function handle(OlxSyncOrchestrator $orchestrator): void

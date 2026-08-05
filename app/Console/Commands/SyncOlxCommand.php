@@ -7,6 +7,7 @@ use App\Services\Olx\OlxDailyCreateLimiter;
 use App\Services\Olx\OlxSyncOrchestrator;
 use App\Services\Olx\OlxSyncSettings;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Cache;
 
 class SyncOlxCommand extends Command
 {
@@ -15,7 +16,8 @@ class SyncOlxCommand extends Command
                             {--full : Force recompute all managed listings}
                             {--product= : Sync single product id}
                             {--max-creates= : Max new OLX listings this run (e.g. 350 for full daily quota)}
-                            {--full-quota : Use entire remaining daily create limit this run}';
+                            {--full-quota : Use entire remaining daily create limit this run}
+                            {--clear-lock : Clear legacy ShouldBeUnique Redis lock before dispatch}';
 
     protected $description = 'Run OLX export sync (incremental by default)';
 
@@ -37,6 +39,13 @@ class SyncOlxCommand extends Command
             $this->warn('OLX sync već radi — preskačem dispatch. Provjerite Import jobove.');
 
             return self::SUCCESS;
+        }
+
+        if ($this->option('clear-lock')) {
+            foreach (['olx-sync-all-incremental', 'olx-sync-all-full'] as $suffix) {
+                Cache::forget('laravel_unique_job:App\\Jobs\\RunOlxSyncJob:'.$suffix);
+            }
+            $this->line('Legacy unique lock očišćen.');
         }
 
         $maxCreatesPerRun = $this->resolveMaxCreatesPerRun($createLimiter);

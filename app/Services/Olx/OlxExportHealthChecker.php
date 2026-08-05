@@ -38,10 +38,13 @@ class OlxExportHealthChecker
         $reference = $source?->last_successful_sync_at ?? now();
         $nextScheduledAt = $this->nextScheduledAtAfter(now());
         $isOverdue = $this->isOverdue($source, $runningJob !== null);
+        $overdueSince = $isOverdue && $source?->last_successful_sync_at !== null
+            ? $this->nextScheduledAtAfter($source->last_successful_sync_at)
+            : null;
         $staleImportPipelineError = $this->isStaleImportPipelineError($source?->last_error);
         $wrongPipelineJobs = $source ? $this->wrongPipelineJobsSince($source, $reference) : collect();
-        $olxJobSinceDue = $source && $isOverdue && $nextScheduledAt
-            ? $this->olxJobSince($source, $nextScheduledAt)
+        $olxJobSinceDue = $source && $isOverdue && $overdueSince
+            ? $this->olxJobSince($source, $overdueSince)
             : null;
 
         return [
@@ -52,9 +55,9 @@ class OlxExportHealthChecker
             'sync_times' => $this->settings->all()['sync_times'] ?? [],
             'next_scheduled_at' => $nextScheduledAt,
             'is_overdue' => $isOverdue,
-            'overdue_since' => $isOverdue ? $nextScheduledAt : null,
-            'overdue_human' => $isOverdue && $nextScheduledAt
-                ? $nextScheduledAt->diffForHumans(now(), true)
+            'overdue_since' => $overdueSince,
+            'overdue_human' => $isOverdue && $overdueSince
+                ? $overdueSince->diffForHumans(now(), true)
                 : null,
             'stale_import_pipeline_error' => $staleImportPipelineError,
             'wrong_pipeline_job_count' => $wrongPipelineJobs->count(),
