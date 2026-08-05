@@ -18,8 +18,13 @@ class RunOlxSyncJob implements ShouldBeUnique, ShouldQueue
     public function __construct(
         public bool $fullSync = false,
         public ?int $productId = null,
+        public ?int $maxCreatesPerRun = null,
     ) {
         $this->onQueue('sync');
+
+        if ($maxCreatesPerRun !== null && $maxCreatesPerRun >= 300) {
+            $this->timeout = 14400;
+        }
     }
 
     public function uniqueId(): string
@@ -29,6 +34,6 @@ class RunOlxSyncJob implements ShouldBeUnique, ShouldQueue
 
     public function handle(OlxSyncOrchestrator $orchestrator): void
     {
-        $orchestrator->run($this->fullSync, $this->productId);
+        $orchestrator->run($this->fullSync, $this->productId, $this->maxCreatesPerRun);
     }
 }

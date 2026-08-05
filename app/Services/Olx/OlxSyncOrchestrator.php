@@ -20,7 +20,7 @@ class OlxSyncOrchestrator
     /**
      * @return array<string, mixed>
      */
-    public function run(bool $fullSync = false, ?int $productId = null): array
+    public function run(bool $fullSync = false, ?int $productId = null, ?int $maxCreatesPerRun = null): array
     {
         if (function_exists('set_time_limit')) {
             @set_time_limit(0);
@@ -54,7 +54,7 @@ class OlxSyncOrchestrator
                 'skipped_quota' => 0,
                 'errors' => [],
             ],
-            'limits' => $this->createLimiter->snapshot(),
+            'limits' => $this->createLimiter->snapshot($maxCreatesPerRun),
         ];
 
         $createQuota = (int) ($stats['limits']['allowed_this_run'] ?? 0);
@@ -66,7 +66,7 @@ class OlxSyncOrchestrator
                 $product = Product::query()->with(['category.parent', 'images', 'attributeValues.attributeDefinition', 'manufacturer'])->findOrFail($productId);
                 $action = filled($product->olx_listing_id) ? 'update' : 'create';
 
-                if ($action === 'create' && ! $this->createLimiter->canCreate()) {
+                if ($action === 'create' && ! $this->createLimiter->canCreate($maxCreatesPerRun)) {
                     throw new \RuntimeException(sprintf(
                         'Dnevni limit OLX objava dostignut (%d/%d). Pokušajte sutra ili povećajte max_creates_per_run.',
                         $this->createLimiter->createsToday(),
@@ -126,7 +126,7 @@ class OlxSyncOrchestrator
                                 if (OlxDailyCreateLimiter::isDailyLimitError($message)) {
                                     $createQuota = 0;
                                     $stats['actions']['skipped_quota']++;
-                                    $stats['limits'] = $this->createLimiter->snapshot();
+                                    $stats['limits'] = $this->createLimiter->snapshot($maxCreatesPerRun);
 
                                     continue;
                                 }
@@ -146,7 +146,7 @@ class OlxSyncOrchestrator
                 }
             }
 
-            $stats['limits'] = $this->createLimiter->snapshot();
+            $stats['limits'] = $this->createLimiter->snapshot($maxCreatesPerRun);
 
             DB::transaction(function () use ($source, $syncStartedAt, $job, $stats): void {
                 $source->update([

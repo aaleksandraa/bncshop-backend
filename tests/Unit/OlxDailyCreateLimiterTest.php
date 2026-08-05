@@ -25,19 +25,19 @@ class OlxDailyCreateLimiterTest extends TestCase
     {
         $this->mockSettings([
             'daily_create_limit' => 350,
-            'max_creates_per_run' => 150,
+            'max_creates_per_run' => 175,
         ]);
 
         $limiter = app(OlxDailyCreateLimiter::class);
 
-        $this->assertSame(150, $limiter->allowedThisRun());
+        $this->assertSame(175, $limiter->allowedThisRun());
     }
 
     public function test_remaining_today_decreases_after_record_create(): void
     {
         $this->mockSettings([
             'daily_create_limit' => 350,
-            'max_creates_per_run' => 150,
+            'max_creates_per_run' => 175,
         ]);
 
         $limiter = app(OlxDailyCreateLimiter::class);
@@ -45,7 +45,7 @@ class OlxDailyCreateLimiterTest extends TestCase
 
         $this->assertSame(1, $limiter->createsToday());
         $this->assertSame(349, $limiter->remainingToday());
-        $this->assertSame(150, $limiter->allowedThisRun());
+        $this->assertSame(175, $limiter->allowedThisRun());
     }
 
     public function test_seeds_creates_today_from_completed_jobs(): void
@@ -72,13 +72,14 @@ class OlxDailyCreateLimiterTest extends TestCase
 
         $this->mockSettings([
             'daily_create_limit' => 350,
-            'max_creates_per_run' => 150,
+            'max_creates_per_run' => 175,
         ]);
 
         $limiter = app(OlxDailyCreateLimiter::class);
 
         $this->assertSame(320, $limiter->createsToday());
         $this->assertSame(30, $limiter->allowedThisRun());
+        $this->assertSame(30, $limiter->allowedThisRun(350));
     }
 
     public function test_detects_daily_limit_error_message(): void

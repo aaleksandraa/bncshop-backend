@@ -128,8 +128,8 @@ class OlxSyncSettingsPage extends Page implements HasForms
                         TextInput::make('max_creates_per_run')
                             ->label('Max novih objava po sync run-u')
                             ->numeric()
-                            ->default(150)
-                            ->helperText('Inkrementalni sync kreira najviše ovoliko novih listinga po pokretanju.'),
+                            ->default(175)
+                            ->helperText('Scheduled sync (06:00, 18:00): pola dnevnog limita (350/2 = 175). Ručno: php artisan bnc:sync-olx --full-quota'),
                     ])
                     ->columns(2),
                 Section::make('Lokacija oglasa')

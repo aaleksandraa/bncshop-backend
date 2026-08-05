@@ -29,7 +29,7 @@ class OlxSyncSettings
             'reconcile_weekly' => true,
             'batch_size' => 20,
             'daily_create_limit' => (int) config('bnc.olx_daily_create_limit', 350),
-            'max_creates_per_run' => (int) config('bnc.olx_max_creates_per_run', 150),
+            'max_creates_per_run' => (int) config('bnc.olx_max_creates_per_run', 175),
             'device_name' => config('bnc.olx_api_device_name', 'bncshopweb_integration'),
         ];
     }

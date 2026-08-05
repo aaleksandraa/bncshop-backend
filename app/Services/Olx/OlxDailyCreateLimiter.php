@@ -20,7 +20,7 @@ class OlxDailyCreateLimiter
 
     public function maxPerRun(): int
     {
-        return max(1, (int) ($this->settings->all()['max_creates_per_run'] ?? config('bnc.olx_max_creates_per_run', 150)));
+        return max(1, (int) ($this->settings->all()['max_creates_per_run'] ?? config('bnc.olx_max_creates_per_run', 175)));
     }
 
     public function createsToday(): int
@@ -43,14 +43,16 @@ class OlxDailyCreateLimiter
         return max(0, $this->dailyLimit() - $this->createsToday());
     }
 
-    public function allowedThisRun(): int
+    public function allowedThisRun(?int $maxPerRunOverride = null): int
     {
-        return min($this->remainingToday(), $this->maxPerRun());
+        $cap = max(1, $maxPerRunOverride ?? $this->maxPerRun());
+
+        return min($this->remainingToday(), $cap);
     }
 
-    public function canCreate(): bool
+    public function canCreate(?int $maxPerRunOverride = null): bool
     {
-        return $this->allowedThisRun() > 0;
+        return $this->allowedThisRun($maxPerRunOverride) > 0;
     }
 
     public function recordCreate(): void
@@ -66,18 +68,20 @@ class OlxDailyCreateLimiter
     }
 
     /**
-     * @return array{daily_limit: int, creates_today: int, remaining_today: int, allowed_this_run: int}
+     * @return array{daily_limit: int, creates_today: int, remaining_today: int, max_per_run: int, allowed_this_run: int}
      */
-    public function snapshot(): array
+    public function snapshot(?int $maxPerRunOverride = null): array
     {
         $createsToday = $this->createsToday();
         $dailyLimit = $this->dailyLimit();
+        $maxPerRun = max(1, $maxPerRunOverride ?? $this->maxPerRun());
 
         return [
             'daily_limit' => $dailyLimit,
             'creates_today' => $createsToday,
             'remaining_today' => max(0, $dailyLimit - $createsToday),
-            'allowed_this_run' => $this->allowedThisRun(),
+            'max_per_run' => $maxPerRun,
+            'allowed_this_run' => $this->allowedThisRun($maxPerRunOverride),
         ];
     }
 
