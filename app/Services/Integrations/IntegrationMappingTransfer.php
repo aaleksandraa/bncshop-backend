@@ -87,7 +87,7 @@ class IntegrationMappingTransfer
     /**
      * @return array{eline: int, olx_categories: int, olx_attributes: int, warnings: array<int, string>}
      */
-    public function importFromFile(?string $path = null, bool $onlyEnabled = false): array
+    public function importFromFile(?string $path = null, bool $onlyEnabled = false, bool $skipEline = false, bool $skipOlx = false): array
     {
         $path ??= base_path(self::DEFAULT_PATH);
 
@@ -104,6 +104,10 @@ class IntegrationMappingTransfer
         $olxAttributeCount = 0;
 
         foreach ($payload['eline_category_mappings'] ?? [] as $row) {
+            if ($skipEline) {
+                break;
+            }
+
             if ($onlyEnabled && ! ($row['is_enabled'] ?? false)) {
                 continue;
             }
@@ -135,6 +139,10 @@ class IntegrationMappingTransfer
         }
 
         foreach ($payload['olx_category_mappings'] ?? [] as $row) {
+            if ($skipOlx) {
+                break;
+            }
+
             if ($onlyEnabled && ! ($row['is_enabled'] ?? false)) {
                 continue;
             }
@@ -162,6 +170,10 @@ class IntegrationMappingTransfer
         }
 
         foreach ($payload['olx_attribute_mappings'] ?? [] as $row) {
+            if ($skipOlx) {
+                break;
+            }
+
             $olxCategoryId = (int) $row['olx_category_id'];
             $this->ensureOlxCategory($olxCategoryId, null);
 

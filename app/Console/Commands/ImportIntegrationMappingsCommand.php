@@ -9,7 +9,9 @@ class ImportIntegrationMappingsCommand extends Command
 {
     protected $signature = 'bnc:import-integration-mappings
                             {--path= : JSON path (default database/seeders/data/integration_mappings.json)}
-                            {--only-enabled : Import only enabled eLine/OLX category mappings}';
+                            {--only-enabled : Import only enabled eLine/OLX category mappings}
+                            {--skip-eline : Do not import eLine category mappings}
+                            {--skip-olx : Do not import OLX category/attribute mappings}';
 
     protected $description = 'Import eLine and OLX admin mappings from portable JSON (after A1 category sync)';
 
@@ -18,6 +20,8 @@ class ImportIntegrationMappingsCommand extends Command
         $result = $transfer->importFromFile(
             $this->option('path'),
             (bool) $this->option('only-enabled'),
+            (bool) $this->option('skip-eline'),
+            (bool) $this->option('skip-olx'),
         );
 
         $this->info('Imported integration mappings.');

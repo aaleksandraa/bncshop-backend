@@ -8,6 +8,10 @@ use Illuminate\Support\Collection;
 
 class ElineChangeDetector
 {
+    public function __construct(
+        private readonly ElineProductImporter $productImporter,
+    ) {}
+
     /**
      * @param  Collection<int, array<string, mixed>>  $items
      * @param  Collection<string, ElineCategoryMapping>  $mappingsByCategory
@@ -26,6 +30,12 @@ class ElineChangeDetector
             ->fromEline()
             ->whereNotNull('eline_sifra')
             ->pluck('eline_feed_hash', 'eline_sifra');
+
+        $knownProducts = Product::query()
+            ->fromEline()
+            ->whereNotNull('eline_sifra')
+            ->get(['id', 'eline_sifra', 'category_id', 'is_refurbished', 'is_new', 'is_public', 'status'])
+            ->keyBy('eline_sifra');
 
         $changed = collect();
         $allFeedSifre = [];
@@ -59,6 +69,16 @@ class ElineChangeDetector
             }
 
             if ($knownHash !== $hash) {
+                $modifiedItems++;
+                $changed->push($item);
+
+                continue;
+            }
+
+            /** @var Product|null $existingProduct */
+            $existingProduct = $knownProducts->get($sifra);
+
+            if ($existingProduct !== null && $this->productImporter->needsMappingReapply($existingProduct, $item, $mapping)) {
                 $modifiedItems++;
                 $changed->push($item);
 

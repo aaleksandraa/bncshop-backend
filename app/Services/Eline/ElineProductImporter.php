@@ -118,11 +118,8 @@ class ElineProductImporter
             return null;
         }
 
-        $condition = $override?->product_condition
-            ?? $mapping->product_condition
-            ?? ElineCategoryMapping::CONDITION_REFURBISHED;
-
-        $categoryId = $override?->category_id ?? $mapping->category_id;
+        $importState = $this->resolveImportState($item, $mapping);
+        $categoryId = $importState['category_id'];
         $externalId = ElineSupport::externalProductId($sifra);
 
         $product = Product::query()->firstOrNew(['external_product_id' => $externalId]);
@@ -135,8 +132,6 @@ class ElineProductImporter
 
         $mpc = $item['mpc'];
         $stanje = (int) ($item['stanje'] ?? 0);
-        $isArticleActive = ElineSupport::isActive($item['aktivan'] ?? null);
-        $isPriceActive = $item['price_aktivan'] === null || ElineSupport::isActive($item['price_aktivan']);
         $description = (string) ($item['opis'] ?? '');
         $shortDescription = Str::limit($description, 255, '');
 
@@ -149,11 +144,11 @@ class ElineProductImporter
             'name' => (string) ($item['naziv'] ?? $sifra),
             'slug' => $this->resolveSlug($product, (string) ($item['naziv'] ?? $sifra)),
             'category_id' => $categoryId,
-            'is_refurbished' => $condition === ElineCategoryMapping::CONDITION_REFURBISHED,
-            'is_new' => $condition === ElineCategoryMapping::CONDITION_NEW,
+            'is_refurbished' => $importState['is_refurbished'],
+            'is_new' => $importState['is_new'],
             'is_gaming' => false,
-            'is_public' => $mapping->is_enabled && $isArticleActive && $isPriceActive,
-            'status' => $isArticleActive && $isPriceActive ? 'active' : 'draft',
+            'is_public' => $importState['is_public'],
+            'status' => $importState['status'],
             'margin_percentage' => $mapping->margin_percentage,
             'api_price' => $mpc,
             'api_final_price' => $mpc,
@@ -182,6 +177,54 @@ class ElineProductImporter
             product: $freshProduct,
             changedFields: $changedFields,
         );
+    }
+
+    /**
+     * @param  array<string, mixed>  $item
+     * @return array{
+     *     category_id: int,
+     *     is_refurbished: bool,
+     *     is_new: bool,
+     *     is_public: bool,
+     *     status: string
+     * }
+     */
+    public function resolveImportState(array $item, ElineCategoryMapping $mapping): array
+    {
+        $sifra = (string) ($item['sifra'] ?? '');
+        $override = $sifra !== ''
+            ? ElineProductOverride::query()->where('eline_sifra', $sifra)->first()
+            : null;
+
+        $condition = $override?->product_condition
+            ?? $mapping->product_condition
+            ?? ElineCategoryMapping::CONDITION_REFURBISHED;
+
+        $categoryId = (int) ($override?->category_id ?? $mapping->category_id);
+        $isArticleActive = ElineSupport::isActive($item['aktivan'] ?? null);
+        $isPriceActive = $item['price_aktivan'] === null || ElineSupport::isActive($item['price_aktivan']);
+
+        return [
+            'category_id' => $categoryId,
+            'is_refurbished' => $condition === ElineCategoryMapping::CONDITION_REFURBISHED,
+            'is_new' => $condition === ElineCategoryMapping::CONDITION_NEW,
+            'is_public' => $mapping->is_enabled && $isArticleActive && $isPriceActive,
+            'status' => $isArticleActive && $isPriceActive ? 'active' : 'draft',
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $item
+     */
+    public function needsMappingReapply(Product $product, array $item, ElineCategoryMapping $mapping): bool
+    {
+        $expected = $this->resolveImportState($item, $mapping);
+
+        return (int) $product->category_id !== $expected['category_id']
+            || (bool) $product->is_refurbished !== $expected['is_refurbished']
+            || (bool) $product->is_new !== $expected['is_new']
+            || (bool) $product->is_public !== $expected['is_public']
+            || (string) $product->status !== $expected['status'];
     }
 
     private function applyLockedField(Product $product, string $field, mixed $newValue): void

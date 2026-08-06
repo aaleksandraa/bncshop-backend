@@ -134,6 +134,8 @@ class ElineChangeDetectorTest extends TestCase
             'category_id' => $category->id,
             'regular_price' => 200,
             'display_price' => 200,
+            'is_refurbished' => false,
+            'is_new' => true,
             'is_public' => true,
             'status' => 'active',
         ]);
@@ -148,5 +150,61 @@ class ElineChangeDetectorTest extends TestCase
 
         $this->assertSame(1, $result['unchanged']);
         $this->assertCount(0, $result['changed']);
+    }
+
+    public function test_detects_mapping_mismatch_even_when_feed_hash_unchanged(): void
+    {
+        $category = Category::factory()->create();
+        $elineCategory = ElineCategory::query()->create([
+            'name' => 'Refurbished laptopi',
+            'product_count' => 1,
+        ]);
+
+        ElineCategoryMapping::query()->create([
+            'eline_category_id' => $elineCategory->id,
+            'category_id' => $category->id,
+            'is_enabled' => true,
+            'product_condition' => ElineCategoryMapping::CONDITION_REFURBISHED,
+        ]);
+
+        $item = [
+            'sifra' => '30',
+            'naziv' => 'Laptop',
+            'opis' => '',
+            'eline_category' => 'Refurbished laptopi',
+            'aktivan' => 255,
+            'mpc' => 500.0,
+            'stanje' => 2,
+            'price_aktivan' => 255,
+        ];
+
+        Product::query()->create([
+            'external_product_id' => ElineSupport::externalProductId('30'),
+            'import_source' => 'eline',
+            'eline_sifra' => '30',
+            'eline_feed_hash' => ElineSupport::feedHash($item),
+            'sku' => '30',
+            'name' => 'Laptop',
+            'slug' => 'laptop',
+            'category_id' => $category->id,
+            'regular_price' => 500,
+            'display_price' => 500,
+            'is_refurbished' => false,
+            'is_public' => false,
+            'status' => 'active',
+            'available_stock' => 2,
+        ]);
+
+        $mappings = ElineCategoryMapping::query()
+            ->with(['elineCategory', 'category'])
+            ->where('is_enabled', true)
+            ->get()
+            ->keyBy(fn (ElineCategoryMapping $mapping): string => (string) $mapping->elineCategory?->name);
+
+        $result = app(ElineChangeDetector::class)->detect(Collection::make([$item]), $mappings);
+
+        $this->assertSame(0, $result['unchanged']);
+        $this->assertSame(1, $result['modified_items']);
+        $this->assertCount(1, $result['changed']);
     }
 }
