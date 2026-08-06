@@ -10,7 +10,8 @@ use Illuminate\Console\Command;
 class ReapplyElineVisibilityCommand extends Command
 {
     protected $signature = 'bnc:eline-fix-visibility
-                            {--dry-run : Preview changes without saving}';
+                            {--dry-run : Preview changes without saving}
+                            {--from-db : Use BNC category only (less accurate when new/refurbished share a category)}';
 
     protected $description = 'Fix eLine storefront visibility flags without touching images, names, prices, or stock';
 
@@ -19,14 +20,19 @@ class ReapplyElineVisibilityCommand extends Command
         ProductReadCache $productReadCache,
     ): int {
         $dryRun = (bool) $this->option('dry-run');
+        $fromDb = (bool) $this->option('from-db');
 
         if ($dryRun) {
             $this->warn('Dry run — no database changes will be saved.');
         }
 
-        $this->info('Reapplying eLine visibility from current admin categories (images and content stay untouched)...');
-
-        $stats = $service->reapplyFromDatabase($dryRun);
+        if ($fromDb) {
+            $this->info('Reapplying eLine visibility from BNC categories (images and content stay untouched)...');
+            $stats = $service->reapplyFromDatabase($dryRun);
+        } else {
+            $this->info('Reapplying eLine visibility from feed categories (images and content stay untouched)...');
+            $stats = $service->reapplyFromFeed($dryRun);
+        }
 
         $this->line("Scanned: {$stats['scanned']}");
         $this->line('Updated: '.$stats['updated'].($dryRun ? ' (would update)' : ''));
@@ -37,9 +43,14 @@ class ReapplyElineVisibilityCommand extends Command
                 ->map(fn ($value, $key): string => "{$key}=".json_encode($value))
                 ->implode(', ');
 
+            $categoryHint = isset($change['eline_category'])
+                ? ' ('.$change['eline_category'].')'
+                : '';
+
             $this->line(sprintf(
-                '  [%s] %s — %s',
+                '  [%s]%s %s — %s',
                 (string) $change['eline_sifra'],
+                $categoryHint,
                 (string) $change['name'],
                 $fields,
             ));
