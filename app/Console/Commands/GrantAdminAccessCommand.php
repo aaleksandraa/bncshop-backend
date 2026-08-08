@@ -49,7 +49,14 @@ class GrantAdminAccessCommand extends Command
             $user->assignRole($roleName);
         }
 
-        $this->info("Granted '{$roleName}' to {$email}. Login at /admin/login");
+        $user->forceFill([
+            'is_customer' => false,
+            'is_b2b_customer' => false,
+        ])->save();
+
+        $loginPath = $roleName === 'B2B Admin' ? '/b2b-admin/login' : '/admin/login';
+
+        $this->info("Granted '{$roleName}' to {$email}. Login at {$loginPath}");
 
         return self::SUCCESS;
     }

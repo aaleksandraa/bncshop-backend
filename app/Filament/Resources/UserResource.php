@@ -38,6 +38,9 @@ class UserResource extends Resource
     {
         return $form
             ->schema([
+                Forms\Components\Section::make('Podaci')
+                    ->description('Za B2B admin tim dodijelite ulogu "B2B Admin". Ti korisnici se prijavljuju na /b2b-admin/login (backend), ne na /admin.')
+                    ->schema([
                 Forms\Components\TextInput::make('name')
                     ->label('Ime')
                     ->required()
@@ -61,7 +64,10 @@ class UserResource extends Resource
                     ->options(fn (): array => Role::query()->pluck('name', 'name')->all())
                     ->multiple()
                     ->preload()
-                    ->required(),
+                    ->required()
+                    ->helperText('B2B Admin → samo B2B admin panel. Super Admin / Admin → shop admin + B2B admin.'),
+                    ])
+                    ->columns(2),
             ]);
     }
 
