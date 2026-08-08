@@ -33,6 +33,21 @@ class EditB2bCustomer extends EditRecord
             'phone' => $formData['phone'],
         ]);
 
+        if (filled($formData['password'] ?? null)) {
+            if (($formData['password'] ?? null) !== ($formData['password_confirmation'] ?? null)) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'password_confirmation' => 'Lozinke se ne podudaraju.',
+                ]);
+            }
+
+            app(B2bCustomerProvisioner::class)->setCustomerPassword($record->user, $formData['password']);
+
+            Notification::make()
+                ->title('Lozinka je ažurirana.')
+                ->success()
+                ->send();
+        }
+
         $record->update($data);
 
         return $record;

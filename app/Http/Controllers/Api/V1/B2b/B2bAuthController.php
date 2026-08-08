@@ -14,7 +14,6 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 
 class B2bAuthController extends Controller
@@ -77,7 +76,7 @@ class B2bAuthController extends Controller
             return $this->error('Nevažeći B2B račun.', 422);
         }
 
-        $user->update(['password' => Hash::make($validated['password'])]);
+        $user->update(['password' => $validated['password']]);
         $user->tokens()->where('name', 'b2b-api')->delete();
         B2bPasswordSetupToken::query()->where('user_id', $user->id)->delete();
 
@@ -134,7 +133,7 @@ class B2bAuthController extends Controller
             return $this->error('Nevažeći B2B račun.', 422);
         }
 
-        $user->update(['password' => Hash::make($validated['password'])]);
+        $user->update(['password' => $validated['password']]);
         $user->tokens()->where('name', 'b2b-api')->delete();
         B2bPasswordResetToken::query()->where('user_id', $user->id)->delete();
 

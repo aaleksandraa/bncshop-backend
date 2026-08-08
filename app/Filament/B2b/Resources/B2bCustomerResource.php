@@ -68,6 +68,19 @@ class B2bCustomerResource extends Resource
                         ->tel()
                         ->required()
                         ->maxLength(50),
+                    Forms\Components\TextInput::make('password')
+                        ->label('Lozinka')
+                        ->password()
+                        ->revealable()
+                        ->dehydrated(false)
+                        ->minLength(8)
+                        ->same('password_confirmation')
+                        ->helperText('Opciono. Ako ostavite prazno, korisnik će dobiti email za postavljanje lozinke prije prve prijave.'),
+                    Forms\Components\TextInput::make('password_confirmation')
+                        ->label('Potvrda lozinke')
+                        ->password()
+                        ->revealable()
+                        ->dehydrated(false),
                 ])
                 ->columns(2),
             Forms\Components\Section::make('Firma')->schema([

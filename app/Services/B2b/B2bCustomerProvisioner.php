@@ -4,10 +4,10 @@ namespace App\Services\B2b;
 
 use App\Models\B2bAccessRequest;
 use App\Models\B2bCustomer;
+use App\Models\B2bPasswordResetToken;
 use App\Models\B2bPasswordSetupToken;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
@@ -31,7 +31,7 @@ class B2bCustomerProvisioner
             $user = User::createAccount([
                 'name' => $request->fullName(),
                 'email' => $request->email,
-                'password' => Hash::make(Str::random(32)),
+                'password' => Str::random(32),
                 'phone' => $request->phone,
                 'email_verified_at' => now(),
                 'is_customer' => false,
@@ -75,18 +75,26 @@ class B2bCustomerProvisioner
      *     pdv_number?: string|null,
      *     discount_percent?: float|null
      * }  $data
+     * @param  ?string  $password  Plain-text lozinka; ako je prazna, generiše se privremena i šalje email.
      */
-    public function createCustomer(array $data, ?User $creator = null, bool $sendPasswordEmail = true): B2bCustomer
-    {
+    public function createCustomer(
+        array $data,
+        ?User $creator = null,
+        bool $sendPasswordEmail = true,
+        ?string $password = null,
+    ): B2bCustomer {
         if (User::query()->where('email', $data['email'])->exists()) {
             throw new \RuntimeException('Korisnik sa ovim emailom već postoji.');
         }
 
-        $customer = DB::transaction(function () use ($data, $creator): B2bCustomer {
+        $plainPassword = filled($password) ? $password : Str::random(32);
+        $shouldSendPasswordEmail = $sendPasswordEmail && ! filled($password);
+
+        $customer = DB::transaction(function () use ($data, $creator, $plainPassword): B2bCustomer {
             $user = User::createAccount([
                 'name' => $data['name'],
                 'email' => $data['email'],
-                'password' => Hash::make(Str::random(32)),
+                'password' => $plainPassword,
                 'phone' => $data['phone'],
                 'email_verified_at' => now(),
                 'is_customer' => false,
@@ -106,11 +114,23 @@ class B2bCustomerProvisioner
             ])->load('user');
         });
 
-        if ($sendPasswordEmail) {
+        if ($shouldSendPasswordEmail) {
             $this->sendPasswordSetupEmail($customer->user);
         }
 
         return $customer;
+    }
+
+    public function setCustomerPassword(User $user, string $password): void
+    {
+        if (! $user->is_b2b_customer) {
+            throw new \RuntimeException('Korisnik nije B2B kupac.');
+        }
+
+        $user->update(['password' => $password]);
+        $user->tokens()->where('name', 'b2b-api')->delete();
+        B2bPasswordSetupToken::query()->where('user_id', $user->id)->delete();
+        B2bPasswordResetToken::query()->where('user_id', $user->id)->delete();
     }
 
     public function sendPasswordSetupEmail(User $user, bool $force = false): ?string
