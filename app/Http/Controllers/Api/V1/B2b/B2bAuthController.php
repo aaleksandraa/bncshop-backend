@@ -41,7 +41,22 @@ class B2bAuthController extends Controller
         /** @var User $user */
         $user = Auth::user();
 
-        if (! $user->is_b2b_customer || ! $user->b2bCustomer?->is_active) {
+        if (! $user->is_b2b_customer) {
+            Auth::logout();
+
+            if ($user->canAccessB2bAdminPanel()) {
+                $adminUrl = rtrim((string) config('app.url'), '/').'/b2b-admin/login';
+
+                return $this->error(
+                    "Ovaj račun je za B2B admin tim, ne za B2B kupce. Prijavite se na: {$adminUrl}",
+                    422,
+                );
+            }
+
+            return $this->error('Neispravni email ili lozinka.', 422);
+        }
+
+        if (! $user->b2bCustomer?->is_active) {
             Auth::logout();
 
             return $this->error('Neispravni email ili lozinka.', 422);

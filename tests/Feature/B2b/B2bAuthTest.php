@@ -68,6 +68,27 @@ class B2bAuthTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_b2b_admin_staff_gets_admin_panel_hint_on_customer_login(): void
+    {
+        $this->seed(\Database\Seeders\RolesAndPermissionsSeeder::class);
+        config(['turnstile.enabled' => false, 'app.url' => 'https://api.bncshop.ba']);
+
+        $user = User::createAccount([
+            'name' => 'B2B Admin Staff',
+            'email' => 'staff-admin@test.test',
+            'password' => 'StaffAdmin123!',
+            'is_customer' => false,
+            'is_b2b_customer' => false,
+        ]);
+        $user->assignRole('B2B Admin');
+
+        $this->postJsonStateful('/api/v1/b2b/auth/login', [
+            'email' => $user->email,
+            'password' => 'StaffAdmin123!',
+        ])->assertStatus(422)
+            ->assertJsonPath('message', 'Ovaj račun je za B2B admin tim, ne za B2B kupce. Prijavite se na: https://api.bncshop.ba/b2b-admin/login');
+    }
+
     public function test_b2b_order_isolation_between_customers(): void
     {
         [, $customerA] = $this->createB2bUser('a@test.test');

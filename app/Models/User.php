@@ -112,10 +112,19 @@ class User extends Authenticatable implements FilamentUser
         }
 
         if ($panel->getId() === 'b2b-admin') {
-            return $this->hasRole(['Super Admin', 'Admin', 'B2B Admin'])
-                || $this->can('b2b_settings.view');
+            return $this->canAccessB2bAdminPanel();
         }
 
         return false;
+    }
+
+    public function canAccessB2bAdminPanel(): bool
+    {
+        if ($this->is_customer || $this->is_b2b_customer) {
+            return false;
+        }
+
+        return $this->hasRole(['Super Admin', 'Admin', 'B2B Admin'])
+            || $this->can('b2b_settings.view');
     }
 }
