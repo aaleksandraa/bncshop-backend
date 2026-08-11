@@ -3,7 +3,7 @@
 namespace App\Filament\Resources\SupplierResource\Pages;
 
 use App\Filament\Resources\SupplierResource;
-use App\Services\Pricing\ProductPriceRecalculator;
+use App\Jobs\RecalculateSupplierProductPricesJob;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 
@@ -17,12 +17,14 @@ class EditSupplier extends EditRecord
             return;
         }
 
-        $count = app(ProductPriceRecalculator::class)
-            ->forSupplierAndCategory($this->record->id);
+        RecalculateSupplierProductPricesJob::dispatch(
+            supplierId: $this->record->id,
+            supplierLabel: $this->record->label(),
+        )->afterCommit();
 
         Notification::make()
-            ->title('Cijene ažurirane')
-            ->body("Re-kalkulirano {$count} proizvoda za dobavljača {$this->record->label()}.")
+            ->title('Postavke spremljene')
+            ->body("Re-kalkulacija cijena za dobavljača {$this->record->label()} je pokrenuta u pozadini. Promjene će se pojaviti na proizvodima u narednih nekoliko minuta.")
             ->success()
             ->send();
     }
