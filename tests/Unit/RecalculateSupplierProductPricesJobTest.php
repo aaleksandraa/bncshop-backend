@@ -54,8 +54,9 @@ class RecalculateSupplierProductPricesJobTest extends TestCase
             'is_selected_price_source' => true,
         ]);
 
-        (new RecalculateSupplierProductPricesJob($supplier->id, $supplier->label()))->handle(
+        (new RecalculateSupplierProductPricesJob($supplier->id, $supplier->label(), 0))->handle(
             app(\App\Services\Pricing\ProductPriceRecalculator::class),
+            app(\App\Services\Catalog\ProductReadCache::class),
         );
 
         $product->refresh();
@@ -68,11 +69,12 @@ class RecalculateSupplierProductPricesJobTest extends TestCase
     {
         Queue::fake();
 
-        RecalculateSupplierProductPricesJob::dispatch(1, 'Startech');
+        RecalculateSupplierProductPricesJob::start(1, 'Startech');
 
         Queue::assertPushed(RecalculateSupplierProductPricesJob::class, function (RecalculateSupplierProductPricesJob $job): bool {
             return $job->supplierId === 1
-                && $job->supplierLabel === 'Startech';
+                && $job->supplierLabel === 'Startech'
+                && $job->afterProductId === 0;
         });
     }
 }

@@ -17,10 +17,10 @@ class EditSupplier extends EditRecord
             return;
         }
 
-        RecalculateSupplierProductPricesJob::dispatch(
+        RecalculateSupplierProductPricesJob::start(
             supplierId: $this->record->id,
             supplierLabel: $this->record->label(),
-        )->afterCommit();
+        );
 
         Notification::make()
             ->title('Postavke spremljene')

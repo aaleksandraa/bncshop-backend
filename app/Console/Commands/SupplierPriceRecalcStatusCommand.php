@@ -62,13 +62,16 @@ class SupplierPriceRecalcStatusCommand extends Command
         }
 
         if ($this->option('run')) {
-            RecalculateSupplierProductPricesJob::dispatch($supplier->id, $supplier->label());
+            RecalculateSupplierProductPricesJob::start($supplier->id, $supplier->label());
             $this->newLine();
-            $this->info('Background recalculation job dispatched.');
+            $this->info('Background recalculation started (processed in chunks of '.RecalculateSupplierProductPricesJob::CHUNK_SIZE.' products).');
+            $this->line('Ensure Horizon/queue worker is running on the default queue.');
         }
 
         if ($this->option('sync')) {
             $this->newLine();
+            $this->warn('--sync runs in foreground and may hit HTTP/gateway timeouts in Plesk web terminal.');
+            $this->info('Prefer: php artisan bnc:supplier-price-recalc-status startech --run');
             $this->info('Running synchronous recalculation...');
             $count = app(\App\Services\Pricing\ProductPriceRecalculator::class)
                 ->forSupplierAndCategory($supplier->id);
@@ -80,8 +83,8 @@ class SupplierPriceRecalcStatusCommand extends Command
         if (! $this->option('run') && ! $this->option('sync')) {
             $this->newLine();
             $this->comment('Tips:');
-            $this->line('  php artisan bnc:supplier-price-recalc-status startech --sync  # fix all prices now');
-            $this->line('  php artisan bnc:supplier-price-recalc-status startech --run   # queue job');
+            $this->line('  php artisan bnc:supplier-price-recalc-status startech --run   # recommended (queue, no timeout)');
+            $this->line('  php artisan bnc:supplier-price-recalc-status startech --sync  # SSH only, not Plesk web');
             $this->line('  php artisan bnc:recalculate-prices --supplier='.$supplier->id);
         }
 

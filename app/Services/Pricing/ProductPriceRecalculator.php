@@ -63,16 +63,38 @@ class ProductPriceRecalculator
     public function forSupplierAndCategory(int $supplierId, ?int $categoryId = null): int
     {
         $count = 0;
+        $afterProductId = 0;
 
-        $this->productQuery($supplierId, $categoryId)
-            ->chunkById(500, function ($products) use (&$count): void {
-                foreach ($products as $product) {
-                    $this->priceCalculator->recalculateAndPersist($product);
-                    $count++;
-                }
-            });
+        do {
+            $processed = $this->forSupplierChunk($supplierId, $afterProductId, 500, $categoryId, $afterProductId);
+            $count += $processed;
+        } while ($processed === 500);
 
         $this->productReadCache->flushAll();
+
+        return $count;
+    }
+
+    public function forSupplierChunk(
+        int $supplierId,
+        int $afterProductId,
+        int $limit,
+        ?int $categoryId = null,
+        ?int &$lastProcessedId = null,
+    ): int {
+        $count = 0;
+        $lastProcessedId = $afterProductId;
+
+        $this->productQuery($supplierId, $categoryId)
+            ->where('products.id', '>', $afterProductId)
+            ->orderBy('products.id')
+            ->limit($limit)
+            ->get()
+            ->each(function (Product $product) use (&$count, &$lastProcessedId): void {
+                $this->priceCalculator->recalculateAndPersist($product);
+                $lastProcessedId = $product->id;
+                $count++;
+            });
 
         return $count;
     }
