@@ -12,9 +12,9 @@ class RecalculateSupplierProductPricesJob implements ShouldQueue
 {
     use Queueable;
 
-    public const CHUNK_SIZE = 200;
+    public const CHUNK_SIZE = 100;
 
-    public int $timeout = 300;
+    public int $timeout = 90;
 
     public function __construct(
         public int $supplierId,
