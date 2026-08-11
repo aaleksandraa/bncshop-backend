@@ -61,6 +61,17 @@ class SupplierResource extends Resource
                             ->default(true),
                     ])
                     ->columns(2),
+                Forms\Components\Section::make('Kalkulacija cijene')
+                    ->schema([
+                        Forms\Components\TextInput::make('price_adjustment_amount')
+                            ->label('Fiksni dodatak na cijenu')
+                            ->numeric()
+                            ->minValue(0)
+                            ->maxValue(9999)
+                            ->default(0)
+                            ->suffix('KM')
+                            ->helperText('Fiksni iznos koji se dodaje na regularnu cijenu nakon marže. Primjenjuje se na sve postojeće proizvode ovog dobavljača pri spremanju. 0 = bez dodatka.'),
+                    ]),
             ]);
     }
 
@@ -81,6 +92,12 @@ class SupplierResource extends Resource
                 Tables\Columns\TextColumn::make('margin_rules_count')
                     ->label('Pravila marže')
                     ->counts('marginRules'),
+                Tables\Columns\TextColumn::make('price_adjustment_amount')
+                    ->label('Dodatak cijene')
+                    ->formatStateUsing(fn (Supplier $record): string => $record->hasPriceAdjustment()
+                        ? '+'.number_format((float) $record->price_adjustment_amount, 2, '.', '').' KM'
+                        : '—')
+                    ->sortable(),
                 Tables\Columns\IconColumn::make('is_active')
                     ->label('Aktivan')
                     ->boolean(),

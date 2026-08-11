@@ -22,6 +22,7 @@ readonly class PriceResult
         public ?float $appliedMargin = null,
         public ?string $marginSource = null,
         public ?string $supplierName = null,
+        public ?float $appliedPriceAdjustment = null,
     ) {}
 
     public function toArray(): array
@@ -41,6 +42,7 @@ readonly class PriceResult
             'applied_margin' => $this->appliedMargin,
             'margin_source' => $this->marginSource,
             'supplier_name' => $this->supplierName,
+            'applied_price_adjustment' => $this->appliedPriceAdjustment,
         ];
     }
 }

@@ -22,6 +22,7 @@ class PriceCalculator
         $appliedMargin = null;
         $marginSource = null;
         $supplierName = null;
+        $appliedPriceAdjustment = null;
 
         if ($priceLocked && $product->manual_price !== null) {
             $regularPrice = (float) $product->manual_price;
@@ -32,6 +33,7 @@ class PriceCalculator
             $appliedMargin = $pricing['applied_margin'];
             $marginSource = $pricing['margin_source'];
             $supplierName = $pricing['supplier_name'];
+            $appliedPriceAdjustment = $pricing['applied_price_adjustment'];
         }
 
         $discount = null;
@@ -88,6 +90,7 @@ class PriceCalculator
             appliedMargin: $appliedMargin,
             marginSource: $marginSource,
             supplierName: $supplierName,
+            appliedPriceAdjustment: $appliedPriceAdjustment,
         );
     }
 
@@ -137,7 +140,8 @@ class PriceCalculator
      *     wholesale_price: ?float,
      *     applied_margin: ?float,
      *     margin_source: ?string,
-     *     supplier_name: ?string
+     *     supplier_name: ?string,
+     *     applied_price_adjustment: ?float
      * }
      */
     private function resolveRegularPrice(Product $product): array
@@ -153,6 +157,7 @@ class PriceCalculator
                 'applied_margin' => null,
                 'margin_source' => null,
                 'supplier_name' => null,
+                'applied_price_adjustment' => null,
             ];
         }
 
@@ -160,24 +165,53 @@ class PriceCalculator
         $offer->loadMissing('supplier');
         $margin = $this->marginRuleResolver->resolve($product, $offer->supplier);
         $marginPercentage = $margin['margin_percentage'];
+        $supplierName = $offer->supplier?->display_name ?? $offer->supplier?->name;
 
         if ($marginPercentage === null) {
+            $basePrice = $fallback > 0 ? $fallback : $wholesalePrice;
+            [$regularPrice, $appliedPriceAdjustment] = $this->applySupplierPriceAdjustment(
+                $basePrice,
+                $offer->supplier,
+            );
+
             return [
-                'regular_price' => $fallback > 0 ? $fallback : $wholesalePrice,
+                'regular_price' => $regularPrice,
                 'wholesale_price' => $wholesalePrice,
                 'applied_margin' => null,
                 'margin_source' => $margin['source'],
-                'supplier_name' => $offer->supplier?->display_name ?? $offer->supplier?->name,
+                'supplier_name' => $supplierName,
+                'applied_price_adjustment' => $appliedPriceAdjustment,
             ];
         }
 
+        $regularPrice = round($wholesalePrice * (1 + ($marginPercentage / 100)), 2);
+        [$regularPrice, $appliedPriceAdjustment] = $this->applySupplierPriceAdjustment(
+            $regularPrice,
+            $offer->supplier,
+        );
+
         return [
-            'regular_price' => round($wholesalePrice * (1 + ($marginPercentage / 100)), 2),
+            'regular_price' => $regularPrice,
             'wholesale_price' => $wholesalePrice,
             'applied_margin' => $marginPercentage,
             'margin_source' => $margin['source'],
-            'supplier_name' => $offer->supplier?->display_name ?? $offer->supplier?->name,
+            'supplier_name' => $supplierName,
+            'applied_price_adjustment' => $appliedPriceAdjustment,
         ];
+    }
+
+    /**
+     * @return array{0: float, 1: ?float}
+     */
+    private function applySupplierPriceAdjustment(float $regularPrice, ?\App\Models\Supplier $supplier): array
+    {
+        $adjustment = (float) ($supplier?->price_adjustment_amount ?? 0);
+
+        if ($adjustment <= 0) {
+            return [$regularPrice, null];
+        }
+
+        return [round($regularPrice + $adjustment, 2), $adjustment];
     }
 
     private function hasActiveApiRebate(Product $product): bool

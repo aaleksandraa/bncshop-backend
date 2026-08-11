@@ -15,6 +15,7 @@ class Supplier extends Model
         'code',
         'is_active',
         'sort_order',
+        'price_adjustment_amount',
     ];
 
     protected function casts(): array
@@ -23,7 +24,13 @@ class Supplier extends Model
             'external_supplier_id' => 'string',
             'is_active' => 'boolean',
             'sort_order' => 'integer',
+            'price_adjustment_amount' => 'decimal:2',
         ];
+    }
+
+    public function hasPriceAdjustment(): bool
+    {
+        return (float) $this->price_adjustment_amount > 0;
     }
 
     public function productOffers(): HasMany
