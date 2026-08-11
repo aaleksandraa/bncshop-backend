@@ -16,7 +16,8 @@ class SupplierPriceRecalcStatusCommand extends Command
                             {supplier? : Supplier ID or code (e.g. startech)}
                             {--run : Dispatch background recalculation job now}
                             {--sync : Recalculate immediately in this process (no queue)}
-                            {--full : Scan all products for price mismatches (slow)}';
+                            {--full : Scan all products for price mismatches (slow)}
+                            {--product= : Debug a single product slug}';
 
     protected $description = 'Check supplier price adjustment status, queue jobs, and sample product prices';
 
@@ -50,6 +51,12 @@ class SupplierPriceRecalcStatusCommand extends Command
         $this->line("Products with offers (not price_locked): {$productCount}");
         $estimatedChunks = (int) ceil($productCount / RecalculateSupplierProductPricesJob::CHUNK_SIZE);
         $this->newLine();
+
+        if ($productSlug = $this->option('product')) {
+            $this->debugProduct($productSlug, $priceCalculator);
+
+            return self::SUCCESS;
+        }
 
         if ($this->option('run')) {
             $pendingBefore = $this->defaultQueueSize();
@@ -280,5 +287,69 @@ class SupplierPriceRecalcStatusCommand extends Command
                         : '—',
                 ));
             });
+    }
+
+    private function debugProduct(string $slug, PriceCalculator $priceCalculator): void
+    {
+        $product = Product::query()
+            ->where('slug', $slug)
+            ->with(['supplierOffers.supplier', 'category', 'manufacturer'])
+            ->first();
+
+        if (! $product) {
+            $this->error("Product not found: {$slug}");
+
+            return;
+        }
+
+        $result = $priceCalculator->calculate($product);
+        $discount = app(\App\Services\Pricing\DiscountEngine::class)->bestForProduct($product);
+
+        $this->info("Product: {$product->name} (#{$product->id})");
+        $this->line('  Slug: '.$product->slug);
+        $this->newLine();
+        $this->info('Stored in database:');
+        $this->line('  regular_price: '.number_format((float) $product->regular_price, 2, '.', '').' KM');
+        $this->line('  display_price: '.number_format((float) $product->display_price, 2, '.', '').' KM');
+        $this->line('  api_price: '.number_format((float) ($product->api_price ?? 0), 2, '.', '').' KM');
+        $this->line('  api_final_price: '.number_format((float) ($product->api_final_price ?? 0), 2, '.', '').' KM');
+        $this->line('  on_sale (db): '.($product->on_sale ? 'yes' : 'no'));
+        $this->newLine();
+        $this->info('Calculated now:');
+        $this->line('  regular_price: '.number_format($result->regularPrice, 2, '.', '').' KM');
+        $this->line('  display_price: '.number_format($result->displayPrice, 2, '.', '').' KM');
+        $this->line('  on_sale: '.($result->onSale ? 'yes' : 'no'));
+        $this->line('  discount_source: '.$result->discountSource);
+        $this->line('  supplier: '.($result->supplierName ?? '—'));
+        $this->line('  adjustment: '.($result->appliedPriceAdjustment !== null
+            ? '+'.number_format($result->appliedPriceAdjustment, 2, '.', '').' KM'
+            : '—'));
+        $this->line('  margin: '.($result->appliedMargin !== null ? $result->appliedMargin.'%' : '—'));
+        $this->line('  wholesale: '.($result->wholesalePrice !== null
+            ? number_format($result->wholesalePrice, 2, '.', '').' KM'
+            : '—'));
+
+        if ($discount) {
+            $this->newLine();
+            $this->warn('Active shop discount detected:');
+            $this->line('  ID: '.$discount->id.' | type: '.$discount->type.' | '.$discount->discount_type.' '.$discount->value);
+            $this->line('  badge: '.($discount->badge_text ?? '—'));
+        }
+
+        $storedRegular = (float) $product->regular_price;
+        $storedDisplay = (float) $product->display_price;
+        $needsPersist = round($storedRegular, 2) !== round($result->regularPrice, 2)
+            || round($storedDisplay, 2) !== round($result->displayPrice, 2);
+
+        if ($needsPersist) {
+            $this->newLine();
+            $this->warn('Database is out of sync with calculator — run recalculation or re-save product.');
+        } elseif ($result->onSale && $result->discountSource === 'none') {
+            $this->newLine();
+            $this->warn('Inverted sale (display < regular) without discount — stale display_price likely.');
+        } elseif (! $result->onSale) {
+            $this->newLine();
+            $this->info('Expected storefront: single price '.number_format($result->displayPrice, 2, '.', '').' KM');
+        }
     }
 }
