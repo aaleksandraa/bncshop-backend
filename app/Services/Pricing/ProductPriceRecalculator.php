@@ -87,13 +87,22 @@ class ProductPriceRecalculator
 
         $this->productQuery($supplierId, $categoryId)
             ->where('products.id', '>', $afterProductId)
+            ->with(['supplierOffers.supplier', 'category'])
             ->orderBy('products.id')
             ->limit($limit)
             ->get()
-            ->each(function (Product $product) use (&$count, &$lastProcessedId): void {
-                $this->priceCalculator->recalculateAndPersist($product);
-                $lastProcessedId = $product->id;
-                $count++;
+            ->each(function (Product $product) use (&$count, &$lastProcessedId, $supplierId): void {
+                try {
+                    $this->priceCalculator->recalculateAndPersist($product);
+                    $lastProcessedId = $product->id;
+                    $count++;
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning('Product price recalculation failed.', [
+                        'product_id' => $product->id,
+                        'supplier_id' => $supplierId,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
             });
 
         return $count;

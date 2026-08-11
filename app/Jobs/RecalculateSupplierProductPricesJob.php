@@ -16,6 +16,8 @@ class RecalculateSupplierProductPricesJob implements ShouldQueue
 
     public int $timeout = 90;
 
+    public int $tries = 3;
+
     public function __construct(
         public int $supplierId,
         public string $supplierLabel,
@@ -60,6 +62,16 @@ class RecalculateSupplierProductPricesJob implements ShouldQueue
             'supplier_label' => $this->supplierLabel,
             'final_chunk_processed' => $processed,
             'completed_after_product_id' => $lastProcessedId,
+        ]);
+    }
+
+    public function failed(?\Throwable $exception): void
+    {
+        Log::error('Supplier product price recalculation chunk failed.', [
+            'supplier_id' => $this->supplierId,
+            'supplier_label' => $this->supplierLabel,
+            'after_product_id' => $this->afterProductId,
+            'error' => $exception?->getMessage(),
         ]);
     }
 }

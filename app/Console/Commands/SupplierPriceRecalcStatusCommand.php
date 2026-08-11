@@ -63,7 +63,7 @@ class SupplierPriceRecalcStatusCommand extends Command
             $this->newLine();
             $this->reportQueueStatus($supplier->id);
             $this->newLine();
-            $this->comment('Wait 5–10 minutes, then verify:');
+            $this->comment('Wait until "Pending jobs on default queue: 0", then verify:');
             $this->line('  php artisan bnc:supplier-price-recalc-status startech --full');
 
             return self::SUCCESS;
@@ -74,8 +74,14 @@ class SupplierPriceRecalcStatusCommand extends Command
         if ($productCount > 0) {
             $this->newLine();
 
-            if ($this->option('full') && (float) $supplier->price_adjustment_amount > 0) {
-                $this->reportPriceMismatchSummary($supplier, $priceCalculator);
+        if ($this->option('full') && (float) $supplier->price_adjustment_amount > 0) {
+                $pending = $this->defaultQueueSize();
+                if ($pending > 0) {
+                    $this->warn("Recalculation still in progress ({$pending} jobs on default queue).");
+                    $this->line('Wait until pending queue is 0, then run --full again.');
+                } else {
+                    $this->reportPriceMismatchSummary($supplier, $priceCalculator);
+                }
             } elseif ((float) $supplier->price_adjustment_amount > 0) {
                 $this->info('Sample products (use --full to scan entire catalog):');
                 $this->reportProductSamples($supplier, $priceCalculator, 5);
@@ -199,17 +205,22 @@ class SupplierPriceRecalcStatusCommand extends Command
                 foreach ($products as $product) {
                     $checked++;
                     $result = $priceCalculator->calculate($product);
-                    $stored = (float) ($product->regular_price ?? 0);
-                    $expected = $result->regularPrice;
+                    $storedRegular = (float) ($product->regular_price ?? 0);
+                    $storedDisplay = (float) ($product->display_price ?? 0);
+                    $expectedRegular = $result->regularPrice;
+                    $expectedDisplay = $result->displayPrice;
 
-                    if (round($stored, 2) === round($expected, 2)) {
+                    if (
+                        round($storedRegular, 2) === round($expectedRegular, 2)
+                        && round($storedDisplay, 2) === round($expectedDisplay, 2)
+                    ) {
                         continue;
                     }
 
                     $mismatchCount++;
 
                     if (count($mismatchSamples) < 5) {
-                        $mismatchSamples[] = [$product, $result, $stored, $expected];
+                        $mismatchSamples[] = [$product, $result, $storedRegular, $storedDisplay, $expectedRegular, $expectedDisplay];
                     }
                 }
             });
@@ -224,17 +235,16 @@ class SupplierPriceRecalcStatusCommand extends Command
             $this->newLine();
             $this->info('Mismatch examples:');
 
-            foreach ($mismatchSamples as [$product, $result, $stored, $expected]) {
+            foreach ($mismatchSamples as [$product, $result, $storedRegular, $storedDisplay, $expectedRegular, $expectedDisplay]) {
                 $this->line(sprintf(
-                    '  [MISMATCH] #%d %s — stored: %.2f KM, expected: %.2f KM (supplier: %s, adj: %s)',
+                    '  [MISMATCH] #%d %s — regular: %.2f→%.2f KM, display: %.2f→%.2f KM (supplier: %s)',
                     $product->id,
                     \Illuminate\Support\Str::limit($product->name, 40),
-                    $stored,
-                    $expected,
+                    $storedRegular,
+                    $expectedRegular,
+                    $storedDisplay,
+                    $expectedDisplay,
                     $result->supplierName ?? '—',
-                    $result->appliedPriceAdjustment !== null
-                        ? '+'.number_format($result->appliedPriceAdjustment, 2, '.', '').' KM'
-                        : '—',
                 ));
             }
         } else {
