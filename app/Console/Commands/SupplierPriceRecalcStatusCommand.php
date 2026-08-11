@@ -52,34 +52,13 @@ class SupplierPriceRecalcStatusCommand extends Command
 
         if ($productCount > 0) {
             $this->newLine();
-            $this->info('Sample products (expected vs stored price):');
 
-            Product::query()
-                ->where('price_locked', false)
-                ->whereHas('supplierOffers', fn ($q) => $q->where('supplier_id', $supplier->id))
-                ->with(['supplierOffers.supplier', 'category'])
-                ->orderBy('id')
-                ->limit(5)
-                ->get()
-                ->each(function (Product $product) use ($priceCalculator): void {
-                    $result = $priceCalculator->calculate($product);
-                    $stored = (float) ($product->regular_price ?? 0);
-                    $expected = $result->regularPrice;
-                    $match = round($stored, 2) === round($expected, 2) ? 'OK' : 'MISMATCH';
-
-                    $this->line(sprintf(
-                        '  [%s] #%d %s — stored: %.2f KM, expected: %.2f KM (supplier: %s, adj: %s)',
-                        $match,
-                        $product->id,
-                        \Illuminate\Support\Str::limit($product->name, 40),
-                        $stored,
-                        $expected,
-                        $result->supplierName ?? '—',
-                        $result->appliedPriceAdjustment !== null
-                            ? '+'.number_format($result->appliedPriceAdjustment, 2, '.', '').' KM'
-                            : '—',
-                    ));
-                });
+            if ((float) $supplier->price_adjustment_amount > 0) {
+                $this->reportPriceMismatchSummary($supplier, $priceCalculator);
+            } else {
+                $this->info('Sample products (expected vs stored price):');
+                $this->reportProductSamples($supplier, $priceCalculator, 5);
+            }
         }
 
         if ($this->option('run')) {
@@ -94,15 +73,16 @@ class SupplierPriceRecalcStatusCommand extends Command
             $count = app(\App\Services\Pricing\ProductPriceRecalculator::class)
                 ->forSupplierAndCategory($supplier->id);
             $this->info("Recalculated {$count} products.");
+            $this->newLine();
+            $this->reportPriceMismatchSummary($supplier, $priceCalculator);
         }
 
         if (! $this->option('run') && ! $this->option('sync')) {
             $this->newLine();
             $this->comment('Tips:');
+            $this->line('  php artisan bnc:supplier-price-recalc-status startech --sync  # fix all prices now');
             $this->line('  php artisan bnc:supplier-price-recalc-status startech --run   # queue job');
-            $this->line('  php artisan bnc:supplier-price-recalc-status startech --sync  # run now (CLI)');
             $this->line('  php artisan bnc:recalculate-prices --supplier='.$supplier->id);
-            $this->line('  php artisan queue:work --queue=default   # process pending jobs');
         }
 
         return self::SUCCESS;
@@ -171,5 +151,94 @@ class SupplierPriceRecalcStatusCommand extends Command
 
         return str_contains($payload, '"supplierId":'.$supplierId)
             || str_contains($payload, 's:10:\"supplierId\";i:'.$supplierId);
+    }
+
+    private function reportPriceMismatchSummary(Supplier $supplier, PriceCalculator $priceCalculator): void
+    {
+        $this->info('Scanning all supplier products for price mismatches...');
+
+        $checked = 0;
+        $mismatchCount = 0;
+        $mismatchSamples = [];
+
+        Product::query()
+            ->where('price_locked', false)
+            ->whereHas('supplierOffers', fn ($q) => $q->where('supplier_id', $supplier->id))
+            ->with(['supplierOffers.supplier', 'category'])
+            ->chunkById(200, function ($products) use ($priceCalculator, &$checked, &$mismatchCount, &$mismatchSamples): void {
+                foreach ($products as $product) {
+                    $checked++;
+                    $result = $priceCalculator->calculate($product);
+                    $stored = (float) ($product->regular_price ?? 0);
+                    $expected = $result->regularPrice;
+
+                    if (round($stored, 2) === round($expected, 2)) {
+                        continue;
+                    }
+
+                    $mismatchCount++;
+
+                    if (count($mismatchSamples) < 5) {
+                        $mismatchSamples[] = [$product, $result, $stored, $expected];
+                    }
+                }
+            });
+
+        $inSync = $checked - $mismatchCount;
+        $this->line("  Checked: {$checked}");
+        $this->line("  In sync: {$inSync}");
+        $this->line("  Mismatch: {$mismatchCount}");
+
+        if ($mismatchCount > 0) {
+            $this->warn('  → Some products still have old prices. Run with --sync to fix all.');
+            $this->newLine();
+            $this->info('Mismatch examples:');
+
+            foreach ($mismatchSamples as [$product, $result, $stored, $expected]) {
+                $this->line(sprintf(
+                    '  [MISMATCH] #%d %s — stored: %.2f KM, expected: %.2f KM (supplier: %s, adj: %s)',
+                    $product->id,
+                    \Illuminate\Support\Str::limit($product->name, 40),
+                    $stored,
+                    $expected,
+                    $result->supplierName ?? '—',
+                    $result->appliedPriceAdjustment !== null
+                        ? '+'.number_format($result->appliedPriceAdjustment, 2, '.', '').' KM'
+                        : '—',
+                ));
+            }
+        } else {
+            $this->info('  → All checked products have correct prices.');
+        }
+    }
+
+    private function reportProductSamples(Supplier $supplier, PriceCalculator $priceCalculator, int $limit): void
+    {
+        Product::query()
+            ->where('price_locked', false)
+            ->whereHas('supplierOffers', fn ($q) => $q->where('supplier_id', $supplier->id))
+            ->with(['supplierOffers.supplier', 'category'])
+            ->orderBy('id')
+            ->limit($limit)
+            ->get()
+            ->each(function (Product $product) use ($priceCalculator): void {
+                $result = $priceCalculator->calculate($product);
+                $stored = (float) ($product->regular_price ?? 0);
+                $expected = $result->regularPrice;
+                $match = round($stored, 2) === round($expected, 2) ? 'OK' : 'MISMATCH';
+
+                $this->line(sprintf(
+                    '  [%s] #%d %s — stored: %.2f KM, expected: %.2f KM (supplier: %s, adj: %s)',
+                    $match,
+                    $product->id,
+                    \Illuminate\Support\Str::limit($product->name, 40),
+                    $stored,
+                    $expected,
+                    $result->supplierName ?? '—',
+                    $result->appliedPriceAdjustment !== null
+                        ? '+'.number_format($result->appliedPriceAdjustment, 2, '.', '').' KM'
+                        : '—',
+                ));
+            });
     }
 }
