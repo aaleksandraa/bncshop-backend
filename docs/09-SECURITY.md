@@ -67,3 +67,20 @@ Sync jobs and order status changes logged.
 - Sentry for exceptions
 - Horizon for failed jobs alert
 - Health endpoint `/api/health`
+
+## Horizon dashboard (`/horizon`)
+
+Queue monitoring dashboard — **not public**.
+
+| Environment | Access |
+|-------------|--------|
+| `production` | Filament web session + **Super Admin** role only |
+| `local` / `testing` | Any authenticated admin user (dev convenience) |
+
+Unauthorized requests receive **401** (guest) or **403** (logged-in without Super Admin).
+
+Implementation: `app/Providers/HorizonServiceProvider.php` + `auth` middleware in `config/horizon.php`.
+
+**Production requirements:** `APP_ENV=production` in `.env` (never `local`). After changing env: `php artisan config:cache` + `php artisan horizon:terminate`.
+
+Verify: `curl -s -o /dev/null -w "%{http_code}" https://api.bnc.ba/horizon/api/stats` → expect `401` or `403`.

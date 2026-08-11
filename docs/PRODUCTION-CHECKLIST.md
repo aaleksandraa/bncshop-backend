@@ -55,6 +55,8 @@ Pre go-live provjerite sve stavke:
 
 ## Sigurnost i ops
 - [ ] `APP_DEBUG=false` (health endpoint ne smije otkrivati DB/Redis detalje)
+- [ ] `APP_ENV=production` (Horizon `/horizon` mora vraćati 401/403 bez prijave)
+- [ ] `/horizon` zaključan — `curl` na `/horizon/api/stats` vraća 401 ili 403
 - [ ] `TURNSTILE_ENABLED=true` + validni site/secret keys (login, register, B2B auth, checkout)
 - [ ] `SESSION_SECURE_COOKIE=true`, `SESSION_ENCRYPT=true`
 - [ ] `TRUSTED_PROXIES` = eksplicitne IP adrese reverse proxyja (nikad `*`)
