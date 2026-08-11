@@ -201,4 +201,52 @@ class PriceCalculatorSupplierPriceAdjustmentTest extends TestCase
         $this->assertNull($result->appliedPriceAdjustment);
         $this->assertSame('Comtrade', $result->supplierName);
     }
+
+    public function test_display_price_uses_regular_price_when_api_final_price_is_stale(): void
+    {
+        $category = Category::factory()->create();
+        $supplier = Supplier::query()->create([
+            'external_supplier_id' => 'supplier-display',
+            'name' => 'startech',
+            'display_name' => 'Startech',
+            'code' => 'startech',
+            'price_adjustment_amount' => 20,
+        ]);
+
+        SupplierCategoryMarginRule::query()->create([
+            'supplier_id' => $supplier->id,
+            'category_id' => $category->id,
+            'margin_percentage' => 30,
+            'subcategory_scope' => 'all_descendants',
+            'is_active' => true,
+        ]);
+
+        $product = Product::query()->create([
+            'external_product_id' => 'prod-display-1',
+            'name' => 'Filter proizvod',
+            'slug' => 'filter-proizvod',
+            'status' => 'active',
+            'is_public' => true,
+            'category_id' => $category->id,
+            'api_price' => 109.00,
+            'api_final_price' => 109.00,
+            'regular_price' => 109.70,
+            'display_price' => 109.00,
+        ]);
+
+        ProductSupplierOffer::query()->create([
+            'product_id' => $product->id,
+            'supplier_id' => $supplier->id,
+            'supplier_price' => 69.00,
+            'supplier_stock' => 5,
+            'is_selected_price_source' => true,
+        ]);
+
+        $result = app(PriceCalculator::class)->calculate($product->fresh(['supplierOffers.supplier', 'category']));
+
+        $this->assertSame(109.70, $result->regularPrice);
+        $this->assertSame(109.70, $result->displayPrice);
+        $this->assertFalse($result->onSale);
+        $this->assertSame(20.0, $result->appliedPriceAdjustment);
+    }
 }

@@ -57,7 +57,7 @@ class PriceCalculator
                 $discountAmount = round($regularPrice - $base, 2);
                 $discountSource = 'api';
             } else {
-                $base = (float) ($product->api_final_price ?? $product->api_price ?? $regularPrice);
+                $base = (float) $regularPrice;
             }
         }
 
