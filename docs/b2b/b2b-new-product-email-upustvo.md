@@ -134,7 +134,7 @@ php artisan migrate --force
 
 ## Praćenje u Horizonu
 
-Dashboard: **`/horizon`** (pristup: korisnik s permisijom `manage_sync`).
+Dashboard: **`/horizon`** (pristup: **Super Admin** rola, ulogovan na `/admin`).
 
 Nakon dodavanja proizvoda (toggle uključen):
 

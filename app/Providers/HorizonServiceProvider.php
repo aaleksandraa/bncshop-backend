@@ -15,6 +15,16 @@ class HorizonServiceProvider extends HorizonApplicationServiceProvider
     {
         parent::boot();
 
+        Horizon::auth(function ($request): bool {
+            if (app()->environment('local', 'testing')) {
+                return true;
+            }
+
+            $user = $request->user();
+
+            return $user !== null && $user->hasRole('Super Admin');
+        });
+
         // Horizon::routeSmsNotificationsTo('15556667777');
         // Horizon::routeMailNotificationsTo('example@example.com');
         // Horizon::routeSlackNotificationsTo('slack-webhook-url', '#channel');
@@ -28,7 +38,7 @@ class HorizonServiceProvider extends HorizonApplicationServiceProvider
     protected function gate(): void
     {
         Gate::define('viewHorizon', function ($user = null): bool {
-            return $user !== null && $user->can('manage_sync');
+            return $user !== null && $user->hasRole('Super Admin');
         });
     }
 }

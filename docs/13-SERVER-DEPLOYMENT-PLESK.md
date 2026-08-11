@@ -653,9 +653,24 @@ Supervisor će ponovo pokrenuti Horizon sa novim kodom.
 
 ### Horizon dashboard
 
-URL: `https://api.bncshop.ba/horizon`
+URL: `https://api.bnc.ba/horizon`
 
-Pristup: samo autentificirani korisnici sa permisijom `manage_sync`.
+Pristup: **Super Admin** rola + Filament web sesija (ulogovan na `/admin`). Admin/Manager/Analyst nemaju pristup.
+
+**Obavezno na produkciji:** `APP_ENV=production` u `.env`. Ako je `local`, Horizon je javan svima. Nakon izmjene env-a:
+
+```bash
+php artisan config:clear
+php artisan config:cache
+php artisan horizon:terminate
+```
+
+Verifikacija (anonimni pristup mora biti odbijen):
+
+```bash
+curl -s -o /dev/null -w "%{http_code}\n" https://api.bnc.ba/horizon/api/stats
+# Očekivano: 401 ili 403 (ne 200)
+```
 
 ### ⚠️ Samo jedan process manager (Supervisor **ili** systemd)
 

@@ -138,7 +138,7 @@ php artisan bnc:sync-diagnose
 ## Monitoring
 
 - `/api/v1/health` — DB, Redis, Meilisearch checks
-- Horizon dashboard at `/horizon` (admin only)
+- Horizon dashboard at `/horizon` (Super Admin only, Filament session)
 - Sentry DSN in production .env
 
 ## Initial setup commands

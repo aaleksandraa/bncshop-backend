@@ -13,6 +13,12 @@ composer audit || echo "WARNING: composer audit reported vulnerabilities"
 
 php artisan migrate --force
 php artisan storage:link --force
+
+if grep -q '^APP_ENV=local' .env 2>/dev/null; then
+  echo "ERROR: APP_ENV=local on production — aborting deploy"
+  exit 1
+fi
+
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
@@ -37,5 +43,10 @@ fi
 
 echo "==> Health check"
 curl -fsS "${APP_URL:-http://127.0.0.1:8000}/api/v1/health" >/dev/null || echo "WARNING: health check failed"
+
+HORIZON_CODE="$(curl -s -o /dev/null -w "%{http_code}" "${APP_URL:-http://127.0.0.1:8000}/horizon/api/stats")"
+if [[ "${HORIZON_CODE}" != "401" && "${HORIZON_CODE}" != "403" ]]; then
+  echo "WARNING: Horizon is publicly accessible (HTTP ${HORIZON_CODE}) — check APP_ENV and HorizonServiceProvider"
+fi
 
 echo "==> Backend deploy complete"
