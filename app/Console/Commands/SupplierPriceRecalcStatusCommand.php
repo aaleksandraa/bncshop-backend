@@ -17,7 +17,8 @@ class SupplierPriceRecalcStatusCommand extends Command
                             {--run : Dispatch background recalculation job now}
                             {--sync : Recalculate immediately in this process (no queue)}
                             {--full : Scan all products for price mismatches (slow)}
-                            {--product= : Debug a single product slug}';
+                            {--product= : Debug a single product slug}
+                            {--fix : With --product, persist recalculated prices immediately}';
 
     protected $description = 'Check supplier price adjustment status, queue jobs, and sample product prices';
 
@@ -53,6 +54,12 @@ class SupplierPriceRecalcStatusCommand extends Command
         $this->newLine();
 
         if ($productSlug = $this->option('product')) {
+            if ($this->option('fix')) {
+                $this->fixProduct($productSlug, $priceCalculator);
+
+                return self::SUCCESS;
+            }
+
             $this->debugProduct($productSlug, $priceCalculator);
 
             return self::SUCCESS;
@@ -351,5 +358,29 @@ class SupplierPriceRecalcStatusCommand extends Command
             $this->newLine();
             $this->info('Expected storefront: single price '.number_format($result->displayPrice, 2, '.', '').' KM');
         }
+    }
+
+    private function fixProduct(string $slug, PriceCalculator $priceCalculator): void
+    {
+        $product = Product::query()
+            ->where('slug', $slug)
+            ->with(['supplierOffers.supplier', 'category'])
+            ->first();
+
+        if (! $product) {
+            $this->error("Product not found: {$slug}");
+
+            return;
+        }
+
+        $beforeRegular = (float) $product->regular_price;
+        $beforeDisplay = (float) $product->display_price;
+
+        $result = $priceCalculator->recalculateAndPersist($product->fresh(['supplierOffers.supplier', 'category']));
+
+        $this->info("Fixed: {$product->name} (#{$product->id})");
+        $this->line('  regular_price: '.number_format($beforeRegular, 2, '.', '').' → '.number_format($result->regularPrice, 2, '.', '').' KM');
+        $this->line('  display_price: '.number_format($beforeDisplay, 2, '.', '').' → '.number_format($result->displayPrice, 2, '.', '').' KM');
+        $this->line('  on_sale: '.($result->onSale ? 'yes' : 'no'));
     }
 }
