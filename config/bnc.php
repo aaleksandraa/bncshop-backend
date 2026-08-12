@@ -17,18 +17,20 @@ return [
     'shipping_multi_category_mode' => env('BNC_SHIPPING_MULTI', 'max'),
 
     'new_product_days' => 30,
-    'default_page_size' => 500,
+    'default_page_size' => 100,
 
     'a1_api_verify_ssl' => env('A1_API_VERIFY_SSL', true),
-    'a1_api_timeout' => (int) env('A1_API_TIMEOUT', 300),
+    'a1_api_timeout' => (int) env('A1_API_TIMEOUT', 120),
     'a1_api_retries' => (int) env('A1_API_RETRIES', 3),
     'a1_api_retry_delay_ms' => (int) env('A1_API_RETRY_DELAY_MS', 5000),
+    'a1_api_max_page_size' => (int) env('A1_API_MAX_PAGE_SIZE', 200),
+    'a1_sync_failure_cooldown_minutes' => (int) env('A1_SYNC_FAILURE_COOLDOWN_MINUTES', 30),
 
     'a1_api_base_url' => env('A1_API_BASE_URL', 'https://a1team.ba'),
     'a1_api_username' => env('A1_API_USERNAME', 'bnc'),
     'a1_api_password' => env('A1_API_PASSWORD'),
     'a1_api_target_system_code' => env('A1_API_TARGET_SYSTEM_CODE', 'bnc-shop'),
-    'a1_api_page_size' => (int) env('A1_API_PAGE_SIZE', 500),
+    'a1_api_page_size' => (int) env('A1_API_PAGE_SIZE', 100),
 
     'eline_api_base_url' => env('ELINE_API_BASE_URL', 'https://www8.eline.ba/bl/RestWebShop.svc/json'),
     'eline_api_token' => env('ELINE_API_TOKEN'),

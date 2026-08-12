@@ -43,6 +43,10 @@ class IncrementalSyncScheduler
             return false;
         }
 
+        if ($this->hasRecentFailure($source)) {
+            return false;
+        }
+
         $intervalMinutes = max(1, (int) ($source->sync_interval_minutes ?? 60));
 
         return $source->last_successful_sync_at
@@ -57,6 +61,35 @@ class IncrementalSyncScheduler
             ->where('api_source_id', $source->id)
             ->where('status', 'running')
             ->exists();
+    }
+
+    public function hasRecentFailure(ApiSource $source): bool
+    {
+        $cooldownMinutes = max(1, (int) config('bnc.a1_sync_failure_cooldown_minutes', 30));
+
+        $latestFailedJob = ApiImportJob::query()
+            ->where('api_source_id', $source->id)
+            ->where('status', 'failed')
+            ->latest('completed_at')
+            ->first();
+
+        if ($latestFailedJob === null || $latestFailedJob->completed_at === null) {
+            return false;
+        }
+
+        $latestSuccessfulJob = ApiImportJob::query()
+            ->where('api_source_id', $source->id)
+            ->where('status', 'completed')
+            ->latest('completed_at')
+            ->first();
+
+        if ($latestSuccessfulJob !== null
+            && $latestSuccessfulJob->completed_at !== null
+            && $latestSuccessfulJob->completed_at->gte($latestFailedJob->completed_at)) {
+            return false;
+        }
+
+        return $latestFailedJob->completed_at->gt(now()->subMinutes($cooldownMinutes));
     }
 
     public function nextSyncAt(ApiSource $source): ?\Illuminate\Support\Carbon

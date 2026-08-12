@@ -170,4 +170,61 @@ class IntegrationApiClientTest extends TestCase
         $this->assertSame('new-access', $source->access_token);
         $this->assertSame('new-refresh', $source->refresh_token);
     }
+
+    public function test_products_request_retries_on_gateway_timeout(): void
+    {
+        config([
+            'bnc.a1_api_verify_ssl' => false,
+            'bnc.a1_api_retries' => 2,
+            'bnc.a1_api_retry_delay_ms' => 0,
+        ]);
+
+        $source = ApiSource::query()->create([
+            'name' => 'Test',
+            'target_system_code' => 'bnc-shop',
+            'base_url' => 'https://a1team.ba',
+            'username' => 'bnc',
+            'password' => 'secret',
+            'access_token' => 'token',
+            'page_size' => 500,
+            'is_active' => true,
+        ]);
+
+        Http::fake([
+            'https://a1team.ba/api/integrations/bnc-shop/products*' => Http::sequence()
+                ->push('<html>504 Gateway Time-out</html>', 504)
+                ->push([
+                    'data' => [['productId' => '1']],
+                    'pagination' => ['nextPage' => null],
+                ], 200),
+        ]);
+
+        $response = IntegrationApiClient::forSource($source)->getProducts(null, 1, 10);
+
+        $this->assertCount(1, $response['data']);
+        Http::assertSentCount(2);
+    }
+
+    public function test_page_size_is_capped_to_configured_maximum(): void
+    {
+        config([
+            'bnc.a1_api_max_page_size' => 200,
+            'bnc.a1_api_page_size' => 500,
+        ]);
+
+        $source = ApiSource::query()->create([
+            'name' => 'Test',
+            'target_system_code' => 'bnc-shop',
+            'base_url' => 'https://a1team.ba',
+            'username' => 'bnc',
+            'password' => 'secret',
+            'access_token' => 'token',
+            'page_size' => 500,
+            'is_active' => true,
+        ]);
+
+        $client = IntegrationApiClient::forSource($source);
+
+        $this->assertSame(200, $client->resolvedPageSize());
+    }
 }

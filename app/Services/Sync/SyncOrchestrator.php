@@ -148,7 +148,7 @@ class SyncOrchestrator
         $updated = 0;
         $deactivated = 0;
         $errors = [];
-        $pageSize = $source->page_size ?? config('bnc.default_page_size', 500);
+        $pageSize = $client->resolvedPageSize();
         $pagesProcessed = 0;
 
         do {

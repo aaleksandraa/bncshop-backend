@@ -165,8 +165,20 @@ class SyncHealthChecker
             }
         }
 
+        if ($this->scheduler->hasRecentFailure($source)) {
+            $issues[] = 'Zadnji sync je pao — automatski retry je pauziran ~'
+                .config('bnc.a1_sync_failure_cooldown_minutes', 30)
+                .' min da se ne opterećuje A1 API. Ručno pokrenite sync ili sačekajte cooldown.';
+        }
+
         if ($source->connection_status === 'error' && $source->last_error) {
-            $issues[] = 'Zadnja greška konekcije: '.$source->last_error;
+            $lastError = $source->last_error;
+            if (str_contains($lastError, '504 Gateway Time-out') || str_contains($lastError, '502 Bad Gateway')) {
+                $issues[] = 'A1 Technoshop API (nginx) vraća timeout — problem je na njihovoj strani ili upit traje predugo. Sync koristi manje stranice (max '
+                    .config('bnc.a1_api_max_page_size', 200)
+                    .' proizvoda) i automatski retry.';
+            }
+            $issues[] = 'Zadnja greška konekcije: '.$lastError;
         }
 
         if (config('queue.default') === 'redis') {

@@ -174,4 +174,36 @@ class IncrementalSyncSchedulerTest extends TestCase
         $this->assertFalse($scheduler->isDue($source));
         $this->assertTrue($scheduler->dueSources()->isEmpty());
     }
+
+    public function test_recent_failed_job_blocks_scheduled_sync(): void
+    {
+        config(['bnc.a1_sync_failure_cooldown_minutes' => 30]);
+
+        $scheduler = new IncrementalSyncScheduler;
+
+        $source = ApiSource::query()->create([
+            'name' => 'A1',
+            'target_system_code' => 'bnc-shop',
+            'base_url' => 'https://example.test',
+            'username' => 'user',
+            'password' => 'pass',
+            'is_active' => true,
+            'auto_sync_enabled' => true,
+            'sync_interval_minutes' => 15,
+            'last_successful_sync_at' => now()->subHour(),
+        ]);
+
+        ApiImportJob::query()->create([
+            'api_source_id' => $source->id,
+            'type' => 'incremental',
+            'status' => 'failed',
+            'sync_started_at' => now()->subMinutes(10),
+            'started_at' => now()->subMinutes(10),
+            'completed_at' => now()->subMinutes(5),
+            'error_message' => '504 Gateway Time-out',
+        ]);
+
+        $this->assertTrue($scheduler->hasRecentFailure($source));
+        $this->assertFalse($scheduler->isDue($source));
+    }
 }

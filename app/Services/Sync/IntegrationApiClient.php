@@ -120,7 +120,7 @@ class IntegrationApiClient
     {
         $this->ensureAuthenticated();
 
-        $pageSize = $pageSize ?? $this->source->page_size ?? config('bnc.default_page_size', 500);
+        $pageSize = $this->resolvePageSize($pageSize);
 
         $query = [
             'Page' => $page,
@@ -131,10 +131,11 @@ class IntegrationApiClient
             $query['ModifiedAfter'] = $dateModifiedAfter;
         }
 
-        $response = $this->authenticatedRequest()
-            ->get($this->integrationPath('products'), $query);
-
-        $this->assertSuccessful($response, 'Failed to fetch products');
+        $response = $this->getWithRetry(
+            $this->integrationPath('products'),
+            $query,
+            'Failed to fetch products',
+        );
 
         $payload = $response->json();
 
@@ -142,6 +143,11 @@ class IntegrationApiClient
             'data' => $this->unwrapData($payload),
             'meta' => $this->extractPagination($payload),
         ];
+    }
+
+    public function resolvedPageSize(?int $pageSize = null): int
+    {
+        return $this->resolvePageSize($pageSize);
     }
 
     public function testConnection(): bool
@@ -174,17 +180,18 @@ class IntegrationApiClient
         $this->ensureAuthenticated();
 
         $page = 1;
-        $pageSize = $this->source->page_size ?? config('bnc.default_page_size', 500);
+        $pageSize = $this->resolvePageSize(null);
         $all = [];
 
         do {
-            $response = $this->authenticatedRequest()
-                ->get($this->integrationPath($resource), [
+            $response = $this->getWithRetry(
+                $this->integrationPath($resource),
+                [
                     'Page' => $page,
                     'PageSize' => $pageSize,
-                ]);
-
-            $this->assertSuccessful($response, "Failed to fetch {$resource}");
+                ],
+                "Failed to fetch {$resource}",
+            );
 
             $payload = $response->json();
             $all = array_merge($all, $this->unwrapData($payload));
@@ -230,14 +237,68 @@ class IntegrationApiClient
     {
         return Http::baseUrl(rtrim($this->source->base_url, '/'))
             ->acceptJson()
-            ->timeout((int) config('bnc.a1_api_timeout', 300))
-            ->retry(
-                (int) config('bnc.a1_api_retries', 3),
-                (int) config('bnc.a1_api_retry_delay_ms', 5000),
-                fn (Throwable $exception) => $exception instanceof ConnectionException,
-                throw: false,
-            )
+            ->timeout((int) config('bnc.a1_api_timeout', 120))
             ->withOptions(['verify' => (bool) config('bnc.a1_api_verify_ssl', true)]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $query
+     */
+    private function getWithRetry(string $path, array $query, string $errorMessage): Response
+    {
+        $maxAttempts = max(1, (int) config('bnc.a1_api_retries', 3));
+        $delayMs = max(0, (int) config('bnc.a1_api_retry_delay_ms', 5000));
+        $lastBody = null;
+
+        for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
+            try {
+                $response = $this->authenticatedRequest()->get($path, $query);
+
+                if ($response->successful()) {
+                    return $response;
+                }
+
+                $lastBody = $response->body();
+
+                if ($this->shouldRetryResponse($response) && $attempt < $maxAttempts) {
+                    usleep($delayMs * 1000 * $attempt);
+
+                    continue;
+                }
+
+                $this->assertSuccessful($response, $errorMessage);
+            } catch (ConnectionException $e) {
+                if ($attempt < $maxAttempts) {
+                    usleep($delayMs * 1000 * $attempt);
+
+                    continue;
+                }
+
+                throw new RuntimeException(sprintf('%s: %s', $errorMessage, $e->getMessage()), 0, $e);
+            }
+        }
+
+        throw new RuntimeException(sprintf(
+            '%s: %s',
+            $errorMessage,
+            $lastBody ?: 'retries exhausted',
+        ));
+    }
+
+    private function shouldRetryResponse(Response $response): bool
+    {
+        return in_array($response->status(), [408, 429, 500, 502, 503, 504], true);
+    }
+
+    private function resolvePageSize(?int $pageSize): int
+    {
+        $resolved = $pageSize
+            ?? $this->source->page_size
+            ?? config('bnc.a1_api_page_size', config('bnc.default_page_size', 100));
+
+        $maxPageSize = max(1, (int) config('bnc.a1_api_max_page_size', 200));
+
+        return min(max(1, (int) $resolved), $maxPageSize);
     }
 
     private function authenticatedRequest(): PendingRequest
