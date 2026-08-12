@@ -20,7 +20,7 @@ class SupplierPriceRecalcStatusCommand extends Command
                             {--full : Scan all products for price mismatches (slow)}
                             {--product= : Debug a single product slug}
                             {--fix : With --product, persist recalculated prices immediately}
-                            {--fix-all : Recalculate and persist all supplier products now (SSH/nohup)}';
+                            {--recalc-all : Recalculate and persist all supplier products now (SSH/nohup)}';
 
     protected $description = 'Check supplier price adjustment status, queue jobs, and sample product prices';
 
@@ -67,7 +67,7 @@ class SupplierPriceRecalcStatusCommand extends Command
             return self::SUCCESS;
         }
 
-        if ($this->option('fix-all')) {
+        if ($this->option('recalc-all')) {
             $this->info('Recalculating all supplier products synchronously...');
             $this->line('Use SSH with nohup if this takes longer than a few minutes.');
             $count = app(\App\Services\Pricing\ProductPriceRecalculator::class)
@@ -135,7 +135,7 @@ class SupplierPriceRecalcStatusCommand extends Command
             $this->newLine();
             $this->comment('Tips:');
             $this->line('  php artisan bnc:supplier-price-recalc-status startech --run   # queue recalculation');
-            $this->line('  php artisan bnc:supplier-price-recalc-status startech --fix-all # SSH, all at once');
+            $this->line('  php artisan bnc:supplier-price-recalc-status startech --recalc-all # SSH, all at once');
             $this->line('  php artisan bnc:supplier-price-recalc-status startech --full  # verify all prices');
             $this->line('  php artisan bnc:recalculate-prices --supplier='.$supplier->id);
         }
@@ -304,7 +304,7 @@ class SupplierPriceRecalcStatusCommand extends Command
 
         if ($totalMismatch > 0) {
             $this->newLine();
-            $this->warn('  → Run --run to queue recalculation, or --fix-all via SSH for immediate fix.');
+            $this->warn('  → Run --run to queue recalculation, or --recalc-all via SSH for immediate fix.');
             $this->newLine();
             $this->info('Mismatch examples:');
 
