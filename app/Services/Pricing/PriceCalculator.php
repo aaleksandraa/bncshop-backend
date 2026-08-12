@@ -5,6 +5,7 @@ namespace App\Services\Pricing;
 use App\Models\Coupon;
 use App\Models\Product;
 use App\Models\ProductPriceHistory;
+use App\Models\Supplier;
 
 class PriceCalculator
 {
@@ -26,6 +27,11 @@ class PriceCalculator
 
         if ($priceLocked && $product->manual_price !== null) {
             $regularPrice = (float) $product->manual_price;
+        } elseif ($apiPricing = $this->resolveApiAdjustedPricing($product)) {
+            $regularPrice = $apiPricing['regular_price'];
+            $wholesalePrice = $apiPricing['wholesale_price'];
+            $supplierName = $apiPricing['supplier_name'];
+            $appliedPriceAdjustment = $apiPricing['applied_price_adjustment'];
         } else {
             $pricing = $this->resolveRegularPrice($product);
             $regularPrice = $pricing['regular_price'];
@@ -33,7 +39,6 @@ class PriceCalculator
             $appliedMargin = $pricing['applied_margin'];
             $marginSource = $pricing['margin_source'];
             $supplierName = $pricing['supplier_name'];
-            $appliedPriceAdjustment = $pricing['applied_price_adjustment'];
         }
 
         $discount = null;
@@ -52,6 +57,10 @@ class PriceCalculator
                 $discountAmount = $this->discountEngine->discountAmount($discount, $regularPrice);
                 $discountSource = 'local';
                 $badgeText = $discount->badge_text;
+            } elseif ($appliedPriceAdjustment !== null && $this->hasActiveApiRebate($product)) {
+                $base = round((float) ($product->api_final_price ?? $this->applyApiRebate($product)) + $appliedPriceAdjustment, 2);
+                $discountAmount = round($regularPrice - $base, 2);
+                $discountSource = 'api';
             } elseif ($this->hasActiveApiRebate($product)) {
                 $base = (float) ($product->api_final_price ?? $this->applyApiRebate($product));
                 $discountAmount = round($regularPrice - $base, 2);
@@ -135,13 +144,55 @@ class PriceCalculator
     }
 
     /**
+     * When the selected supplier has a fixed price adjustment, derive regular/display
+     * from API prices and add the adjustment on top (not on wholesale margin).
+     *
+     * @return array{
+     *     regular_price: float,
+     *     wholesale_price: ?float,
+     *     supplier_name: ?string,
+     *     applied_price_adjustment: float
+     * }|null
+     */
+    private function resolveApiAdjustedPricing(Product $product): ?array
+    {
+        $offer = $this->supplierOfferSelector->select($product);
+
+        if (! $offer) {
+            return null;
+        }
+
+        $offer->loadMissing('supplier');
+        $supplier = $offer->supplier;
+        $adjustment = (float) ($supplier?->price_adjustment_amount ?? 0);
+
+        if ($adjustment <= 0) {
+            return null;
+        }
+
+        $apiPrice = (float) ($product->api_price ?? 0);
+
+        if ($apiPrice <= 0) {
+            return null;
+        }
+
+        $supplierName = $supplier?->display_name ?? $supplier?->name;
+
+        return [
+            'regular_price' => round($apiPrice + $adjustment, 2),
+            'wholesale_price' => $offer->supplier_price !== null ? (float) $offer->supplier_price : null,
+            'supplier_name' => $supplierName,
+            'applied_price_adjustment' => $adjustment,
+        ];
+    }
+
+    /**
      * @return array{
      *     regular_price: float,
      *     wholesale_price: ?float,
      *     applied_margin: ?float,
      *     margin_source: ?string,
-     *     supplier_name: ?string,
-     *     applied_price_adjustment: ?float
+     *     supplier_name: ?string
      * }
      */
     private function resolveRegularPrice(Product $product): array
@@ -157,7 +208,6 @@ class PriceCalculator
                 'applied_margin' => null,
                 'margin_source' => null,
                 'supplier_name' => null,
-                'applied_price_adjustment' => null,
             ];
         }
 
@@ -168,11 +218,7 @@ class PriceCalculator
         $supplierName = $offer->supplier?->display_name ?? $offer->supplier?->name;
 
         if ($marginPercentage === null) {
-            $basePrice = $fallback > 0 ? $fallback : $wholesalePrice;
-            [$regularPrice, $appliedPriceAdjustment] = $this->applySupplierPriceAdjustment(
-                $basePrice,
-                $offer->supplier,
-            );
+            $regularPrice = $fallback > 0 ? $fallback : $wholesalePrice;
 
             return [
                 'regular_price' => $regularPrice,
@@ -180,15 +226,10 @@ class PriceCalculator
                 'applied_margin' => null,
                 'margin_source' => $margin['source'],
                 'supplier_name' => $supplierName,
-                'applied_price_adjustment' => $appliedPriceAdjustment,
             ];
         }
 
         $regularPrice = round($wholesalePrice * (1 + ($marginPercentage / 100)), 2);
-        [$regularPrice, $appliedPriceAdjustment] = $this->applySupplierPriceAdjustment(
-            $regularPrice,
-            $offer->supplier,
-        );
 
         return [
             'regular_price' => $regularPrice,
@@ -196,22 +237,7 @@ class PriceCalculator
             'applied_margin' => $marginPercentage,
             'margin_source' => $margin['source'],
             'supplier_name' => $supplierName,
-            'applied_price_adjustment' => $appliedPriceAdjustment,
         ];
-    }
-
-    /**
-     * @return array{0: float, 1: ?float}
-     */
-    private function applySupplierPriceAdjustment(float $regularPrice, ?\App\Models\Supplier $supplier): array
-    {
-        $adjustment = (float) ($supplier?->price_adjustment_amount ?? 0);
-
-        if ($adjustment <= 0) {
-            return [$regularPrice, null];
-        }
-
-        return [round($regularPrice + $adjustment, 2), $adjustment];
     }
 
     private function hasActiveApiRebate(Product $product): bool

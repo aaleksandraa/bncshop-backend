@@ -42,6 +42,8 @@ class RecalculateSupplierProductPricesJobTest extends TestCase
             'status' => 'active',
             'is_public' => true,
             'category_id' => $category->id,
+            'api_price' => 726.96,
+            'api_final_price' => 726.96,
             'regular_price' => 726.96,
             'display_price' => 726.96,
         ]);
