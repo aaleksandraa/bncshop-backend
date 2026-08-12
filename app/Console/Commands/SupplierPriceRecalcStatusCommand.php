@@ -6,6 +6,7 @@ use App\Jobs\RecalculateSupplierProductPricesJob;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Services\Pricing\PriceCalculator;
+use App\Services\Pricing\SupplierOfferSelector;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
@@ -18,7 +19,8 @@ class SupplierPriceRecalcStatusCommand extends Command
                             {--sync : Recalculate immediately in this process (no queue)}
                             {--full : Scan all products for price mismatches (slow)}
                             {--product= : Debug a single product slug}
-                            {--fix : With --product, persist recalculated prices immediately}';
+                            {--fix : With --product, persist recalculated prices immediately}
+                            {--fix-all : Recalculate and persist all supplier products now (SSH/nohup)}';
 
     protected $description = 'Check supplier price adjustment status, queue jobs, and sample product prices';
 
@@ -65,13 +67,25 @@ class SupplierPriceRecalcStatusCommand extends Command
             return self::SUCCESS;
         }
 
+        if ($this->option('fix-all')) {
+            $this->info('Recalculating all supplier products synchronously...');
+            $this->line('Use SSH with nohup if this takes longer than a few minutes.');
+            $count = app(\App\Services\Pricing\ProductPriceRecalculator::class)
+                ->forSupplierAndCategory($supplier->id);
+            $this->info("Recalculated {$count} products.");
+            $this->newLine();
+            $this->reportPriceMismatchSummary($supplier, $priceCalculator);
+
+            return self::SUCCESS;
+        }
+
         if ($this->option('run')) {
             $pendingBefore = $this->defaultQueueSize();
-            RecalculateSupplierProductPricesJob::start($supplier->id, $supplier->label());
+            $chunks = RecalculateSupplierProductPricesJob::start($supplier->id, $supplier->label());
             $pendingAfter = $this->defaultQueueSize();
 
             $this->info('Background recalculation queued.');
-            $this->line('  Chunks: ~'.$estimatedChunks.' × '.RecalculateSupplierProductPricesJob::CHUNK_SIZE.' products');
+            $this->line('  Chunks dispatched: '.$chunks.' × '.RecalculateSupplierProductPricesJob::CHUNK_SIZE.' products (independent jobs)');
             $this->line('  Default queue size before: '.$pendingBefore);
             $this->line('  Default queue size after:  '.$pendingAfter);
             $this->newLine();
@@ -88,7 +102,7 @@ class SupplierPriceRecalcStatusCommand extends Command
         if ($productCount > 0) {
             $this->newLine();
 
-        if ($this->option('full') && (float) $supplier->price_adjustment_amount > 0) {
+            if ((float) $supplier->price_adjustment_amount > 0 && $this->option('full')) {
                 $pending = $this->defaultQueueSize();
                 if ($pending > 0) {
                     $this->warn("Recalculation still in progress ({$pending} jobs on default queue).");
@@ -121,6 +135,7 @@ class SupplierPriceRecalcStatusCommand extends Command
             $this->newLine();
             $this->comment('Tips:');
             $this->line('  php artisan bnc:supplier-price-recalc-status startech --run   # queue recalculation');
+            $this->line('  php artisan bnc:supplier-price-recalc-status startech --fix-all # SSH, all at once');
             $this->line('  php artisan bnc:supplier-price-recalc-status startech --full  # verify all prices');
             $this->line('  php artisan bnc:recalculate-prices --supplier='.$supplier->id);
         }
@@ -207,53 +222,103 @@ class SupplierPriceRecalcStatusCommand extends Command
     {
         $this->info('Scanning all supplier products for price mismatches...');
 
+        $offerSelector = app(SupplierOfferSelector::class);
+        $adjustment = (float) $supplier->price_adjustment_amount;
+
         $checked = 0;
-        $mismatchCount = 0;
+        $inSync = 0;
+        $regularMismatch = 0;
+        $displayOnlyMismatch = 0;
+        $startechPricing = 0;
+        $otherSupplierPricing = 0;
         $mismatchSamples = [];
 
         Product::query()
             ->where('price_locked', false)
             ->whereHas('supplierOffers', fn ($q) => $q->where('supplier_id', $supplier->id))
             ->with(['supplierOffers.supplier', 'category'])
-            ->chunkById(200, function ($products) use ($priceCalculator, &$checked, &$mismatchCount, &$mismatchSamples): void {
+            ->chunkById(200, function ($products) use (
+                $priceCalculator,
+                $offerSelector,
+                $supplier,
+                $adjustment,
+                &$checked,
+                &$inSync,
+                &$regularMismatch,
+                &$displayOnlyMismatch,
+                &$startechPricing,
+                &$otherSupplierPricing,
+                &$mismatchSamples,
+            ): void {
                 foreach ($products as $product) {
                     $checked++;
                     $result = $priceCalculator->calculate($product);
+                    $selectedOffer = $offerSelector->select($product);
                     $storedRegular = (float) ($product->regular_price ?? 0);
                     $storedDisplay = (float) ($product->display_price ?? 0);
                     $expectedRegular = $result->regularPrice;
                     $expectedDisplay = $result->displayPrice;
 
-                    if (
-                        round($storedRegular, 2) === round($expectedRegular, 2)
-                        && round($storedDisplay, 2) === round($expectedDisplay, 2)
-                    ) {
+                    if ($selectedOffer?->supplier_id === $supplier->id) {
+                        $startechPricing++;
+                    } else {
+                        $otherSupplierPricing++;
+                    }
+
+                    $regularOk = round($storedRegular, 2) === round($expectedRegular, 2);
+                    $displayOk = round($storedDisplay, 2) === round($expectedDisplay, 2);
+
+                    if ($regularOk && $displayOk) {
+                        $inSync++;
+
                         continue;
                     }
 
-                    $mismatchCount++;
+                    if ($regularOk && ! $displayOk) {
+                        $displayOnlyMismatch++;
+                    } else {
+                        $regularMismatch++;
+                    }
 
-                    if (count($mismatchSamples) < 5) {
-                        $mismatchSamples[] = [$product, $result, $storedRegular, $storedDisplay, $expectedRegular, $expectedDisplay];
+                    if (count($mismatchSamples) < 8) {
+                        $kind = $regularOk ? 'display-only' : 'regular';
+                        $mismatchSamples[] = [$kind, $product, $result, $storedRegular, $storedDisplay, $expectedRegular, $expectedDisplay, $selectedOffer];
                     }
                 }
             });
 
-        $inSync = $checked - $mismatchCount;
+        $totalMismatch = $regularMismatch + $displayOnlyMismatch;
+
         $this->line("  Checked: {$checked}");
         $this->line("  In sync: {$inSync}");
-        $this->line("  Mismatch: {$mismatchCount}");
+        $this->line("  Mismatch: {$totalMismatch}");
+        $this->line("    regular price wrong: {$regularMismatch}");
+        $this->line("    display only (fake akcija): {$displayOnlyMismatch}");
 
-        if ($mismatchCount > 0) {
-            $this->warn('  → Some products still have old prices. Run with --run to queue recalculation.');
+        if ($adjustment > 0) {
+            $this->newLine();
+            $this->line('  Pricing source for products with Startech offer:');
+            $this->line("    Startech selected (+{$adjustment} KM applies): {$startechPricing}");
+            $this->line("    Other supplier selected (no +{$adjustment} KM): {$otherSupplierPricing}");
+        }
+
+        if ($totalMismatch > 0) {
+            $this->newLine();
+            $this->warn('  → Run --run to queue recalculation, or --fix-all via SSH for immediate fix.');
             $this->newLine();
             $this->info('Mismatch examples:');
 
-            foreach ($mismatchSamples as [$product, $result, $storedRegular, $storedDisplay, $expectedRegular, $expectedDisplay]) {
+            foreach ($mismatchSamples as [$kind, $product, $result, $storedRegular, $storedDisplay, $expectedRegular, $expectedDisplay, $selectedOffer]) {
+                $pricingNote = $selectedOffer?->supplier_id === $supplier->id
+                    ? 'Startech pricing'
+                    : 'other supplier: '.($selectedOffer?->supplier?->display_name ?? $selectedOffer?->supplier?->name ?? '—');
+
                 $this->line(sprintf(
-                    '  [MISMATCH] #%d %s — regular: %.2f→%.2f KM, display: %.2f→%.2f KM (supplier: %s)',
+                    '  [%s/%s] #%d %s — regular: %.2f→%.2f KM, display: %.2f→%.2f KM (%s)',
+                    strtoupper($kind),
+                    $pricingNote,
                     $product->id,
-                    \Illuminate\Support\Str::limit($product->name, 40),
+                    \Illuminate\Support\Str::limit($product->name, 35),
                     $storedRegular,
                     $expectedRegular,
                     $storedDisplay,

@@ -65,16 +65,68 @@ class RecalculateSupplierProductPricesJobTest extends TestCase
         $this->assertSame(746.96, (float) $product->display_price);
     }
 
-    public function test_job_can_be_dispatched_to_queue(): void
+    public function test_start_dispatches_independent_chunk_jobs(): void
     {
         Queue::fake();
 
-        RecalculateSupplierProductPricesJob::start(1, 'Startech');
+        $category = Category::factory()->create();
+        $supplier = Supplier::query()->create([
+            'external_supplier_id' => 'supplier-chunks',
+            'name' => 'startech',
+            'display_name' => 'Startech',
+            'code' => 'startech',
+            'price_adjustment_amount' => 20,
+        ]);
 
-        Queue::assertPushed(RecalculateSupplierProductPricesJob::class, function (RecalculateSupplierProductPricesJob $job): bool {
-            return $job->supplierId === 1
-                && $job->supplierLabel === 'Startech'
-                && $job->afterProductId === 0;
-        });
+        SupplierCategoryMarginRule::query()->create([
+            'supplier_id' => $supplier->id,
+            'category_id' => $category->id,
+            'margin_percentage' => 30,
+            'subcategory_scope' => 'all_descendants',
+            'is_active' => true,
+        ]);
+
+        for ($i = 1; $i <= RecalculateSupplierProductPricesJob::CHUNK_SIZE + 1; $i++) {
+            $product = Product::query()->create([
+                'external_product_id' => "prod-chunk-{$i}",
+                'name' => "Proizvod {$i}",
+                'slug' => "proizvod-chunk-{$i}",
+                'status' => 'active',
+                'is_public' => true,
+                'category_id' => $category->id,
+                'regular_price' => 100,
+                'display_price' => 100,
+            ]);
+
+            ProductSupplierOffer::query()->create([
+                'product_id' => $product->id,
+                'supplier_id' => $supplier->id,
+                'supplier_price' => 50,
+                'supplier_stock' => 1,
+                'is_selected_price_source' => true,
+            ]);
+        }
+
+        $dispatched = RecalculateSupplierProductPricesJob::start($supplier->id, $supplier->label());
+
+        $this->assertSame(2, $dispatched);
+        Queue::assertPushed(RecalculateSupplierProductPricesJob::class, 2);
+    }
+
+    public function test_start_dispatches_nothing_when_no_products(): void
+    {
+        Queue::fake();
+
+        $supplier = Supplier::query()->create([
+            'external_supplier_id' => 'supplier-empty',
+            'name' => 'startech',
+            'display_name' => 'Startech',
+            'code' => 'startech',
+        ]);
+
+        $dispatched = RecalculateSupplierProductPricesJob::start($supplier->id, $supplier->label());
+
+        $this->assertSame(0, $dispatched);
+        Queue::assertNothingPushed();
     }
 }
