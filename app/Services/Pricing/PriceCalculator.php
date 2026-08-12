@@ -200,7 +200,8 @@ class PriceCalculator
      */
     private function resolveRegularPrice(Product $product): array
     {
-        $fallback = (float) ($product->regular_price ?? $product->api_price ?? 0);
+        $apiPrice = (float) ($product->api_price ?? 0);
+        $fallback = $apiPrice > 0 ? $apiPrice : (float) ($product->regular_price ?? 0);
 
         $offer = $this->supplierOfferSelector->select($product);
 
@@ -220,27 +221,27 @@ class PriceCalculator
         $marginPercentage = $margin['margin_percentage'];
         $supplierName = $offer->supplier?->display_name ?? $offer->supplier?->name;
 
-        if ($marginPercentage === null) {
-            $regularPrice = $fallback > 0 ? $fallback : $wholesalePrice;
-
-            return [
-                'regular_price' => $regularPrice,
-                'wholesale_price' => $wholesalePrice,
-                'applied_margin' => null,
-                'margin_source' => $margin['source'],
-                'supplier_name' => $supplierName,
-            ];
-        }
-
-        $regularPrice = round($wholesalePrice * (1 + ($marginPercentage / 100)), 2);
-
-        return [
-            'regular_price' => $regularPrice,
+        $metadata = [
             'wholesale_price' => $wholesalePrice,
             'applied_margin' => $marginPercentage,
             'margin_source' => $margin['source'],
             'supplier_name' => $supplierName,
         ];
+
+        // Technoshop API price is the authoritative gross retail price (margin + PDV included).
+        if ($apiPrice > 0) {
+            return array_merge($metadata, ['regular_price' => $apiPrice]);
+        }
+
+        if ($marginPercentage === null) {
+            $regularPrice = $fallback > 0 ? $fallback : $wholesalePrice;
+        } else {
+            $netPrice = $wholesalePrice * (1 + ($marginPercentage / 100));
+            $vatRate = (float) config('bnc.vat_rate_percent', 17) / 100;
+            $regularPrice = round($netPrice * (1 + $vatRate), 2);
+        }
+
+        return array_merge($metadata, ['regular_price' => $regularPrice]);
     }
 
     private function hasActiveApiRebate(Product $product): bool

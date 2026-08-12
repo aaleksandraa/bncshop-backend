@@ -4,6 +4,9 @@ return [
     'currency' => env('BNC_CURRENCY', 'BAM'),
     'currency_symbol' => env('BNC_CURRENCY_SYMBOL', 'KM'),
 
+    /** Gross VAT rate applied only when deriving a price from wholesale + margin (no API price). */
+    'vat_rate_percent' => (float) env('BNC_VAT_RATE_PERCENT', 17),
+
     'attribute_type_map' => [
         0 => 'text',
         1 => 'number',

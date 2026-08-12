@@ -15,7 +15,7 @@ class PriceCalculatorSupplierMarginTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_regular_price_is_calculated_from_supplier_price_and_margin_rule(): void
+    public function test_regular_price_uses_api_price_and_keeps_margin_metadata(): void
     {
         $category = Category::factory()->create();
         $supplier = Supplier::query()->create([
@@ -55,11 +55,49 @@ class PriceCalculatorSupplierMarginTest extends TestCase
 
         $result = app(PriceCalculator::class)->calculate($product->fresh(['supplierOffers.supplier', 'category']));
 
-        $this->assertSame(726.96, $result->regularPrice);
+        $this->assertSame(809.0, $result->regularPrice);
         $this->assertSame(559.2, $result->wholesalePrice);
         $this->assertSame(30.0, $result->appliedMargin);
         $this->assertSame('rule', $result->marginSource);
         $this->assertSame('Comtrade', $result->supplierName);
+        $this->assertSame(809.0, $result->displayPrice);
+    }
+
+    public function test_fallback_price_includes_vat_when_api_price_missing(): void
+    {
+        $category = Category::factory()->create([
+            'margin_percentage' => 30,
+        ]);
+        $supplier = Supplier::query()->create([
+            'external_supplier_id' => 'supplier-no-api',
+            'name' => 'uniexpert',
+            'display_name' => 'Uniexpert',
+            'code' => 'uniexpert',
+        ]);
+
+        $product = Product::query()->create([
+            'external_product_id' => 'prod-no-api-1',
+            'name' => 'Proizvod bez API cijene',
+            'slug' => 'proizvod-bez-api-cijene',
+            'status' => 'active',
+            'is_public' => true,
+            'category_id' => $category->id,
+            'regular_price' => 0,
+        ]);
+
+        ProductSupplierOffer::query()->create([
+            'product_id' => $product->id,
+            'supplier_id' => $supplier->id,
+            'supplier_sku' => 'UX-2',
+            'supplier_price' => 92,
+            'supplier_stock' => 5,
+            'is_selected_price_source' => true,
+        ]);
+
+        $result = app(PriceCalculator::class)->calculate($product->fresh(['supplierOffers.supplier', 'category']));
+
+        $this->assertSame(139.93, $result->regularPrice);
+        $this->assertSame(139.93, $result->displayPrice);
     }
 
     public function test_display_price_uses_api_price_when_no_supplier_adjustment(): void
@@ -99,7 +137,7 @@ class PriceCalculatorSupplierMarginTest extends TestCase
 
         $result = app(PriceCalculator::class)->calculate($product->fresh(['supplierOffers.supplier', 'category']));
 
-        $this->assertSame(119.60, $result->regularPrice);
+        $this->assertSame(139.0, $result->regularPrice);
         $this->assertSame(139.0, $result->displayPrice);
         $this->assertFalse($result->onSale);
     }
