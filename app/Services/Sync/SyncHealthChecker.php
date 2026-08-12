@@ -175,8 +175,10 @@ class SyncHealthChecker
             $lastError = $source->last_error;
             if (str_contains($lastError, '504 Gateway Time-out') || str_contains($lastError, '502 Bad Gateway')) {
                 $issues[] = 'A1 Technoshop API (nginx) vraća timeout — problem je na njihovoj strani ili upit traje predugo. Sync koristi manje stranice (max '
-                    .config('bnc.a1_api_max_page_size', 200)
-                    .' proizvoda) i automatski retry.';
+                    .config('bnc.a1_api_max_page_size', 50)
+                    .' proizvoda, inkrementalno '
+                    .config('bnc.a1_api_incremental_page_size', 25)
+                    .') i automatski retry.';
             }
             $issues[] = 'Zadnja greška konekcije: '.$lastError;
         }

@@ -208,7 +208,7 @@ class IntegrationApiClientTest extends TestCase
     public function test_page_size_is_capped_to_configured_maximum(): void
     {
         config([
-            'bnc.a1_api_max_page_size' => 200,
+            'bnc.a1_api_max_page_size' => 50,
             'bnc.a1_api_page_size' => 500,
         ]);
 
@@ -225,6 +225,48 @@ class IntegrationApiClientTest extends TestCase
 
         $client = IntegrationApiClient::forSource($source);
 
-        $this->assertSame(200, $client->resolvedPageSize());
+        $this->assertSame(50, $client->resolvedPageSize());
+    }
+
+    public function test_products_request_downsizes_page_on_gateway_timeout(): void
+    {
+        config([
+            'bnc.a1_api_verify_ssl' => false,
+            'bnc.a1_api_max_page_size' => 50,
+            'bnc.a1_api_incremental_page_size' => 25,
+            'bnc.a1_api_retries' => 1,
+            'bnc.a1_api_retry_delay_ms' => 0,
+        ]);
+
+        $source = ApiSource::query()->create([
+            'name' => 'Test',
+            'target_system_code' => 'bnc-shop',
+            'base_url' => 'https://a1team.ba',
+            'username' => 'bnc',
+            'password' => 'secret',
+            'access_token' => 'token',
+            'page_size' => 50,
+            'is_active' => true,
+        ]);
+
+        Http::fake([
+            'https://a1team.ba/api/integrations/bnc-shop/products*' => function ($request) {
+                $pageSize = (int) ($request->data()['PageSize'] ?? 0);
+
+                if ($pageSize >= 50) {
+                    return Http::response('<html>504 Gateway Time-out</html>', 504);
+                }
+
+                return Http::response([
+                    'data' => [['productId' => '1']],
+                    'pagination' => ['nextPage' => null, 'pageSize' => $pageSize],
+                ], 200);
+            },
+        ]);
+
+        $response = IntegrationApiClient::forSource($source)->getProducts(null, 1, 50);
+
+        $this->assertCount(1, $response['data']);
+        $this->assertSame(25, $response['page_size']);
     }
 }

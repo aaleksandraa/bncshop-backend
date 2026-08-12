@@ -148,14 +148,19 @@ class SyncOrchestrator
         $updated = 0;
         $deactivated = 0;
         $errors = [];
-        $pageSize = $client->resolvedPageSize();
+        $requestPageSize = $dateModifiedAfter !== null
+            ? (int) config('bnc.a1_api_incremental_page_size', 25)
+            : null;
+        $pageSize = $client->resolvedPageSize($requestPageSize);
         $pagesProcessed = 0;
+        $pageDelayMs = max(0, (int) config('bnc.a1_api_page_delay_ms', 1000));
 
         do {
             $started = microtime(true);
-            $response = $client->getProducts($dateModifiedAfter, $page);
+            $response = $client->getProducts($dateModifiedAfter, $page, $requestPageSize);
             $products = $response['data'];
             $pagination = $response['meta'];
+            $pageSize = (int) ($response['page_size'] ?? $pageSize);
             $pageImported = 0;
             $pageErrors = [];
 
@@ -199,6 +204,10 @@ class SyncOrchestrator
             }
 
             $page = $this->resolveNextPage($pagination, $page, count($products), $pageSize);
+
+            if ($page !== null && $pageDelayMs > 0) {
+                usleep($pageDelayMs * 1000);
+            }
         } while ($page !== null);
 
         $imported = $created + $updated + $deactivated;

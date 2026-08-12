@@ -106,6 +106,30 @@ class A1ApiTestCommand extends Command
             $failed++;
         }
 
+        $this->info('Test 1.6 — Resolved sync page sizes');
+        $this->line('  DB page_size: '.($source->page_size ?? '—'));
+        $this->line('  Resolved max: '.$client->resolvedPageSize());
+        $this->line('  Incremental page size: '.config('bnc.a1_api_incremental_page_size', 25));
+
+        $this->info('Test 1.6b — Incremental fetch (PageSize='.config('bnc.a1_api_incremental_page_size', 25).')');
+        try {
+            $modifiedAfter = IntegrationApiClient::formatModifiedAfter(
+                $source->last_successful_sync_at ?? now()->subMonth(),
+            );
+            $start = microtime(true);
+            $response = $client->getProducts(
+                $modifiedAfter,
+                1,
+                (int) config('bnc.a1_api_incremental_page_size', 25),
+            );
+            $elapsed = round(microtime(true) - $start, 1);
+            $this->line('  PASS: '.count($response['data'])." products in {$elapsed}s (effective page_size={$response['page_size']})");
+            $passed++;
+        } catch (\Throwable $e) {
+            $this->error('  FAIL: '.$e->getMessage());
+            $failed++;
+        }
+
         // Test 1.7 ModifiedAfter
         $this->info('Test 1.7 — ModifiedAfter filter');
         try {

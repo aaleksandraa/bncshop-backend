@@ -120,29 +120,43 @@ class IntegrationApiClient
     {
         $this->ensureAuthenticated();
 
-        $pageSize = $this->resolvePageSize($pageSize);
+        $initialPageSize = $this->resolvePageSize($pageSize);
+        $lastException = null;
 
-        $query = [
-            'Page' => $page,
-            'PageSize' => $pageSize,
-        ];
+        foreach ($this->adaptivePageSizes($initialPageSize) as $tryPageSize) {
+            $query = [
+                'Page' => $page,
+                'PageSize' => $tryPageSize,
+            ];
 
-        if ($dateModifiedAfter) {
-            $query['ModifiedAfter'] = $dateModifiedAfter;
+            if ($dateModifiedAfter) {
+                $query['ModifiedAfter'] = $dateModifiedAfter;
+            }
+
+            try {
+                $response = $this->getWithRetry(
+                    $this->integrationPath('products'),
+                    $query,
+                    'Failed to fetch products',
+                );
+
+                $payload = $response->json();
+
+                return [
+                    'data' => $this->unwrapData($payload),
+                    'meta' => $this->extractPagination($payload),
+                    'page_size' => $tryPageSize,
+                ];
+            } catch (RuntimeException $e) {
+                $lastException = $e;
+
+                if (! $this->isGatewayTimeoutError($e)) {
+                    throw $e;
+                }
+            }
         }
 
-        $response = $this->getWithRetry(
-            $this->integrationPath('products'),
-            $query,
-            'Failed to fetch products',
-        );
-
-        $payload = $response->json();
-
-        return [
-            'data' => $this->unwrapData($payload),
-            'meta' => $this->extractPagination($payload),
-        ];
+        throw $lastException ?? new RuntimeException('Failed to fetch products: retries exhausted');
     }
 
     public function resolvedPageSize(?int $pageSize = null): int
@@ -296,9 +310,44 @@ class IntegrationApiClient
             ?? $this->source->page_size
             ?? config('bnc.a1_api_page_size', config('bnc.default_page_size', 100));
 
-        $maxPageSize = max(1, (int) config('bnc.a1_api_max_page_size', 200));
+        $maxPageSize = max(1, (int) config('bnc.a1_api_max_page_size', 50));
 
         return min(max(1, (int) $resolved), $maxPageSize);
+    }
+
+    /**
+     * @return list<int>
+     */
+    private function adaptivePageSizes(int $requested): array
+    {
+        $candidates = array_unique([
+            $requested,
+            (int) config('bnc.a1_api_incremental_page_size', 25),
+            25,
+            10,
+        ]);
+
+        $sizes = [];
+
+        foreach ($candidates as $size) {
+            if ($size >= 1 && $size <= $requested) {
+                $sizes[] = $size;
+            }
+        }
+
+        rsort($sizes);
+
+        return array_values($sizes);
+    }
+
+    private function isGatewayTimeoutError(RuntimeException $exception): bool
+    {
+        $message = $exception->getMessage();
+
+        return str_contains($message, '504 Gateway Time-out')
+            || str_contains($message, '502 Bad Gateway')
+            || str_contains($message, '503 Service Temporarily Unavailable')
+            || str_contains($message, '504 Gateway Timeout');
     }
 
     private function authenticatedRequest(): PendingRequest
