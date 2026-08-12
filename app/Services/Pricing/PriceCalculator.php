@@ -5,7 +5,7 @@ namespace App\Services\Pricing;
 use App\Models\Coupon;
 use App\Models\Product;
 use App\Models\ProductPriceHistory;
-use App\Models\Supplier;
+use App\Services\Sync\FieldLockService;
 
 class PriceCalculator
 {
@@ -14,6 +14,7 @@ class PriceCalculator
         private readonly CouponEngine $couponEngine,
         private readonly SupplierOfferSelector $supplierOfferSelector,
         private readonly MarginRuleResolver $marginRuleResolver,
+        private readonly FieldLockService $fieldLockService,
     ) {}
 
     public function calculate(Product $product, ?Coupon $coupon = null): PriceResult
@@ -24,9 +25,17 @@ class PriceCalculator
         $marginSource = null;
         $supplierName = null;
         $appliedPriceAdjustment = null;
+        $pricedFromLocalMargin = false;
 
         if ($priceLocked && $product->manual_price !== null) {
             $regularPrice = (float) $product->manual_price;
+        } elseif ($localPricing = $this->resolveLocalMarginPricing($product)) {
+            $regularPrice = $localPricing['regular_price'];
+            $wholesalePrice = $localPricing['wholesale_price'];
+            $appliedMargin = $localPricing['applied_margin'];
+            $marginSource = $localPricing['margin_source'];
+            $supplierName = $localPricing['supplier_name'];
+            $pricedFromLocalMargin = true;
         } elseif ($apiPricing = $this->resolveApiAdjustedPricing($product)) {
             $regularPrice = $apiPricing['regular_price'];
             $wholesalePrice = $apiPricing['wholesale_price'];
@@ -57,6 +66,8 @@ class PriceCalculator
                 $discountAmount = $this->discountEngine->discountAmount($discount, $regularPrice);
                 $discountSource = 'local';
                 $badgeText = $discount->badge_text;
+            } elseif ($pricedFromLocalMargin) {
+                $base = (float) $regularPrice;
             } elseif ($appliedPriceAdjustment !== null && $this->hasActiveApiRebate($product)) {
                 $base = round((float) ($product->api_final_price ?? $this->applyApiRebate($product)) + $appliedPriceAdjustment, 2);
                 $discountAmount = round($regularPrice - $base, 2);
@@ -144,6 +155,65 @@ class PriceCalculator
         }
 
         return $result;
+    }
+
+    /**
+     * Admin override: nabavna × (1 + marža%) × (1 + PDV).
+     * Used when the product margin field is locked, or the category margin was edited locally.
+     *
+     * @return array{
+     *     regular_price: float,
+     *     wholesale_price: float,
+     *     applied_margin: float,
+     *     margin_source: string,
+     *     supplier_name: ?string
+     * }|null
+     */
+    private function resolveLocalMarginPricing(Product $product): ?array
+    {
+        $offer = $this->supplierOfferSelector->select($product);
+
+        if (! $offer || $offer->supplier_price === null || (float) $offer->supplier_price <= 0) {
+            return null;
+        }
+
+        $product->loadMissing('category');
+        $offer->loadMissing('supplier');
+
+        $productMarginLocked = $this->fieldLockService->isLocked($product, 'margin_percentage');
+        $productMargin = (float) ($product->margin_percentage ?? 0);
+        $categoryLocked = (bool) ($product->category?->margin_locked);
+        $categoryMargin = $product->category?->margin_percentage !== null
+            ? (float) $product->category->margin_percentage
+            : null;
+
+        if ($productMarginLocked && $productMargin > 0) {
+            $marginPercentage = $productMargin;
+            $marginSource = 'product';
+        } elseif ($categoryLocked && $categoryMargin !== null) {
+            $marginPercentage = $categoryMargin;
+            $marginSource = 'category';
+        } else {
+            return null;
+        }
+
+        $wholesalePrice = (float) $offer->supplier_price;
+
+        return [
+            'regular_price' => $this->grossFromWholesale($wholesalePrice, $marginPercentage),
+            'wholesale_price' => $wholesalePrice,
+            'applied_margin' => $marginPercentage,
+            'margin_source' => $marginSource,
+            'supplier_name' => $offer->supplier?->display_name ?? $offer->supplier?->name,
+        ];
+    }
+
+    private function grossFromWholesale(float $wholesalePrice, float $marginPercentage): float
+    {
+        $netPrice = $wholesalePrice * (1 + ($marginPercentage / 100));
+        $vatRate = (float) config('bnc.vat_rate_percent', 17) / 100;
+
+        return round($netPrice * (1 + $vatRate), 2);
     }
 
     /**
@@ -236,9 +306,7 @@ class PriceCalculator
         if ($marginPercentage === null) {
             $regularPrice = $fallback > 0 ? $fallback : $wholesalePrice;
         } else {
-            $netPrice = $wholesalePrice * (1 + ($marginPercentage / 100));
-            $vatRate = (float) config('bnc.vat_rate_percent', 17) / 100;
-            $regularPrice = round($netPrice * (1 + $vatRate), 2);
+            $regularPrice = $this->grossFromWholesale($wholesalePrice, $marginPercentage);
         }
 
         return array_merge($metadata, ['regular_price' => $regularPrice]);

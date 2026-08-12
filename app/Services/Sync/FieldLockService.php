@@ -24,6 +24,17 @@ class FieldLockService
 
         $this->clearCache($product, $fieldName);
     }
+
+    public function unlockField(Product $product, string $fieldName): void
+    {
+        ProductSyncLock::query()
+            ->where('product_id', $product->id)
+            ->where('field_name', $fieldName)
+            ->delete();
+
+        $this->clearCache($product, $fieldName);
+    }
+
     public function isLocked(Product $product, string $fieldName): bool
     {
         $cacheKey = "product_sync_lock:{$product->id}:{$fieldName}";

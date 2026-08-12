@@ -141,4 +141,92 @@ class PriceCalculatorSupplierMarginTest extends TestCase
         $this->assertSame(139.0, $result->displayPrice);
         $this->assertFalse($result->onSale);
     }
+
+    public function test_locked_product_margin_calculates_wholesale_plus_margin_plus_vat(): void
+    {
+        $category = Category::factory()->create([
+            'margin_percentage' => 30,
+        ]);
+        $supplier = Supplier::query()->create([
+            'external_supplier_id' => 'supplier-manual-margin',
+            'name' => 'uniexpert',
+            'display_name' => 'Uniexpert',
+            'code' => 'uniexpert',
+        ]);
+
+        $product = Product::query()->create([
+            'external_product_id' => 'prod-manual-margin',
+            'name' => 'Ručna marža',
+            'slug' => 'rucna-marza',
+            'status' => 'active',
+            'is_public' => true,
+            'category_id' => $category->id,
+            'api_price' => 139,
+            'api_final_price' => 139,
+            'regular_price' => 139,
+            'display_price' => 139,
+            'margin_percentage' => 40,
+        ]);
+
+        ProductSupplierOffer::query()->create([
+            'product_id' => $product->id,
+            'supplier_id' => $supplier->id,
+            'supplier_sku' => 'UX-3',
+            'supplier_price' => 92,
+            'supplier_stock' => 5,
+            'is_selected_price_source' => true,
+        ]);
+
+        app(\App\Services\Sync\FieldLockService::class)->lockField($product, 'margin_percentage');
+
+        $result = app(PriceCalculator::class)->calculate($product->fresh(['supplierOffers.supplier', 'category']));
+
+        $this->assertSame(150.70, $result->regularPrice);
+        $this->assertSame(150.70, $result->displayPrice);
+        $this->assertSame(40.0, $result->appliedMargin);
+        $this->assertSame('product', $result->marginSource);
+    }
+
+    public function test_locked_category_margin_calculates_wholesale_plus_margin_plus_vat(): void
+    {
+        $category = Category::factory()->create([
+            'margin_percentage' => 25,
+            'margin_locked' => true,
+        ]);
+        $supplier = Supplier::query()->create([
+            'external_supplier_id' => 'supplier-cat-lock',
+            'name' => 'asbis',
+            'display_name' => 'Asbis',
+            'code' => 'asbis',
+        ]);
+
+        $product = Product::query()->create([
+            'external_product_id' => 'prod-cat-lock',
+            'name' => 'Kategorija marža',
+            'slug' => 'kategorija-marza',
+            'status' => 'active',
+            'is_public' => true,
+            'category_id' => $category->id,
+            'api_price' => 3429,
+            'api_final_price' => 3429,
+            'regular_price' => 3429,
+            'display_price' => 3429,
+        ]);
+
+        ProductSupplierOffer::query()->create([
+            'product_id' => $product->id,
+            'supplier_id' => $supplier->id,
+            'supplier_sku' => 'AS-1',
+            'supplier_price' => 2399,
+            'supplier_stock' => 2,
+            'is_selected_price_source' => true,
+        ]);
+
+        $result = app(PriceCalculator::class)->calculate($product->fresh(['supplierOffers.supplier', 'category']));
+
+        $this->assertSame(3508.54, $result->regularPrice);
+        $this->assertSame(3508.54, $result->displayPrice);
+        $this->assertSame(25.0, $result->appliedMargin);
+        $this->assertSame('category', $result->marginSource);
+    }
 }

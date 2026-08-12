@@ -107,6 +107,30 @@ class CategoryResource extends Resource
                                     ])
                                     ->columns(2),
                             ]),
+                        Forms\Components\Tabs\Tab::make('Marža')
+                            ->icon('heroicon-o-calculator')
+                            ->visible(fn (): bool => auth()->user()?->can('view_margin') ?? false)
+                            ->schema([
+                                Forms\Components\Section::make('Marža iz Technoshop API-ja')
+                                    ->description('API šalje maržu po kategoriji (marginPercentage / marginName). Shop po defaultu koristi gotovu API cijenu proizvoda (već uključuje maržu i PDV). Ako ručno promijenite maržu, prodajna cijena se računa kao nabavna × (1 + marža%) × 1,17 (PDV).')
+                                    ->schema([
+                                        Forms\Components\TextInput::make('margin_name')
+                                            ->label('Naziv marže (API)')
+                                            ->disabled()
+                                            ->dehydrated(false),
+                                        Forms\Components\TextInput::make('margin_percentage')
+                                            ->label('Marža (%)')
+                                            ->numeric()
+                                            ->minValue(0)
+                                            ->maxValue(500)
+                                            ->suffix('%')
+                                            ->helperText('Uvezeno iz API-ja. Možete izmijeniti — tada se cijene proizvoda u ovoj kategoriji preračunaju iz nabavne + marže + PDV 17%.'),
+                                        Forms\Components\Toggle::make('margin_locked')
+                                            ->label('Koristi ovu maržu za prodajnu cijenu')
+                                            ->helperText('Isključeno: shop koristi API cijenu. Uključeno: nabavna × marža × PDV 17%. Sync neće pregaziti ručno unesenu maržu.'),
+                                    ])
+                                    ->columns(2),
+                            ]),
                         Forms\Components\Tabs\Tab::make('Filteri shopa')
                             ->icon('heroicon-o-funnel')
                             ->schema([
@@ -209,6 +233,17 @@ class CategoryResource extends Resource
                     ->searchable()
                     ->copyable()
                     ->toggleable(),
+                Tables\Columns\TextColumn::make('margin_percentage')
+                    ->label('Marža')
+                    ->suffix('%')
+                    ->sortable()
+                    ->toggleable()
+                    ->visible(fn (): bool => auth()->user()?->can('view_margin') ?? false),
+                Tables\Columns\IconColumn::make('margin_locked')
+                    ->label('Lokalna marža')
+                    ->boolean()
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->visible(fn (): bool => auth()->user()?->can('view_margin') ?? false),
                 Tables\Columns\TextColumn::make('short_description')
                     ->label('Kratki opis')
                     ->limit(40)

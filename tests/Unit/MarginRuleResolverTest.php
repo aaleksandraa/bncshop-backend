@@ -411,4 +411,28 @@ class MarginRuleResolverTest extends TestCase
         $this->assertSame(18.0, $resolver->resolve($gamingProduct, null)['margin_percentage']);
         $this->assertSame('none', $resolver->resolve($officeProduct, null)['source']);
     }
+
+    public function test_locked_product_margin_applies_to_a1_new_products(): void
+    {
+        $category = Category::factory()->create(['name' => 'Monitori']);
+
+        $product = Product::query()->create([
+            'external_product_id' => 'prod-locked-new',
+            'name' => 'Monitor locked',
+            'slug' => 'monitor-locked-new',
+            'status' => 'active',
+            'is_public' => true,
+            'is_new' => true,
+            'import_source' => 'a1',
+            'category_id' => $category->id,
+            'margin_percentage' => 18,
+        ]);
+
+        app(\App\Services\Sync\FieldLockService::class)->lockField($product, 'margin_percentage');
+
+        $result = app(MarginRuleResolver::class)->resolve($product, null);
+
+        $this->assertSame(18.0, $result['margin_percentage']);
+        $this->assertSame('product', $result['source']);
+    }
 }

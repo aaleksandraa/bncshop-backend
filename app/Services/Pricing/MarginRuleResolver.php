@@ -7,9 +7,14 @@ use App\Models\CategoryMarginRule;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\SupplierCategoryMarginRule;
+use App\Services\Sync\FieldLockService;
 
 class MarginRuleResolver
 {
+    public function __construct(
+        private readonly FieldLockService $fieldLockService,
+    ) {}
+
     /**
      * @return array{margin_percentage: ?float, source: string, rule_id: ?int}
      */
@@ -68,6 +73,10 @@ class MarginRuleResolver
     {
         if ($product->margin_percentage === null || (float) $product->margin_percentage <= 0) {
             return false;
+        }
+
+        if ($this->fieldLockService->isLocked($product, 'margin_percentage')) {
+            return true;
         }
 
         if ($this->appliesA1CategoryMarginRules($product)) {

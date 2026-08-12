@@ -59,7 +59,6 @@ class CategoryImporter
             'path' => $this->buildPath($parent, $externalId),
             'margin_id' => $payload['marginId'] ?? null,
             'margin_name' => $payload['marginName'] ?? null,
-            'margin_percentage' => $payload['marginPercentage'] ?? null,
             'olx_id' => $payload['olxId'] ?? null,
             'olx_name' => $payload['olxName'] ?? null,
             'system' => (bool) ($payload['system'] ?? true),
@@ -68,6 +67,10 @@ class CategoryImporter
             'image_url' => $payload['imageUrl'] ?? null,
             'icon_url' => $payload['iconUrl'] ?? null,
         ];
+
+        if (! $existing?->margin_locked) {
+            $attributes['margin_percentage'] = $payload['marginPercentage'] ?? null;
+        }
 
         if ($existing) {
             $existing->update($attributes);
