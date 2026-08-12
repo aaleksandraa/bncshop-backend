@@ -16,6 +16,7 @@ class SupplierPriceRecalcStatusCommand extends Command
     protected $signature = 'bnc:supplier-price-recalc-status
                             {supplier? : Supplier ID or code (e.g. startech)}
                             {--run : Dispatch background recalculation job now}
+                            {--force : With --run, queue even if recalc jobs are already pending}
                             {--sync : Recalculate immediately in this process (no queue)}
                             {--full : Scan all products for price mismatches (slow)}
                             {--product= : Debug a single product slug}
@@ -81,6 +82,15 @@ class SupplierPriceRecalcStatusCommand extends Command
 
         if ($this->option('run')) {
             $pendingBefore = $this->defaultQueueSize();
+
+            if ($pendingBefore > 0 && ! $this->option('force')) {
+                $this->warn("Default queue already has {$pendingBefore} pending jobs.");
+                $this->line('Wait until the queue drains, or use --recalc-all via SSH for a one-shot sync.');
+                $this->line('To queue anyway: php artisan bnc:supplier-price-recalc-status startech --run --force');
+
+                return self::SUCCESS;
+            }
+
             $chunks = RecalculateSupplierProductPricesJob::start($supplier->id, $supplier->label());
             $pendingAfter = $this->defaultQueueSize();
 

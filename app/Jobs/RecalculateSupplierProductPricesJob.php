@@ -5,11 +5,12 @@ namespace App\Jobs;
 use App\Models\Product;
 use App\Services\Catalog\ProductReadCache;
 use App\Services\Pricing\ProductPriceRecalculator;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
 
-class RecalculateSupplierProductPricesJob implements ShouldQueue
+class RecalculateSupplierProductPricesJob implements ShouldBeUnique, ShouldQueue
 {
     use Queueable;
 
@@ -19,6 +20,8 @@ class RecalculateSupplierProductPricesJob implements ShouldQueue
 
     public int $tries = 3;
 
+    public int $uniqueFor = 3600;
+
     public function __construct(
         public int $supplierId,
         public string $supplierLabel,
@@ -26,6 +29,11 @@ class RecalculateSupplierProductPricesJob implements ShouldQueue
         public bool $flushCacheAfter = false,
     ) {
         $this->onQueue('default');
+    }
+
+    public function uniqueId(): string
+    {
+        return "supplier-price-recalc:{$this->supplierId}:{$this->afterProductId}";
     }
 
     public static function start(int $supplierId, string $supplierLabel): int
