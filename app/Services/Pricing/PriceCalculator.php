@@ -65,8 +65,11 @@ class PriceCalculator
                 $base = (float) ($product->api_final_price ?? $this->applyApiRebate($product));
                 $discountAmount = round($regularPrice - $base, 2);
                 $discountSource = 'api';
-            } else {
+            } elseif ($appliedPriceAdjustment !== null) {
+                // Supplier fixed adjustment: regular is already api + KM; ignore stale api_final.
                 $base = (float) $regularPrice;
+            } else {
+                $base = (float) ($product->api_final_price ?? $product->api_price ?? $regularPrice);
             }
         }
 
