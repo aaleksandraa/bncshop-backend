@@ -4,6 +4,8 @@ namespace Tests\Feature;
 
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\ProductSupplierOffer;
+use App\Models\Supplier;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -74,6 +76,56 @@ class SellerCatalogProductApiTest extends TestCase
                 'description' => 'Novi opis',
             ])
             ->assertNotFound();
+    }
+
+    public function test_seller_can_see_catalog_product_supplier(): void
+    {
+        $seller = $this->createSeller();
+        $supplier = Supplier::query()->create([
+            'external_supplier_id' => 'supplier-comtrade',
+            'name' => 'comtrade',
+            'display_name' => 'Comtrade',
+        ]);
+        $otherSupplier = Supplier::query()->create([
+            'external_supplier_id' => 'supplier-arbis',
+            'name' => 'arbis',
+            'display_name' => 'Arbis',
+        ]);
+        $product = Product::factory()->create([
+            'import_source' => 'a1',
+            'name' => 'A1 monitor',
+        ]);
+
+        ProductSupplierOffer::query()->create([
+            'product_id' => $product->id,
+            'supplier_id' => $otherSupplier->id,
+            'supplier_price' => 120,
+            'supplier_stock' => 1,
+            'is_selected_price_source' => false,
+        ]);
+        ProductSupplierOffer::query()->create([
+            'product_id' => $product->id,
+            'supplier_id' => $supplier->id,
+            'supplier_price' => 100,
+            'supplier_stock' => 3,
+            'is_selected_price_source' => true,
+        ]);
+
+        $this->postJsonStateful('/api/v1/seller/login', [
+            'email' => $seller->email,
+            'password' => 'password123',
+        ])->assertOk();
+
+        $this->getJsonStateful("/api/v1/seller/catalog-products/{$product->id}")
+            ->assertOk()
+            ->assertJsonPath('data.supplier_name', 'Comtrade, Arbis')
+            ->assertJsonPath('data.import_source', 'a1')
+            ->assertJsonPath('data.import_source_label', 'A1 Technoshop');
+
+        $this->getJsonStateful('/api/v1/seller/catalog-products')
+            ->assertOk()
+            ->assertJsonPath('data.0.supplier_name', 'Comtrade, Arbis')
+            ->assertJsonPath('data.0.import_source_label', 'A1 Technoshop');
     }
 
     public function test_seller_can_filter_catalog_products(): void

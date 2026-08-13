@@ -5,9 +5,11 @@ namespace App\Services\Seller;
 use App\Models\Discount;
 use App\Models\Product;
 use App\Models\ProductImage;
+use App\Models\ProductSupplierOffer;
 use App\Models\User;
 use App\Services\Media\MediaStorage;
 use App\Services\Pricing\PriceCalculator;
+use App\Services\Pricing\SupplierOfferSelector;
 use App\Services\Sync\FieldLockService;
 use App\Services\Sync\ProductImageStorageService;
 use App\Support\PublicStorageUrl;
@@ -28,6 +30,7 @@ class SellerElineProductService
         private readonly PriceCalculator $priceCalculator,
         private readonly ProductImageStorageService $productImageStorage,
         private readonly MediaStorage $mediaStorage,
+        private readonly SupplierOfferSelector $supplierOfferSelector,
     ) {}
 
     public function findElineProduct(int $id): Product
@@ -42,7 +45,7 @@ class SellerElineProductService
     {
         return Product::query()
             ->notFromEline()
-            ->with(['images', 'defaultImage', 'category:id,name,display_name,full_slug'])
+            ->with(['images', 'defaultImage', 'category:id,name,display_name,full_slug', 'supplierOffers.supplier'])
             ->findOrFail($id);
     }
 
@@ -224,6 +227,9 @@ class SellerElineProductService
             'status' => $product->status,
             'is_public' => (bool) $product->is_public,
             'available_stock' => $product->available_stock,
+            'import_source' => $product->import_source,
+            'import_source_label' => $this->importSourceLabel($product->import_source),
+            'supplier_name' => $this->resolveSupplierName($product),
             'primary_image_url' => $primaryImage
                 ? PublicStorageUrl::absoluteFromResolved($this->productImageStorage->resolvedUrl($primaryImage))
                 : null,
@@ -241,7 +247,6 @@ class SellerElineProductService
             'short_description' => $product->short_description,
             'available_stock' => $product->available_stock,
             'stock_status' => $product->stock_status,
-            'import_source' => $product->import_source,
             'images' => $product->images->map(fn (ProductImage $image) => [
                 'id' => $image->id,
                 'url' => PublicStorageUrl::absoluteFromResolved($this->productImageStorage->resolvedUrl($image)),
@@ -249,6 +254,48 @@ class SellerElineProductService
                 'sort_order' => $image->sort_order,
             ])->values()->all(),
         ];
+    }
+
+    private function resolveSupplierName(Product $product): ?string
+    {
+        $product->loadMissing('supplierOffers.supplier');
+
+        $offers = $product->supplierOffers;
+
+        if ($offers->isEmpty()) {
+            return null;
+        }
+
+        $selectedLabel = $this->supplierOfferSelector->select($product)?->supplier?->label();
+
+        $labels = $offers
+            ->map(fn (ProductSupplierOffer $offer): ?string => $offer->supplier?->label())
+            ->filter()
+            ->unique()
+            ->values();
+
+        if (is_string($selectedLabel) && $selectedLabel !== '') {
+            $labels = $labels
+                ->reject(fn (string $label): bool => $label === $selectedLabel)
+                ->prepend($selectedLabel)
+                ->values();
+        }
+
+        return $labels->isEmpty() ? null : $labels->implode(', ');
+    }
+
+    private function importSourceLabel(?string $source): ?string
+    {
+        if ($source === null || $source === '') {
+            return null;
+        }
+
+        return match ($source) {
+            'eline' => 'eLine ERP',
+            'manual' => 'Ručno',
+            'a1' => 'A1 Technoshop',
+            default => $source,
+        };
     }
 
     private function findSellerDiscount(Product $product): ?Discount

@@ -29,7 +29,7 @@ class SellerCatalogProductController extends Controller
 
         $query = Product::query()
             ->notFromEline()
-            ->with(['defaultImage', 'images', 'category:id,name,display_name,full_slug']);
+            ->with(['defaultImage', 'images', 'category:id,name,display_name,full_slug', 'supplierOffers.supplier']);
 
         $this->applyListingFilters($query, $request);
 
@@ -82,7 +82,7 @@ class SellerCatalogProductController extends Controller
         $this->sellerProducts->setPrimaryImage($product, (int) $request->validated('primary_image_id'));
 
         return $this->success(
-            $this->sellerProducts->formatDetail($product->fresh(['images', 'defaultImage', 'category'])),
+            $this->sellerProducts->formatDetail($product->fresh($this->catalogRelations())),
         );
     }
 
@@ -97,7 +97,7 @@ class SellerCatalogProductController extends Controller
         );
 
         return $this->success(
-            $this->sellerProducts->formatDetail($product->fresh(['images', 'defaultImage', 'category'])),
+            $this->sellerProducts->formatDetail($product->fresh($this->catalogRelations())),
         );
     }
 
@@ -111,8 +111,16 @@ class SellerCatalogProductController extends Controller
         $this->sellerProducts->deleteImage($product, $imageId);
 
         return $this->success(
-            $this->sellerProducts->formatDetail($product->fresh(['images', 'defaultImage', 'category'])),
+            $this->sellerProducts->formatDetail($product->fresh($this->catalogRelations())),
         );
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function catalogRelations(): array
+    {
+        return ['images', 'defaultImage', 'category', 'supplierOffers.supplier'];
     }
 
     private function applyListingFilters(Builder $query, Request $request): void
