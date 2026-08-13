@@ -271,6 +271,7 @@ Ključ u query stringu (`?api_key=`) takođe vraća `401`.
 
 - Max **200** proizvoda po stranici (`PageSize`).
 - Default rate limit: **60 zahtjeva / minutu** po ključu (može biti drugačije po dogovoru).
+- Default dnevni limit: **2000 stranica / 24h** po ključu (jedan full sync ≈ 240 stranica pri `PageSize=100`).
 - Šaljite samo `GET`.
 - Ne dijelite ključ, ne stavljajte ga u javni frontend, git ili screenshot.
 - Ako sumnjate da je ključ procurio, odmah zatražite rotaciju.

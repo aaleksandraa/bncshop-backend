@@ -121,6 +121,14 @@ class PartnerApiClientResource extends Resource
                             ->maxValue(300)
                             ->default(60)
                             ->required(),
+                        Forms\Components\TextInput::make('daily_page_limit')
+                            ->label('Dnevni limit stranica')
+                            ->numeric()
+                            ->minValue(50)
+                            ->maxValue(10000)
+                            ->default(2000)
+                            ->required()
+                            ->helperText('Max broj uspješnih GET stranica u 24h. Jedan full sync (~24k proizvoda / 100) troši oko 240 stranica.'),
                         Forms\Components\Placeholder::make('last_used_at')
                             ->label('Zadnji uspješan pristup')
                             ->content(fn (?PartnerApiClient $record): string => $record?->last_used_at?->toIso8601String() ?: 'Još nema pristupa.'),

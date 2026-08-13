@@ -102,6 +102,30 @@ class PartnerExportSecurityService
         return $this->error('Previše zahtjeva. Pokušajte ponovo za minut.', 429);
     }
 
+    public function rejectDailyPageLimit(Request $request, PartnerApiClient $client): ?JsonResponse
+    {
+        $key = $this->dailyPageLimitKey($client);
+
+        if (! RateLimiter::tooManyAttempts($key, $client->dailyPageLimit())) {
+            RateLimiter::hit($key, 86400);
+
+            return null;
+        }
+
+        $this->logEvent('daily_page_limit_exceeded', $request, [
+            'partner_api_client_id' => $client->id,
+            'partner_code' => $client->code,
+            'daily_page_limit' => $client->dailyPageLimit(),
+        ]);
+
+        return $this->error('Dnevni limit preuzimanja je dostignut. Pokušajte ponovo za 24 sata ili kontaktirajte BNC.', 429);
+    }
+
+    public function dailyPageLimitKey(PartnerApiClient $client): string
+    {
+        return 'partner-export:daily-pages:'.$client->id;
+    }
+
     public function rejectTooManyFailedAttempts(Request $request): ?JsonResponse
     {
         $key = $this->failedAttemptsKey($request);

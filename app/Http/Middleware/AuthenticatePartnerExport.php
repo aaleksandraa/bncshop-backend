@@ -49,6 +49,7 @@ class AuthenticatePartnerExport
             fn () => $this->security->rejectMissingIpAllowlist($request, $client),
             fn () => $this->security->rejectDisallowedIp($request, $client),
             fn () => $this->security->rejectRateLimited($request, $client),
+            fn () => $this->security->rejectDailyPageLimit($request, $client),
         ] as $check) {
             $response = $check();
 

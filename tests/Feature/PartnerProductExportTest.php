@@ -301,4 +301,56 @@ class PartnerProductExportTest extends TestCase
             ->getJson('/api/v1/partner/products')
             ->assertUnauthorized();
     }
+
+    public function test_blocks_after_daily_page_limit(): void
+    {
+        RateLimiter::clear('partner-export:daily-pages:'.$this->client->id);
+
+        $this->client->update([
+            'daily_page_limit' => 50,
+            'rate_limit_per_minute' => 300,
+        ]);
+
+        Product::factory()->create([
+            'is_public' => true,
+            'status' => 'active',
+        ]);
+
+        RateLimiter::hit('partner-export:daily-pages:'.$this->client->id, 86400);
+        for ($i = 1; $i < 50; $i++) {
+            RateLimiter::hit('partner-export:daily-pages:'.$this->client->id, 86400);
+        }
+
+        $this->withHeader('X-API-Key', $this->apiKey)
+            ->getJson('/api/v1/partner/products')
+            ->assertStatus(429)
+            ->assertJsonPath('errors.0', 'Dnevni limit preuzimanja je dostignut. Pokušajte ponovo za 24 sata ili kontaktirajte BNC.');
+    }
+
+    public function test_reuses_cached_product_count_across_pages(): void
+    {
+        Product::factory()->count(3)->create([
+            'is_public' => true,
+            'status' => 'active',
+        ]);
+
+        $first = $this->withHeader('X-API-Key', $this->apiKey)
+            ->getJson('/api/v1/partner/products?page=1&per_page=1')
+            ->assertOk();
+
+        Product::factory()->create([
+            'is_public' => true,
+            'status' => 'active',
+        ]);
+
+        $second = $this->withHeader('X-API-Key', $this->apiKey)
+            ->getJson('/api/v1/partner/products?page=2&per_page=1')
+            ->assertOk();
+
+        $this->assertSame(
+            $first->json('meta.pagination.total'),
+            $second->json('meta.pagination.total'),
+        );
+        $this->assertSame(3, $second->json('meta.pagination.total'));
+    }
 }

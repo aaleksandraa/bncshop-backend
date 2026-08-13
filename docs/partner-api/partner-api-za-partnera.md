@@ -169,10 +169,16 @@ Marža, nabavna cijena i interni rabati **se ne šalju**.
 | `401` | Pogrešan / nedostaje ključ, ili kod u URL-u nije vaš |
 | `403` | API ugašen, nije HTTPS, ili IP nije na allowlisti |
 | `422` | Loš datum ili paginacija |
-| `429` | Previše zahtjeva — sačekajte minutu |
+| `429` | Previše zahtjeva u minuti, ili dnevni limit stranica — sačekajte / javite BNC-u |
 | `503` | Allowlist nije podešen — javite BNC-u |
 
-Limit: **60 zahtjeva / minutu** (osim ako nije drugačije dogovoreno). Max **200** proizvoda po stranici.
+Limiti (osim ako nije drugačije dogovoreno):
+
+- **60 zahtjeva / minutu**
+- **2000 stranica / 24h** (jedan full sync od ~24.000 proizvoda / 100 ≈ 240 stranica)
+- Max **200** proizvoda po stranici
+
+Koristite `ModifiedAfter` nakon prvog synca da ostanete daleko ispod dnevnog limita.
 
 ---
 

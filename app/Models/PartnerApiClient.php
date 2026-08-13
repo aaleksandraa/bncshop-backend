@@ -23,6 +23,7 @@ class PartnerApiClient extends Model
         'require_ip_allowlist',
         'allowed_ips',
         'rate_limit_per_minute',
+        'daily_page_limit',
         'last_used_at',
         'last_used_ip',
     ];
@@ -34,6 +35,7 @@ class PartnerApiClient extends Model
             'require_ip_allowlist' => 'boolean',
             'allowed_ips' => 'array',
             'rate_limit_per_minute' => 'integer',
+            'daily_page_limit' => 'integer',
             'api_key_created_at' => 'datetime',
             'last_used_at' => 'datetime',
         ];
@@ -107,6 +109,11 @@ class PartnerApiClient extends Model
     public function rateLimitPerMinute(): int
     {
         return max(1, min(300, (int) ($this->rate_limit_per_minute ?: 60)));
+    }
+
+    public function dailyPageLimit(): int
+    {
+        return max(50, min(10000, (int) ($this->daily_page_limit ?: 2000)));
     }
 
     public function integrationProductsUrl(): string
