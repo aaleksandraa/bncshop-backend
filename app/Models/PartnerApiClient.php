@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class PartnerApiClient extends Model
@@ -129,6 +130,44 @@ class PartnerApiClient extends Model
     public function isFullExport(): bool
     {
         return $this->type === self::TYPE_FULL;
+    }
+
+    public static function normalizeType(mixed $type): string
+    {
+        $value = strtolower(trim((string) $type));
+
+        if ($value === self::TYPE_FULL || str_starts_with($value, 'puni')) {
+            return self::TYPE_FULL;
+        }
+
+        return self::TYPE_BASIC;
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    public static function sanitizeFormData(array $data): array
+    {
+        if (array_key_exists('allowed_ips_text', $data)) {
+            $data['allowed_ips'] = self::parseAllowedIps((string) ($data['allowed_ips_text'] ?? ''));
+        }
+
+        unset($data['allowed_ips_text']);
+
+        if (array_key_exists('type', $data)) {
+            $data['type'] = self::normalizeType($data['type']);
+        }
+
+        if (filled($data['code'] ?? null)) {
+            $data['code'] = Str::slug((string) $data['code']);
+        }
+
+        if (! Schema::hasColumn((new self)->getTable(), 'daily_page_limit')) {
+            unset($data['daily_page_limit']);
+        }
+
+        return array_intersect_key($data, array_flip((new self)->getFillable()));
     }
 
     public function recordSuccessfulUse(string $ip): void

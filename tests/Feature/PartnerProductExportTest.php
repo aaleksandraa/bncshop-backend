@@ -327,6 +327,35 @@ class PartnerProductExportTest extends TestCase
             ->assertJsonPath('errors.0', 'Dnevni limit preuzimanja je dostignut. Pokušajte ponovo za 24 sata ili kontaktirajte BNC.');
     }
 
+    public function test_sanitizes_full_type_labels_and_keeps_fillable_fields(): void
+    {
+        $data = PartnerApiClient::sanitizeFormData([
+            'name' => 'Shop',
+            'code' => 'Full Shop',
+            'type' => 'Puni (kategorija, opis, atributi, slike, brend)',
+            'enabled' => true,
+            'allowed_ips_text' => '203.0.113.10',
+            'daily_page_limit' => 2000,
+            'integration_url' => 'should-be-removed',
+        ]);
+
+        $this->assertSame('full-shop', $data['code']);
+        $this->assertSame(PartnerApiClient::TYPE_FULL, $data['type']);
+        $this->assertSame(['203.0.113.10'], $data['allowed_ips']);
+        $this->assertArrayNotHasKey('integration_url', $data);
+        $this->assertArrayNotHasKey('allowed_ips_text', $data);
+
+        $client = PartnerApiClient::query()->create([
+            'name' => 'Full shop',
+            'code' => 'full-shop',
+            'type' => PartnerApiClient::TYPE_FULL,
+            'enabled' => true,
+            'daily_page_limit' => 2000,
+        ]);
+
+        $this->assertTrue($client->isFullExport());
+    }
+
     public function test_reuses_cached_product_count_across_pages(): void
     {
         Product::factory()->count(3)->create([

@@ -9,7 +9,7 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\Model;
 
 class PartnerApiClientResource extends Resource
 {
@@ -75,26 +75,38 @@ class PartnerApiClientResource extends Resource
                         Forms\Components\Select::make('type')
                             ->label('Tip API-ja')
                             ->options([
-                                PartnerApiClient::TYPE_BASIC => 'Osnovni (naziv, barkod, zaliha, cijena)',
-                                PartnerApiClient::TYPE_FULL => 'Puni (kategorija, opis, atributi, slike, brend)',
+                                PartnerApiClient::TYPE_BASIC => 'Osnovni',
+                                PartnerApiClient::TYPE_FULL => 'Puni',
                             ])
+                            ->helperText('Osnovni: naziv, barkod, zaliha, cijena. Puni: plus kategorija, opis, atributi, slike, brend.')
+                            ->default(PartnerApiClient::TYPE_BASIC)
                             ->required()
+                            ->in([PartnerApiClient::TYPE_BASIC, PartnerApiClient::TYPE_FULL])
                             ->native(false),
                         Forms\Components\Toggle::make('enabled')
                             ->label('Aktivan')
                             ->default(true),
                         Forms\Components\Placeholder::make('integration_url')
                             ->label('Integracijski endpoint')
-                            ->content(fn (?PartnerApiClient $record): string => $record?->integrationProductsUrl()
-                                ?? rtrim((string) config('app.url'), '/').'/api/integrations/{code}/products'),
+                            ->content(function (?Model $record): string {
+                                if ($record instanceof PartnerApiClient) {
+                                    return $record->integrationProductsUrl();
+                                }
+
+                                return rtrim((string) config('app.url'), '/').'/api/integrations/{code}/products';
+                            }),
                         Forms\Components\Placeholder::make('legacy_url')
                             ->label('Legacy endpoint')
                             ->content(fn (): string => app(\App\Services\Integrations\PartnerExportSettings::class)->legacyEndpointUrl()),
                         Forms\Components\Placeholder::make('api_key_hint_display')
                             ->label('Aktivni API ključ')
-                            ->content(fn (?PartnerApiClient $record): string => filled($record?->api_key_hint)
-                                ? '...'.$record->api_key_hint.' (rotirajte ključ da biste vidjeli cijeli token)'
-                                : 'Nije generisan — sačuvajte partnera pa rotirajte ključ.'),
+                            ->content(function (?Model $record): string {
+                                if ($record instanceof PartnerApiClient && filled($record->api_key_hint)) {
+                                    return '...'.$record->api_key_hint.' (rotirajte ključ da biste vidjeli cijeli token)';
+                                }
+
+                                return 'Nije generisan — sačuvajte partnera pa rotirajte ključ.';
+                            }),
                     ])
                     ->columns(2),
                 Forms\Components\Section::make('Sigurnost')
@@ -131,10 +143,22 @@ class PartnerApiClientResource extends Resource
                             ->helperText('Max broj uspješnih GET stranica u 24h. Jedan full sync (~24k proizvoda / 100) troši oko 240 stranica.'),
                         Forms\Components\Placeholder::make('last_used_at')
                             ->label('Zadnji uspješan pristup')
-                            ->content(fn (?PartnerApiClient $record): string => $record?->last_used_at?->toIso8601String() ?: 'Još nema pristupa.'),
+                            ->content(function (?Model $record): string {
+                                if ($record instanceof PartnerApiClient && $record->last_used_at) {
+                                    return $record->last_used_at->toIso8601String();
+                                }
+
+                                return 'Još nema pristupa.';
+                            }),
                         Forms\Components\Placeholder::make('last_used_ip')
                             ->label('IP zadnjeg pristupa')
-                            ->content(fn (?PartnerApiClient $record): string => $record?->last_used_ip ?: '—'),
+                            ->content(function (?Model $record): string {
+                                if ($record instanceof PartnerApiClient && filled($record->last_used_ip)) {
+                                    return (string) $record->last_used_ip;
+                                }
+
+                                return '—';
+                            }),
                     ])
                     ->columns(2),
                 Forms\Components\Section::make('Upotreba API-ja')
@@ -201,15 +225,6 @@ class PartnerApiClientResource extends Resource
      */
     public static function mutateFormDataBeforeSave(array $data): array
     {
-        if (array_key_exists('allowed_ips_text', $data)) {
-            $data['allowed_ips'] = PartnerApiClient::parseAllowedIps((string) ($data['allowed_ips_text'] ?? ''));
-            unset($data['allowed_ips_text']);
-        }
-
-        if (filled($data['code'] ?? null)) {
-            $data['code'] = Str::slug((string) $data['code']);
-        }
-
-        return $data;
+        return PartnerApiClient::sanitizeFormData($data);
     }
 }
