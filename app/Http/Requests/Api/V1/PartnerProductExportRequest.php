@@ -18,8 +18,11 @@ class PartnerProductExportRequest extends FormRequest
     {
         return [
             'updated_since' => ['nullable', 'date'],
+            'ModifiedAfter' => ['nullable', 'date'],
             'page' => ['nullable', 'integer', 'min:1'],
+            'Page' => ['nullable', 'integer', 'min:1'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:200'],
+            'PageSize' => ['nullable', 'integer', 'min:1', 'max:200'],
         ];
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Services\Integrations;
 
+use App\Models\PartnerApiClient;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -42,24 +43,27 @@ class PartnerExportSecurityService
         return $this->error('Partner export API zahtijeva HTTPS konekciju.', 403);
     }
 
-    public function rejectMissingIpAllowlist(Request $request): ?JsonResponse
+    public function rejectMissingIpAllowlist(Request $request, PartnerApiClient $client): ?JsonResponse
     {
-        if (! $this->settings->requiresIpAllowlist()) {
+        if (! $this->settings->requiresIpAllowlist() || ! $client->require_ip_allowlist) {
             return null;
         }
 
-        if ($this->settings->allowedIps() !== []) {
+        if ($client->allowedIpList() !== []) {
             return null;
         }
 
-        $this->logEvent('missing_ip_allowlist', $request);
+        $this->logEvent('missing_ip_allowlist', $request, [
+            'partner_api_client_id' => $client->id,
+            'partner_code' => $client->code,
+        ]);
 
         return $this->error('Partner export API zahtijeva definisan IP allowlist prije aktivacije u produkciji.', 503);
     }
 
-    public function rejectDisallowedIp(Request $request): ?JsonResponse
+    public function rejectDisallowedIp(Request $request, PartnerApiClient $client): ?JsonResponse
     {
-        $allowedIps = $this->settings->allowedIps();
+        $allowedIps = $client->allowedIpList();
 
         if ($allowedIps === []) {
             return null;
@@ -73,22 +77,27 @@ class PartnerExportSecurityService
 
         $this->logEvent('ip_not_allowed', $request, [
             'client_ip' => $clientIp,
+            'partner_api_client_id' => $client->id,
+            'partner_code' => $client->code,
         ]);
 
         return $this->error('Pristup sa ove IP adrese nije dozvoljen.', 403);
     }
 
-    public function rejectRateLimited(Request $request, ?string $apiKey): ?JsonResponse
+    public function rejectRateLimited(Request $request, PartnerApiClient $client): ?JsonResponse
     {
-        $key = 'partner-export:requests:'.($apiKey ?: (string) $request->ip());
+        $key = 'partner-export:requests:'.$client->id;
 
-        if (! RateLimiter::tooManyAttempts($key, $this->settings->rateLimitPerMinute())) {
+        if (! RateLimiter::tooManyAttempts($key, $client->rateLimitPerMinute())) {
             RateLimiter::hit($key, 60);
 
             return null;
         }
 
-        $this->logEvent('rate_limit_exceeded', $request);
+        $this->logEvent('rate_limit_exceeded', $request, [
+            'partner_api_client_id' => $client->id,
+            'partner_code' => $client->code,
+        ]);
 
         return $this->error('Previše zahtjeva. Pokušajte ponovo za minut.', 429);
     }
@@ -119,11 +128,7 @@ class PartnerExportSecurityService
 
     public function isValidApiKeyFormat(?string $apiKey): bool
     {
-        if ($apiKey === null || $apiKey === '') {
-            return false;
-        }
-
-        return (bool) preg_match('/^bncpe_[A-Za-z0-9]{40}$/', $apiKey);
+        return PartnerApiClient::isValidApiKeyFormat($apiKey);
     }
 
     public function extractApiKey(Request $request): ?string
@@ -145,10 +150,14 @@ class PartnerExportSecurityService
         return null;
     }
 
-    public function recordSuccessfulAccess(Request $request): void
+    public function recordSuccessfulAccess(Request $request, PartnerApiClient $client): void
     {
-        $this->settings->recordSuccessfulUse((string) $request->ip());
-        $this->logEvent('auth_success', $request);
+        $client->recordSuccessfulUse((string) $request->ip());
+        $this->logEvent('auth_success', $request, [
+            'partner_api_client_id' => $client->id,
+            'partner_code' => $client->code,
+            'export_type' => $client->type,
+        ]);
     }
 
     public function error(string $message, int $status): JsonResponse

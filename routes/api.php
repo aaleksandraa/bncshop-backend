@@ -36,6 +36,12 @@ use App\Http\Controllers\Api\V1\SitemapController;
 use App\Http\Middleware\ResolveCartSession;
 use Illuminate\Support\Facades\Route;
 
+Route::middleware(['partner.export.secure', 'partner.export', 'partner.export.headers'])
+    ->prefix('integrations')
+    ->group(function (): void {
+        Route::get('/{targetSystemCode}/products', [PartnerProductExportController::class, 'index']);
+    });
+
 Route::prefix('v1')->group(function (): void {
     Route::middleware('throttle:api-public')->group(function (): void {
         Route::get('/health', HealthController::class);

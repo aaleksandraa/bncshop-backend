@@ -135,18 +135,10 @@ class SystemSettingsSeeder extends Seeder
             'partner_export' => [
                 'value' => [
                     'enabled' => false,
-                    'partner_name' => '',
-                    'api_key_hash' => null,
-                    'api_key_hint' => null,
-                    'api_key_created_at' => null,
                     'require_https' => true,
                     'require_ip_allowlist' => true,
-                    'allowed_ips' => [],
-                    'rate_limit_per_minute' => 60,
                     'max_failed_auth_per_minute' => 10,
                     'log_access' => true,
-                    'last_used_at' => null,
-                    'last_used_ip' => null,
                 ],
                 'group' => 'integrations',
             ],

@@ -27,8 +27,6 @@ class SecurePartnerExport
         foreach ([
             fn () => $this->security->rejectQueryCredentials($request),
             fn () => $this->security->rejectInsecureTransport($request),
-            fn () => $this->security->rejectMissingIpAllowlist($request),
-            fn () => $this->security->rejectDisallowedIp($request),
             fn () => $this->security->rejectTooManyFailedAttempts($request),
         ] as $check) {
             $response = $check();
@@ -36,14 +34,6 @@ class SecurePartnerExport
             if ($response !== null) {
                 return $response;
             }
-        }
-
-        $apiKey = $this->security->extractApiKey($request);
-
-        $rateLimited = $this->security->rejectRateLimited($request, $apiKey);
-
-        if ($rateLimited !== null) {
-            return $rateLimited;
         }
 
         return $next($request);

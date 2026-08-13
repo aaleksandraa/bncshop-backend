@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\PartnerApiClient;
 use App\Models\Product;
 use App\Services\Integrations\PartnerExportSettings;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -15,18 +16,29 @@ class PartnerProductExportTest extends TestCase
 
     private string $apiKey = '';
 
+    private PartnerApiClient $client;
+
     protected function setUp(): void
     {
         parent::setUp();
 
-        $settings = app(PartnerExportSettings::class);
-        $this->apiKey = $settings->rotateApiKey();
-        $settings->save([
+        app(PartnerExportSettings::class)->save([
             'enabled' => true,
-            'partner_name' => 'Test partner',
             'require_https' => false,
             'require_ip_allowlist' => false,
         ]);
+
+        $this->client = PartnerApiClient::query()->create([
+            'name' => 'Test partner',
+            'code' => 'test-partner',
+            'type' => PartnerApiClient::TYPE_BASIC,
+            'enabled' => true,
+            'require_ip_allowlist' => false,
+            'allowed_ips' => [],
+            'rate_limit_per_minute' => 60,
+        ]);
+
+        $this->apiKey = $this->client->rotateApiKey();
     }
 
     public function test_returns_forbidden_when_export_is_disabled(): void
@@ -55,9 +67,11 @@ class PartnerProductExportTest extends TestCase
 
     public function test_rejects_when_ip_allowlist_is_required_but_empty(): void
     {
-        app(PartnerExportSettings::class)->save([
+        app(PartnerExportSettings::class)->save(['require_ip_allowlist' => true]);
+
+        $this->client->update([
             'require_ip_allowlist' => true,
-            'allowed_ips_text' => '',
+            'allowed_ips' => [],
         ]);
 
         $this->withHeader('X-API-Key', $this->apiKey)
@@ -68,10 +82,8 @@ class PartnerProductExportTest extends TestCase
 
     public function test_rejects_invalid_ip_allowlist_entries_on_save(): void
     {
-        $settings = app(PartnerExportSettings::class);
-
-        $this->assertSame(['not-an-ip', '999.999.1.1'], $settings->invalidAllowedIps("203.0.113.1\nnot-an-ip\n999.999.1.1"));
-        $this->assertSame([], $settings->invalidAllowedIps("203.0.113.1\n203.0.113.0/24"));
+        $this->assertSame(['not-an-ip', '999.999.1.1'], PartnerApiClient::invalidAllowedIps("203.0.113.1\nnot-an-ip\n999.999.1.1"));
+        $this->assertSame([], PartnerApiClient::invalidAllowedIps("203.0.113.1\n203.0.113.0/24"));
     }
 
     public function test_rejects_api_key_in_query_string(): void
@@ -93,8 +105,14 @@ class PartnerProductExportTest extends TestCase
 
     public function test_rejects_ip_not_on_allowlist(): void
     {
-        app(PartnerExportSettings::class)->save([
-            'allowed_ips_text' => "203.0.113.10\n203.0.113.0/24",
+        $this->client->update([
+            'require_ip_allowlist' => false,
+            'allowed_ips' => ['203.0.113.10', '203.0.113.0/24'],
+        ]);
+
+        Product::factory()->create([
+            'is_public' => true,
+            'status' => 'active',
         ]);
 
         $this->withServerVariables(['REMOTE_ADDR' => '198.51.100.20'])
@@ -106,8 +124,8 @@ class PartnerProductExportTest extends TestCase
 
     public function test_allows_ip_on_allowlist(): void
     {
-        app(PartnerExportSettings::class)->save([
-            'allowed_ips_text' => "203.0.113.10\n203.0.113.0/24",
+        $this->client->update([
+            'allowed_ips' => ['203.0.113.10', '203.0.113.0/24'],
         ]);
 
         Product::factory()->create([
@@ -235,5 +253,52 @@ class PartnerProductExportTest extends TestCase
         $this->withHeader('X-API-Key', $this->apiKey)
             ->getJson('/api/v1/partner/products?updated_since=not-a-date')
             ->assertUnprocessable();
+    }
+
+    public function test_integration_route_filters_by_modified_after(): void
+    {
+        Carbon::setTestNow('2026-07-01 10:00:00');
+
+        $older = Product::factory()->create([
+            'is_public' => true,
+            'status' => 'active',
+        ]);
+        $older->forceFill(['updated_at' => Carbon::parse('2026-06-01 10:00:00')])->saveQuietly();
+
+        $newer = Product::factory()->create([
+            'is_public' => true,
+            'status' => 'active',
+        ]);
+        $newer->forceFill(['updated_at' => Carbon::parse('2026-07-01 09:00:00')])->saveQuietly();
+
+        $this->withHeader('X-API-Key', $this->apiKey)
+            ->getJson('/api/integrations/test-partner/products?ModifiedAfter=2026-06-15T00:00:00Z&Page=1&PageSize=100')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $newer->id)
+            ->assertJsonPath('meta.filters.ModifiedAfter', '2026-06-15T00:00:00Z');
+
+        Carbon::setTestNow();
+    }
+
+    public function test_integration_route_rejects_mismatched_partner_code(): void
+    {
+        Product::factory()->create([
+            'is_public' => true,
+            'status' => 'active',
+        ]);
+
+        $this->withHeader('X-API-Key', $this->apiKey)
+            ->getJson('/api/integrations/other-partner/products')
+            ->assertUnauthorized();
+    }
+
+    public function test_disabled_client_is_rejected(): void
+    {
+        $this->client->update(['enabled' => false]);
+
+        $this->withHeader('X-API-Key', $this->apiKey)
+            ->getJson('/api/v1/partner/products')
+            ->assertUnauthorized();
     }
 }
