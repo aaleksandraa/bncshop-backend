@@ -111,7 +111,7 @@ Authorization: Bearer [bncpe_...]
 
 Ako je `last_page` veći od trenutne stranice, uzmite sljedeću `Page` dok ne dođete do kraja.
 
-Vraćaju se samo **javni i aktivni** proizvodi.
+Vraćaju se samo **javni, aktivni i novi** proizvodi. eLine / polovni asortiman se ne šalje.
 
 ---
 

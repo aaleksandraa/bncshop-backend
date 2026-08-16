@@ -192,6 +192,22 @@ class PartnerProductExportTest extends TestCase
             'status' => 'draft',
         ]);
 
+        Product::factory()->create([
+            'name' => 'eLine polovni',
+            'import_source' => 'eline',
+            'is_refurbished' => true,
+            'is_public' => true,
+            'status' => 'active',
+        ]);
+
+        Product::factory()->create([
+            'name' => 'eLine novi iz prodavnice',
+            'import_source' => 'eline',
+            'is_refurbished' => false,
+            'is_public' => true,
+            'status' => 'active',
+        ]);
+
         $response = $this->withHeader('X-API-Key', $this->apiKey)
             ->getJson('/api/v1/partner/products');
 

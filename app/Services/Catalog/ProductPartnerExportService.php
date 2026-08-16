@@ -22,6 +22,8 @@ class ProductPartnerExportService
         $baseQuery = Product::query()
             ->public()
             ->active()
+            ->notFromEline()
+            ->where('is_refurbished', false)
             ->when(
                 $updatedSince !== null,
                 fn ($builder) => $builder->where('updated_at', '>=', $updatedSince),
@@ -66,7 +68,7 @@ class ProductPartnerExportService
         $sinceKey = $updatedSince?->utc()->format('Y-m-d\TH:i:s\Z') ?? 'all';
 
         return (int) Cache::remember(
-            'partner-export:product-count:'.$sinceKey,
+            'partner-export:product-count:new-no-eline:'.$sinceKey,
             self::COUNT_CACHE_SECONDS,
             fn (): int => (clone $query)->toBase()->count(),
         );

@@ -153,7 +153,7 @@ Svi uspješni odgovori imaju isti oblik:
 
 Tip određuje BNC pri izdavanju ključa. **Ne možete** ga promijeniti query parametrom.
 
-Vraćaju se samo **javni i aktivni** proizvodi.
+Vraćaju se samo **javni, aktivni i novi** proizvodi. eLine / polovni asortiman se ne šalje.
 
 ### 7.1 Osnovni (`basic`)
 
