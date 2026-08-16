@@ -63,8 +63,8 @@ class RecalculateSupplierProductPricesJobTest extends TestCase
 
         $product->refresh();
 
-        $this->assertSame(746.96, (float) $product->regular_price);
-        $this->assertSame(746.96, (float) $product->display_price);
+        $this->assertSame(871.0, (float) $product->regular_price);
+        $this->assertSame(871.0, (float) $product->display_price);
     }
 
     public function test_start_dispatches_independent_chunk_jobs(): void

@@ -112,7 +112,7 @@ class CategoryResource extends Resource
                             ->visible(fn (): bool => auth()->user()?->can('view_margin') ?? false)
                             ->schema([
                                 Forms\Components\Section::make('Marža iz Technoshop API-ja')
-                                    ->description('API šalje maržu po kategoriji (marginPercentage / marginName). Shop po defaultu koristi gotovu API cijenu proizvoda (već uključuje maržu i PDV). Ako ručno promijenite maržu, prodajna cijena se računa kao nabavna × (1 + marža%) × 1,17 (PDV), pa se zaokružuje naviše na cijeli KM.')
+                                    ->description('Prodajna cijena se uvijek računa kao nabavna × (1 + marža%) × 1,17 (PDV), pa se zaokružuje naviše na cijeli KM. API cijena je samo fallback kad nema nabavne ili marže.')
                                     ->schema([
                                         Forms\Components\TextInput::make('margin_name')
                                             ->label('Naziv marže (API)')
@@ -127,7 +127,7 @@ class CategoryResource extends Resource
                                             ->helperText('Uvezeno iz API-ja. Možete izmijeniti — tada se cijene proizvoda u ovoj kategoriji preračunaju iz nabavne + marže + PDV 17%.'),
                                         Forms\Components\Toggle::make('margin_locked')
                                             ->label('Koristi ovu maržu za prodajnu cijenu')
-                                            ->helperText('Isključeno: shop koristi API cijenu. Uključeno: nabavna × marža × PDV 17%, zaokruženo naviše na cijeli KM. Sync neće pregaziti ručno unesenu maržu.'),
+                                            ->helperText('Marža se uvijek primjenjuje na nabavnu + PDV. Uključeno: sync neće pregaziti ručno unesenu maržu kategorije.'),
                                     ])
                                     ->columns(2),
                             ]),

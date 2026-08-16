@@ -15,7 +15,7 @@ class PriceCalculatorSupplierMarginTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_regular_price_uses_api_price_and_keeps_margin_metadata(): void
+    public function test_regular_price_uses_wholesale_margin_and_vat(): void
     {
         $category = Category::factory()->create();
         $supplier = Supplier::query()->create([
@@ -55,12 +55,12 @@ class PriceCalculatorSupplierMarginTest extends TestCase
 
         $result = app(PriceCalculator::class)->calculate($product->fresh(['supplierOffers.supplier', 'category']));
 
-        $this->assertSame(809.0, $result->regularPrice);
+        $this->assertSame(851.0, $result->regularPrice);
         $this->assertSame(559.2, $result->wholesalePrice);
         $this->assertSame(30.0, $result->appliedMargin);
         $this->assertSame('rule', $result->marginSource);
         $this->assertSame('Comtrade', $result->supplierName);
-        $this->assertSame(809.0, $result->displayPrice);
+        $this->assertSame(851.0, $result->displayPrice);
     }
 
     public function test_fallback_price_includes_vat_when_api_price_missing(): void
@@ -100,7 +100,7 @@ class PriceCalculatorSupplierMarginTest extends TestCase
         $this->assertSame(140.0, $result->displayPrice);
     }
 
-    public function test_display_price_uses_api_price_when_no_supplier_adjustment(): void
+    public function test_display_price_uses_wholesale_margin_when_no_supplier_adjustment(): void
     {
         $category = Category::factory()->create([
             'margin_percentage' => 30,
@@ -137,8 +137,8 @@ class PriceCalculatorSupplierMarginTest extends TestCase
 
         $result = app(PriceCalculator::class)->calculate($product->fresh(['supplierOffers.supplier', 'category']));
 
-        $this->assertSame(139.0, $result->regularPrice);
-        $this->assertSame(139.0, $result->displayPrice);
+        $this->assertSame(140.0, $result->regularPrice);
+        $this->assertSame(140.0, $result->displayPrice);
         $this->assertFalse($result->onSale);
     }
 

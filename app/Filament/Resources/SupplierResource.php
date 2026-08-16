@@ -70,7 +70,7 @@ class SupplierResource extends Resource
                             ->maxValue(9999)
                             ->default(0)
                             ->suffix('KM')
-                            ->helperText('Fiksni iznos koji se dodaje na API/prikaznu cijenu (api_price i api_final_price). Primjenjuje se na sve postojeće proizvode ovog dobavljača pri spremanju. 0 = bez dodatka.'),
+                            ->helperText('Fiksni iznos koji se dodaje na izračunatu prodajnu cijenu (nabavna × marža × PDV). 0 = bez dodatka.'),
                     ]),
             ]);
     }

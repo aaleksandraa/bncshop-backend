@@ -58,8 +58,8 @@ class PriceCalculatorSupplierPriceAdjustmentTest extends TestCase
 
         $result = app(PriceCalculator::class)->calculate($product->fresh(['supplierOffers.supplier', 'category']));
 
-        $this->assertSame(120.0, $result->regularPrice);
-        $this->assertSame(120.0, $result->displayPrice);
+        $this->assertSame(871.0, $result->regularPrice);
+        $this->assertSame(871.0, $result->displayPrice);
         $this->assertFalse($result->onSale);
         $this->assertSame(20.0, $result->appliedPriceAdjustment);
         $this->assertSame('Startech', $result->supplierName);
@@ -102,13 +102,12 @@ class PriceCalculatorSupplierPriceAdjustmentTest extends TestCase
         $result = app(PriceCalculator::class)->calculate($product->fresh(['supplierOffers.supplier', 'category']));
 
         $this->assertSame(140.0, $result->regularPrice);
-        $this->assertSame(120.0, $result->displayPrice);
-        $this->assertTrue($result->onSale);
-        $this->assertSame('api', $result->discountSource);
+        $this->assertSame(140.0, $result->displayPrice);
+        $this->assertFalse($result->onSale);
         $this->assertSame(20.0, $result->appliedPriceAdjustment);
     }
 
-    public function test_zero_price_adjustment_uses_api_price_for_regular_price(): void
+    public function test_zero_price_adjustment_uses_wholesale_margin_for_regular_price(): void
     {
         $category = Category::factory()->create();
         $supplier = Supplier::query()->create([
@@ -148,7 +147,7 @@ class PriceCalculatorSupplierPriceAdjustmentTest extends TestCase
 
         $result = app(PriceCalculator::class)->calculate($product->fresh(['supplierOffers.supplier', 'category']));
 
-        $this->assertSame(809.0, $result->regularPrice);
+        $this->assertSame(851.0, $result->regularPrice);
         $this->assertNull($result->appliedPriceAdjustment);
     }
 
@@ -246,7 +245,7 @@ class PriceCalculatorSupplierPriceAdjustmentTest extends TestCase
 
         $result = app(PriceCalculator::class)->calculate($product->fresh(['supplierOffers.supplier', 'category']));
 
-        $this->assertSame(809.0, $result->regularPrice);
+        $this->assertSame(851.0, $result->regularPrice);
         $this->assertNull($result->appliedPriceAdjustment);
         $this->assertSame('Comtrade', $result->supplierName);
     }

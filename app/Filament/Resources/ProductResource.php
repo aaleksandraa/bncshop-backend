@@ -198,7 +198,7 @@ class ProductResource extends Resource
                                     ->minValue(0)
                                     ->maxValue(500)
                                     ->suffix('%')
-                                    ->helperText('Ručna marža na proizvodu. Ako je unesena, prodajna cijena = nabavna × (1 + marža%) × 1,17 (PDV), zaokruženo naviše na cijeli KM. Sync je neće pregaziti.')
+                                    ->helperText('Ako je unesena i zaključana, ima prednost nad kategorijom. Formula je uvijek nabavna × (1 + marža%) × 1,17, zaokruženo naviše na cijeli KM.')
                                     ->visible(fn (): bool => auth()->user()?->can('view_margin') ?? false),
                                 Forms\Components\TextInput::make('api_rebate')
                                     ->label('API rabat')
