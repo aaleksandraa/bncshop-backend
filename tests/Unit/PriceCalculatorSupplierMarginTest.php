@@ -272,4 +272,82 @@ class PriceCalculatorSupplierMarginTest extends TestCase
         $this->assertSame(1284.0, $result->regularPrice);
         $this->assertSame(1284.0, $result->displayPrice);
     }
+
+    public function test_recalculate_writes_applied_margin_onto_unlocked_product(): void
+    {
+        $category = Category::factory()->create([
+            'margin_percentage' => 22,
+        ]);
+        $supplier = Supplier::query()->create([
+            'external_supplier_id' => 'supplier-write-margin',
+            'name' => 'asbis',
+            'display_name' => 'Asbis',
+            'code' => 'asbis-write',
+        ]);
+
+        $product = Product::query()->create([
+            'external_product_id' => 'prod-write-margin',
+            'name' => 'Upis marže',
+            'slug' => 'upis-marze',
+            'status' => 'active',
+            'is_public' => true,
+            'category_id' => $category->id,
+            'api_price' => 1289,
+            'regular_price' => 1096.78,
+        ]);
+
+        ProductSupplierOffer::query()->create([
+            'product_id' => $product->id,
+            'supplier_id' => $supplier->id,
+            'supplier_sku' => 'AS-WRITE',
+            'supplier_price' => 899,
+            'supplier_stock' => 3,
+            'is_selected_price_source' => true,
+        ]);
+
+        app(PriceCalculator::class)->recalculateAndPersist($product->fresh(['supplierOffers.supplier', 'category']));
+
+        $this->assertSame(22.0, (float) $product->fresh()->margin_percentage);
+        $this->assertSame(1284.0, (float) $product->fresh()->regular_price);
+    }
+
+    public function test_recalculate_does_not_overwrite_locked_product_margin(): void
+    {
+        $category = Category::factory()->create([
+            'margin_percentage' => 22,
+        ]);
+        $supplier = Supplier::query()->create([
+            'external_supplier_id' => 'supplier-keep-margin',
+            'name' => 'asbis',
+            'display_name' => 'Asbis',
+            'code' => 'asbis-keep',
+        ]);
+
+        $product = Product::query()->create([
+            'external_product_id' => 'prod-keep-margin',
+            'name' => 'Zaključana marža',
+            'slug' => 'zakljucana-marza',
+            'status' => 'active',
+            'is_public' => true,
+            'category_id' => $category->id,
+            'api_price' => 1289,
+            'regular_price' => 1096.78,
+            'margin_percentage' => 40,
+        ]);
+
+        ProductSupplierOffer::query()->create([
+            'product_id' => $product->id,
+            'supplier_id' => $supplier->id,
+            'supplier_sku' => 'AS-KEEP',
+            'supplier_price' => 899,
+            'supplier_stock' => 3,
+            'is_selected_price_source' => true,
+        ]);
+
+        app(\App\Services\Sync\FieldLockService::class)->lockField($product, 'margin_percentage');
+
+        app(PriceCalculator::class)->recalculateAndPersist($product->fresh(['supplierOffers.supplier', 'category']));
+
+        $this->assertSame(40.0, (float) $product->fresh()->margin_percentage);
+    }
 }

@@ -75,15 +75,9 @@ class MarginRuleResolver
             return false;
         }
 
-        if ($this->fieldLockService->isLocked($product, 'margin_percentage')) {
-            return true;
-        }
-
-        if ($this->appliesA1CategoryMarginRules($product)) {
-            return false;
-        }
-
-        return true;
+        // Unlocked product margin is only a copy of the applied category/rule
+        // margin. Category edits must still win until someone locks the field.
+        return $this->fieldLockService->isLocked($product, 'margin_percentage');
     }
 
     private function appliesA1CategoryMarginRules(Product $product): bool

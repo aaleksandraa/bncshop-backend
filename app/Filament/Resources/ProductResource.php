@@ -198,7 +198,7 @@ class ProductResource extends Resource
                                     ->minValue(0)
                                     ->maxValue(500)
                                     ->suffix('%')
-                                    ->helperText('Ako je unesena i zaključana, ima prednost nad kategorijom. Formula je uvijek nabavna × (1 + marža%) × 1,17, zaokruženo naviše na cijeli KM.')
+                                    ->helperText('Automatski se upisuje primijenjena marža (kategorija/pravilo). Ručna izmjena zaključava samo ovaj proizvod. Izmjena kategorije ažurira sve proizvode koji nisu ručno zaključani.')
                                     ->visible(fn (): bool => auth()->user()?->can('view_margin') ?? false),
                                 Forms\Components\TextInput::make('api_rebate')
                                     ->label('API rabat')

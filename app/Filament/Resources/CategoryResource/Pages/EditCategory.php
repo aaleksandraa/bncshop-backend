@@ -79,7 +79,7 @@ class EditCategory extends EditRecord
 
             Notification::make()
                 ->title('Cijene preračunate')
-                ->body("Ažurirano {$count} proizvoda u ovoj kategoriji (nabavna + marža + PDV 17% ako je lokalna marža uključena).")
+                ->body("Ažurirano {$count} proizvoda u ovoj kategoriji i potkategorijama. Ručno zaključane marže na pojedinim proizvodima ostaju.")
                 ->success()
                 ->send();
         }

@@ -124,7 +124,7 @@ class CategoryResource extends Resource
                                             ->minValue(0)
                                             ->maxValue(500)
                                             ->suffix('%')
-                                            ->helperText('Uvezeno iz API-ja. Možete izmijeniti — tada se cijene proizvoda u ovoj kategoriji preračunaju iz nabavne + marže + PDV 17%.'),
+                                            ->helperText('Izmjena ovdje ažurira maržu i cijenu svih proizvoda u ovoj kategoriji (i potkategorijama), osim proizvoda s ručno zaključanom maržom.'),
                                         Forms\Components\Toggle::make('margin_locked')
                                             ->label('Koristi ovu maržu za prodajnu cijenu')
                                             ->helperText('Marža se uvijek primjenjuje na nabavnu + PDV. Uključeno: sync neće pregaziti ručno unesenu maržu kategorije.'),

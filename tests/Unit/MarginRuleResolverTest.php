@@ -80,10 +80,48 @@ class MarginRuleResolverTest extends TestCase
             'margin_percentage' => 15,
         ]);
 
+        app(\App\Services\Sync\FieldLockService::class)->lockField($product, 'margin_percentage');
+
         $result = app(MarginRuleResolver::class)->resolve($product, $supplier);
 
         $this->assertSame(15.0, $result['margin_percentage']);
         $this->assertSame('product', $result['source']);
+    }
+
+    public function test_unlocked_product_margin_does_not_override_category_or_rule(): void
+    {
+        $category = Category::factory()->create([
+            'margin_percentage' => 22,
+        ]);
+        $supplier = Supplier::query()->create([
+            'external_supplier_id' => 'supplier-unlocked-copy',
+            'name' => 'comtrade',
+            'display_name' => 'Comtrade',
+            'code' => 'comtrade-unlocked',
+        ]);
+
+        SupplierCategoryMarginRule::query()->create([
+            'supplier_id' => $supplier->id,
+            'category_id' => $category->id,
+            'margin_percentage' => 30,
+            'subcategory_scope' => 'all_descendants',
+            'is_active' => true,
+        ]);
+
+        $product = Product::query()->create([
+            'external_product_id' => 'prod-margin-unlocked',
+            'name' => 'Telefon copy',
+            'slug' => 'telefon-copy',
+            'status' => 'active',
+            'is_public' => true,
+            'category_id' => $category->id,
+            'margin_percentage' => 15,
+        ]);
+
+        $result = app(MarginRuleResolver::class)->resolve($product, $supplier);
+
+        $this->assertSame(30.0, $result['margin_percentage']);
+        $this->assertSame('rule', $result['source']);
     }
 
     public function test_category_margin_rule_has_priority_over_supplier_rule_for_a1_new(): void
@@ -209,7 +247,8 @@ class MarginRuleResolverTest extends TestCase
 
         $result = app(MarginRuleResolver::class)->resolve($product, null);
 
-        $this->assertSame('product', $result['source']);
+        $this->assertNull($result['margin_percentage']);
+        $this->assertSame('none', $result['source']);
     }
 
     public function test_parent_category_rule_without_subcategories_does_not_apply_to_child(): void

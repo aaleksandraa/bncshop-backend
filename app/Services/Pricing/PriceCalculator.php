@@ -5,6 +5,7 @@ namespace App\Services\Pricing;
 use App\Models\Coupon;
 use App\Models\Product;
 use App\Models\ProductPriceHistory;
+use App\Services\Sync\FieldLockService;
 
 class PriceCalculator
 {
@@ -13,6 +14,7 @@ class PriceCalculator
         private readonly CouponEngine $couponEngine,
         private readonly SupplierOfferSelector $supplierOfferSelector,
         private readonly MarginRuleResolver $marginRuleResolver,
+        private readonly FieldLockService $fieldLockService,
     ) {}
 
     public function calculate(Product $product, ?Coupon $coupon = null): PriceResult
@@ -104,6 +106,13 @@ class PriceCalculator
 
         if (! $product->price_locked) {
             $updates['regular_price'] = $result->regularPrice;
+        }
+
+        if (
+            $result->appliedMargin !== null
+            && ! $this->fieldLockService->isLocked($product, 'margin_percentage')
+        ) {
+            $updates['margin_percentage'] = $result->appliedMargin;
         }
 
         $product->update($updates);
