@@ -213,7 +213,20 @@ class PriceCalculator
         $netPrice = $wholesalePrice * (1 + ($marginPercentage / 100));
         $vatRate = (float) config('bnc.vat_rate_percent', 17) / 100;
 
-        return round($netPrice * (1 + $vatRate), 2);
+        return $this->roundSellPrice($netPrice * (1 + $vatRate));
+    }
+
+    /**
+     * Sell prices from nabavna + marža + PDV are whole KM, always rounded up.
+     * Example: 899 × 1.22 × 1.17 = 1283.23 → 1284.
+     */
+    public function roundSellPrice(float $price): float
+    {
+        if ($price <= 0) {
+            return 0.0;
+        }
+
+        return (float) (int) ceil(round($price, 2));
     }
 
     /**

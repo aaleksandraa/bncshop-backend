@@ -96,8 +96,8 @@ class PriceCalculatorSupplierMarginTest extends TestCase
 
         $result = app(PriceCalculator::class)->calculate($product->fresh(['supplierOffers.supplier', 'category']));
 
-        $this->assertSame(139.93, $result->regularPrice);
-        $this->assertSame(139.93, $result->displayPrice);
+        $this->assertSame(140.0, $result->regularPrice);
+        $this->assertSame(140.0, $result->displayPrice);
     }
 
     public function test_display_price_uses_api_price_when_no_supplier_adjustment(): void
@@ -181,8 +181,8 @@ class PriceCalculatorSupplierMarginTest extends TestCase
 
         $result = app(PriceCalculator::class)->calculate($product->fresh(['supplierOffers.supplier', 'category']));
 
-        $this->assertSame(150.70, $result->regularPrice);
-        $this->assertSame(150.70, $result->displayPrice);
+        $this->assertSame(151.0, $result->regularPrice);
+        $this->assertSame(151.0, $result->displayPrice);
         $this->assertSame(40.0, $result->appliedMargin);
         $this->assertSame('product', $result->marginSource);
     }
@@ -224,9 +224,52 @@ class PriceCalculatorSupplierMarginTest extends TestCase
 
         $result = app(PriceCalculator::class)->calculate($product->fresh(['supplierOffers.supplier', 'category']));
 
-        $this->assertSame(3508.54, $result->regularPrice);
-        $this->assertSame(3508.54, $result->displayPrice);
+        $this->assertSame(3509.0, $result->regularPrice);
+        $this->assertSame(3509.0, $result->displayPrice);
         $this->assertSame(25.0, $result->appliedMargin);
         $this->assertSame('category', $result->marginSource);
+    }
+
+    public function test_locked_category_margin_rounds_sell_price_up_to_whole_km(): void
+    {
+        $category = Category::factory()->create([
+            'margin_percentage' => 22,
+            'margin_locked' => true,
+        ]);
+        $supplier = Supplier::query()->create([
+            'external_supplier_id' => 'supplier-round-up',
+            'name' => 'asbis',
+            'display_name' => 'Asbis',
+            'code' => 'asbis',
+        ]);
+
+        $product = Product::query()->create([
+            'external_product_id' => 'prod-round-up',
+            'name' => 'Zaokruživanje',
+            'slug' => 'zaokruzivanje',
+            'status' => 'active',
+            'is_public' => true,
+            'category_id' => $category->id,
+            'api_price' => 1289,
+            'api_final_price' => 1289,
+            'regular_price' => 1096.78,
+            'display_price' => 1096.78,
+        ]);
+
+        ProductSupplierOffer::query()->create([
+            'product_id' => $product->id,
+            'supplier_id' => $supplier->id,
+            'supplier_sku' => 'AS-ROUND',
+            'supplier_price' => 899,
+            'supplier_stock' => 3,
+            'is_selected_price_source' => true,
+        ]);
+
+        $calculator = app(PriceCalculator::class);
+        $result = $calculator->calculate($product->fresh(['supplierOffers.supplier', 'category']));
+
+        $this->assertSame(1284.0, $calculator->roundSellPrice(899 * 1.22 * 1.17));
+        $this->assertSame(1284.0, $result->regularPrice);
+        $this->assertSame(1284.0, $result->displayPrice);
     }
 }
