@@ -21,6 +21,7 @@ class ProductPriceRecalculator
 
         Product::query()
             ->where('price_locked', false)
+            ->notFromEline()
             ->whereHas('supplierOffers', fn (Builder $offer) => $offer->where('supplier_id', $rule->supplier_id))
             ->whereIn('category_id', $categoryIds)
             ->chunkById(500, function ($products) use (&$count): void {
@@ -125,6 +126,7 @@ class ProductPriceRecalculator
         $count = 0;
         $query = Product::query()
             ->where('price_locked', false)
+            ->notFromEline()
             ->with(['supplierOffers.supplier', 'category']);
 
         if ($categoryId) {
@@ -155,6 +157,7 @@ class ProductPriceRecalculator
     {
         $query = Product::query()
             ->where('price_locked', false)
+            ->notFromEline()
             ->whereHas('supplierOffers', fn (Builder $offer) => $offer->where('supplier_id', $supplierId));
 
         if ($categoryId) {

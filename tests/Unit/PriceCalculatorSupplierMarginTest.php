@@ -350,4 +350,48 @@ class PriceCalculatorSupplierMarginTest extends TestCase
 
         $this->assertSame(40.0, (float) $product->fresh()->margin_percentage);
     }
+
+    public function test_eline_products_keep_api_price_instead_of_wholesale_margin(): void
+    {
+        $category = Category::factory()->create([
+            'margin_percentage' => 22,
+        ]);
+        $supplier = Supplier::query()->create([
+            'external_supplier_id' => 'supplier-eline-price',
+            'name' => 'asbis',
+            'display_name' => 'Asbis',
+            'code' => 'asbis-eline-price',
+        ]);
+
+        $product = Product::query()->create([
+            'external_product_id' => 'prod-eline-price',
+            'name' => 'eLine cijena',
+            'slug' => 'eline-cijena',
+            'status' => 'active',
+            'is_public' => true,
+            'import_source' => 'eline',
+            'category_id' => $category->id,
+            'api_price' => 450,
+            'regular_price' => 450,
+            'display_price' => 450,
+        ]);
+
+        ProductSupplierOffer::query()->create([
+            'product_id' => $product->id,
+            'supplier_id' => $supplier->id,
+            'supplier_sku' => 'EL-1',
+            'supplier_price' => 200,
+            'supplier_stock' => 1,
+            'is_selected_price_source' => true,
+        ]);
+
+        $calculator = app(PriceCalculator::class);
+        $result = $calculator->calculate($product->fresh(['supplierOffers.supplier', 'category']));
+        $calculator->recalculateAndPersist($product->fresh(['supplierOffers.supplier', 'category']));
+
+        $this->assertSame(450.0, $result->regularPrice);
+        $this->assertSame('eline', $result->marginSource);
+        $this->assertSame(450.0, (float) $product->fresh()->regular_price);
+        $this->assertNull($product->fresh()->margin_percentage);
+    }
 }

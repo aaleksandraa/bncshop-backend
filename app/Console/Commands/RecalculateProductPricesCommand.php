@@ -41,7 +41,7 @@ class RecalculateProductPricesCommand extends Command
         $supplierId = $this->option('supplier') !== null ? (int) $this->option('supplier') : null;
         $categoryId = $this->option('category') !== null ? (int) $this->option('category') : null;
 
-        $this->logLine('Recalculating product prices...');
+        $this->logLine('Recalculating product prices (excluding eLine)...');
 
         $count = $recalculator->forAll($supplierId, $categoryId, function (int $count, int $lastId): void {
             if ($count % 500 !== 0) {
@@ -65,6 +65,12 @@ class RecalculateProductPricesCommand extends Command
             $this->error("Product not found: {$productKey}");
 
             return self::FAILURE;
+        }
+
+        if ($product->isFromEline()) {
+            $this->warn("Product #{$product->id} is eLine — skipped (eLine keeps ERP/MPC price).");
+
+            return self::SUCCESS;
         }
 
         $before = (float) ($product->regular_price ?? 0);
@@ -93,6 +99,12 @@ class RecalculateProductPricesCommand extends Command
             return self::FAILURE;
         }
 
+        if ($product->isFromEline()) {
+            $this->warn("Product #{$product->id} is eLine — skipped (not part of A1 margin pricing).");
+
+            return self::SUCCESS;
+        }
+
         $result = $calculator->calculate($product->loadMissing(['supplierOffers.supplier', 'category']));
         $stored = (float) ($product->regular_price ?? 0);
         $ok = round($stored, 2) === round($result->regularPrice, 2);
@@ -112,7 +124,7 @@ class RecalculateProductPricesCommand extends Command
 
     private function reportMismatches(PriceCalculator $calculator, float $startedAt): int
     {
-        $this->logLine('Dry run: comparing stored prices with nabavna × marža × PDV (no writes).');
+        $this->logLine('Dry run: comparing stored prices with nabavna × marža × PDV (no writes, eLine excluded).');
 
         $checked = 0;
         $inSync = 0;
@@ -170,7 +182,7 @@ class RecalculateProductPricesCommand extends Command
 
     private function productQuery(): Builder
     {
-        $query = Product::query()->where('price_locked', false);
+        $query = Product::query()->where('price_locked', false)->notFromEline();
 
         if ($this->option('supplier') !== null) {
             $supplierId = (int) $this->option('supplier');

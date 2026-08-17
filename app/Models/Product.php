@@ -271,6 +271,11 @@ class Product extends Model
         return $query->where('status', 'active');
     }
 
+    public function isFromEline(): bool
+    {
+        return $this->import_source === 'eline';
+    }
+
     public function scopeFromEline(Builder $query): Builder
     {
         return $query->where('import_source', 'eline');

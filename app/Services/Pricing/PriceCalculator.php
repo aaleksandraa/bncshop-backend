@@ -109,7 +109,8 @@ class PriceCalculator
         }
 
         if (
-            $result->appliedMargin !== null
+            ! $product->isFromEline()
+            && $result->appliedMargin !== null
             && ! $this->fieldLockService->isLocked($product, 'margin_percentage')
         ) {
             $updates['margin_percentage'] = $result->appliedMargin;
@@ -178,6 +179,19 @@ class PriceCalculator
     {
         $apiPrice = (float) ($product->api_price ?? 0);
         $fallback = $apiPrice > 0 ? $apiPrice : (float) ($product->regular_price ?? 0);
+
+        if ($product->isFromEline()) {
+            return [
+                'regular_price' => $fallback,
+                'wholesale_price' => null,
+                'applied_margin' => null,
+                'margin_source' => 'eline',
+                'supplier_name' => null,
+                'applied_price_adjustment' => null,
+                'priced_from_margin' => false,
+            ];
+        }
+
         $offer = $this->supplierOfferSelector->select($product);
 
         if (! $offer || $offer->supplier_price === null || (float) $offer->supplier_price <= 0) {

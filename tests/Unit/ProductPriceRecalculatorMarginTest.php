@@ -114,6 +114,79 @@ class ProductPriceRecalculatorMarginTest extends TestCase
         $this->assertSame(22.0, (float) $fresh->margin_percentage);
     }
 
+    public function test_recalculate_skips_eline_products(): void
+    {
+        $category = Category::factory()->create([
+            'margin_percentage' => 22,
+        ]);
+        $supplier = Supplier::query()->create([
+            'external_supplier_id' => 'supplier-eline-skip',
+            'name' => 'asbis',
+            'display_name' => 'Asbis',
+            'code' => 'asbis-eline-skip',
+        ]);
+
+        $eline = Product::query()->create([
+            'external_product_id' => 'prod-eline-skip',
+            'name' => 'eLine proizvod',
+            'slug' => 'eline-proizvod',
+            'status' => 'active',
+            'is_public' => true,
+            'import_source' => 'eline',
+            'category_id' => $category->id,
+            'api_price' => 450,
+            'regular_price' => 450,
+            'display_price' => 450,
+        ]);
+        $a1 = Product::query()->create([
+            'external_product_id' => 'prod-a1-keep',
+            'name' => 'A1 proizvod',
+            'slug' => 'a1-proizvod',
+            'status' => 'active',
+            'is_public' => true,
+            'import_source' => 'a1',
+            'category_id' => $category->id,
+            'api_price' => 789,
+            'regular_price' => 672.46,
+        ]);
+
+        foreach ([$eline, $a1] as $product) {
+            ProductSupplierOffer::query()->create([
+                'product_id' => $product->id,
+                'supplier_id' => $supplier->id,
+                'supplier_sku' => 'AS-'.$product->id,
+                'supplier_price' => 551.20,
+                'supplier_stock' => 3,
+                'is_selected_price_source' => true,
+            ]);
+        }
+
+        $count = app(ProductPriceRecalculator::class)->forAll();
+
+        $this->assertSame(1, $count);
+        $this->assertSame(450.0, (float) $eline->fresh()->regular_price);
+        $this->assertSame(787.0, (float) $a1->fresh()->regular_price);
+    }
+
+    public function test_recalculate_prices_command_skips_eline_product(): void
+    {
+        $product = Product::query()->create([
+            'external_product_id' => 'prod-eline-cmd',
+            'name' => 'eLine komanda',
+            'slug' => 'eline-komanda',
+            'status' => 'active',
+            'is_public' => true,
+            'import_source' => 'eline',
+            'api_price' => 450,
+            'regular_price' => 450,
+        ]);
+
+        $this->artisan('bnc:recalculate-prices', ['--product' => (string) $product->id])
+            ->assertSuccessful();
+
+        $this->assertSame(450.0, (float) $product->fresh()->regular_price);
+    }
+
     public function test_recalculate_prices_dry_run_does_not_write(): void
     {
         $category = Category::factory()->create([
