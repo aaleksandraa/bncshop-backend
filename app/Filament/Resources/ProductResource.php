@@ -153,6 +153,25 @@ class ProductResource extends Resource
 
                                         return number_format($result->appliedMargin, 2, '.', '').'% ('.$result->marginSource.')';
                                     }),
+                                Forms\Components\Placeholder::make('pricing_calculated')
+                                    ->label('Izračunata prodajna cijena')
+                                    ->visible(fn (): bool => auth()->user()?->can('view_margin') ?? false)
+                                    ->content(function (?Product $record): string {
+                                        if (! $record) {
+                                            return '—';
+                                        }
+
+                                        $result = app(PriceCalculator::class)->calculate($record);
+                                        $stored = (float) ($record->regular_price ?? 0);
+                                        $calculated = $result->regularPrice;
+                                        $formatted = number_format($calculated, 2, '.', '').' KM';
+
+                                        if (round($stored, 2) !== round($calculated, 2)) {
+                                            return $formatted.' — nije upisano u redovnu cijenu ('.$stored.' KM). Pokrenite preračun.';
+                                        }
+
+                                        return $formatted;
+                                    }),
                                 Forms\Components\Select::make('preferred_supplier_id')
                                     ->label('Preferirani dobavljač')
                                     ->options(function (?Product $record): array {
