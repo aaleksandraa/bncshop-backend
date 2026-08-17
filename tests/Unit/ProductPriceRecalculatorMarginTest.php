@@ -113,4 +113,47 @@ class ProductPriceRecalculatorMarginTest extends TestCase
         $this->assertSame(787.0, (float) $fresh->regular_price);
         $this->assertSame(22.0, (float) $fresh->margin_percentage);
     }
+
+    public function test_recalculate_prices_dry_run_does_not_write(): void
+    {
+        $category = Category::factory()->create([
+            'margin_percentage' => 22,
+        ]);
+        $supplier = Supplier::query()->create([
+            'external_supplier_id' => 'supplier-cmd-dry',
+            'name' => 'asbis',
+            'display_name' => 'Asbis',
+            'code' => 'asbis-cmd-dry',
+        ]);
+
+        $product = Product::query()->create([
+            'external_product_id' => 'prod-cmd-dry',
+            'name' => 'Dry run proizvod',
+            'slug' => 'dry-run-proizvod',
+            'status' => 'active',
+            'is_public' => true,
+            'category_id' => $category->id,
+            'api_price' => 789,
+            'regular_price' => 672.46,
+        ]);
+
+        ProductSupplierOffer::query()->create([
+            'product_id' => $product->id,
+            'supplier_id' => $supplier->id,
+            'supplier_sku' => 'AS-DRY',
+            'supplier_price' => 551.20,
+            'supplier_stock' => 3,
+            'is_selected_price_source' => true,
+        ]);
+
+        $this->artisan('bnc:recalculate-prices', [
+            '--dry-run' => true,
+            '--product' => (string) $product->id,
+        ])->assertSuccessful();
+
+        $fresh = $product->fresh();
+
+        $this->assertSame(672.46, (float) $fresh->regular_price);
+        $this->assertNull($fresh->margin_percentage);
+    }
 }
