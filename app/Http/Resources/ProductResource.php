@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use App\Models\Product;
 use App\Services\Catalog\AttributeDisplayService;
+use App\Services\Catalog\CampaignResolver;
 use App\Support\PublicStorageUrl;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -60,6 +61,7 @@ class ProductResource extends JsonResource
                 $this->category_id,
             )),
             'tags' => $this->whenLoaded('tags'),
+            'campaign_badges' => app(CampaignResolver::class)->badgesForProduct($this->resource),
             'seo_override' => $this->whenLoaded('seoOverride'),
         ];
     }

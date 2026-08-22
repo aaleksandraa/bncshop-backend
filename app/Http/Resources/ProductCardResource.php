@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use App\Models\Product;
 use App\Models\ProductImage;
+use App\Services\Catalog\CampaignResolver;
 use App\Support\PublicStorageUrl;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -29,6 +30,7 @@ class ProductCardResource extends JsonResource
             'is_gaming' => $this->is_gaming,
             'is_refurbished' => $this->is_refurbished,
             'on_sale' => (bool) $this->on_sale,
+            'campaign_badges' => app(CampaignResolver::class)->badgesForProduct($this->resource),
             'manufacturer' => $this->whenLoaded('manufacturer', fn () => $this->manufacturer ? [
                 'id' => $this->manufacturer->id,
                 'name' => $this->manufacturer->name,

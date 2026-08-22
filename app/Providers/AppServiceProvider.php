@@ -22,6 +22,8 @@ use App\Observers\DiscountObserver;
 use App\Observers\MenuItemObserver;
 use App\Observers\ProductImageObserver;
 use App\Observers\ProductObserver;
+use App\Models\ShopCampaign;
+use App\Observers\ShopCampaignObserver;
 use App\Listeners\LogFailedMailJob;
 use App\Listeners\LogSentMail;
 use App\Services\Pricing\PricingCache;
@@ -59,6 +61,7 @@ class AppServiceProvider extends ServiceProvider
         Discount::observe(DiscountObserver::class);
         MenuItem::observe(MenuItemObserver::class);
         CmsPage::observe(CmsPageObserver::class);
+        ShopCampaign::observe(ShopCampaignObserver::class);
         BlogPost::observe(BlogPostObserver::class);
 
         Event::listen(MessageSent::class, LogSentMail::class);

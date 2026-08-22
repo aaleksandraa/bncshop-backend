@@ -138,6 +138,7 @@ class ProductController extends Controller
             'is_new',
             'is_refurbished',
             'has_image',
+            'campaign',
             'sort',
         ] as $key) {
             if ($request->filled($key) && ! ($key === 'sort' && $request->string('sort')->toString() === 'newest')) {

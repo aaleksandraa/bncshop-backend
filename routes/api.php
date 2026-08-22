@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\V1\B2b\B2bCatalogController;
 use App\Http\Controllers\Api\V1\B2b\B2bOrderController;
 use App\Http\Controllers\Api\V1\B2b\B2bProfileController;
 use App\Http\Controllers\Api\V1\BlogPostController;
+use App\Http\Controllers\Api\V1\CampaignController;
 use App\Http\Controllers\Api\V1\CartController;
 use App\Http\Controllers\Api\V1\CategoryController;
 use App\Http\Controllers\Api\V1\CheckoutController;
@@ -68,6 +69,7 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/redirects', RedirectController::class);
         Route::get('/menus/{slug}', [MenuController::class, 'show']);
         Route::get('/pages/{slug}', [PageController::class, 'show']);
+        Route::get('/campaigns/{slug}', [CampaignController::class, 'show']);
         Route::get('/blog/posts', [BlogPostController::class, 'index']);
         Route::get('/blog/posts/{slug}', [BlogPostController::class, 'show']);
         Route::get('/settings/public', [SettingsController::class, 'publicSettings']);

@@ -104,6 +104,35 @@ class ProductReadCache
     /**
      * @return array<string, mixed>
      */
+    public function rememberCampaign(string $slug, int $ttlSeconds, callable $callback): array
+    {
+        return $this->tagged(['campaigns', "campaign:{$slug}"])
+            ->remember("campaign:slug:{$slug}", $ttlSeconds, $callback);
+    }
+
+    public function forgetCampaign(string $slug): void
+    {
+        if ($this->supportsTags()) {
+            Cache::tags(["campaign:{$slug}"])->flush();
+
+            return;
+        }
+
+        Cache::forget("campaign:slug:{$slug}");
+    }
+
+    public function flushCampaigns(): void
+    {
+        if (! $this->supportsTags()) {
+            return;
+        }
+
+        Cache::tags(['campaigns'])->flush();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
     public function rememberBlogPost(string $slug, int $ttlSeconds, callable $callback): array
     {
         return $this->tagged(['blog', "blog:{$slug}"])

@@ -58,6 +58,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'coupons',
             'discounts',
             'blog_posts',
+            'shop_campaigns',
             'shipping_rules',
             'redirects',
             'email_templates',
@@ -175,6 +176,9 @@ class RolesAndPermissionsSeeder extends Seeder
                 'blog_posts.view',
                 'blog_posts.create',
                 'blog_posts.update',
+                'shop_campaigns.view',
+                'shop_campaigns.create',
+                'shop_campaigns.update',
             ],
             'Warehouse' => [
                 'view_products',

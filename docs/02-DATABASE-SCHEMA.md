@@ -161,5 +161,27 @@ slug, subject, body_html, variables jsonb, is_active
 ## system_settings
 key unique, value jsonb, group
 
+## shop_campaigns
+Kampanjski bedževi i landing stranice (npr. `/back-to-school`).
+
+| Kolona | Tip | Opis |
+|--------|-----|------|
+| id | bigint PK | |
+| name | string | Naziv kampanje |
+| slug | string unique | URL `/{slug}` |
+| badge_path | string | Putanja uploadane slike bedža |
+| badge_alt | string nullable | Alt tekst |
+| sort_order | smallint | Redoslijed bedževa na kartici |
+| is_active | boolean | Ručni prekidač |
+| starts_at / ends_at | timestamp nullable | Raspored prikaza |
+| targeting_mode | enum | `categories` ili `products` |
+| include_subcategories | boolean | Za category targeting |
+| has_landing_page | boolean | Da li postoji listing stranica |
+| page_title / page_description | string/text nullable | Sadržaj landing stranice |
+| hero_image_path | string nullable | Hero slika |
+| meta_title / meta_description | string/text nullable | SEO |
+
+Pivot tabele: `shop_campaign_category`, `shop_campaign_product`, `shop_campaign_excluded_product`.
+
 ## report_cache
 report_key, params_hash, data jsonb, expires_at

@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\CmsPage;
 use App\Models\Manufacturer;
 use App\Models\Product;
+use App\Models\ShopCampaign;
 use App\Models\SystemSetting;
 use Illuminate\Console\Command;
 
@@ -127,6 +128,21 @@ class GenerateSitemapCommand extends Command
                     'page',
                     'monthly',
                     0.5,
+                );
+            });
+
+        ShopCampaign::query()
+            ->where('has_landing_page', true)
+            ->orderBy('slug')
+            ->get(['slug', 'updated_at', 'is_active', 'starts_at', 'ends_at'])
+            ->filter(fn (ShopCampaign $campaign): bool => $campaign->isCurrentlyActive())
+            ->each(function (ShopCampaign $campaign) use (&$entries, $baseUrl): void {
+                $entries[] = $this->entry(
+                    "{$baseUrl}/{$campaign->slug}",
+                    $campaign->updated_at?->toAtomString(),
+                    'page',
+                    'weekly',
+                    0.7,
                 );
             });
 
