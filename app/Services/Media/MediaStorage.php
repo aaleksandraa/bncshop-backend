@@ -25,10 +25,20 @@ class MediaStorage
 
     public function diskName(): string
     {
-        return $this->usesR2() ? (string) config('bnc.media_disk', 'r2') : 'public';
+        return self::resolveDiskName();
+    }
+
+    public static function resolveDiskName(): string
+    {
+        return self::usesR2Static() ? (string) config('bnc.media_disk', 'r2') : 'public';
     }
 
     public function usesR2(): bool
+    {
+        return self::usesR2Static();
+    }
+
+    public static function usesR2Static(): bool
     {
         return filled(config('filesystems.disks.r2.key'))
             && filled(config('filesystems.disks.r2.secret'))

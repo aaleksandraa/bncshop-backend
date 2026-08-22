@@ -11,13 +11,11 @@ class OptimizedMediaUpload
 {
     public static function configure(BaseFileUpload $upload, string $directory): BaseFileUpload
     {
-        $mediaStorage = app(MediaStorage::class);
-
         return $upload
-            ->disk($mediaStorage->diskName())
+            ->disk(MediaStorage::resolveDiskName())
             ->directory($directory)
-            ->visibility(null)
-            ->saveUploadedFileUsing(function (TemporaryUploadedFile $file) use ($directory, $mediaStorage): string {
+            ->saveUploadedFileUsing(function (TemporaryUploadedFile $file) use ($directory): string {
+                $mediaStorage = app(MediaStorage::class);
                 $baseName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
                 $baseName = Str::slug($baseName) ?: (string) Str::uuid();
 

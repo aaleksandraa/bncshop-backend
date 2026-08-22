@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Product;
 use App\Models\ShopCampaign;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
@@ -31,6 +32,27 @@ class ShopCampaignAdminPageTest extends TestCase
 
         $this->actingAs($admin)
             ->get('/admin/shop-campaigns')
+            ->assertOk();
+    }
+
+    public function test_shop_campaigns_admin_create_page_loads_with_many_products(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        $admin = User::createAccount([
+            'name' => 'Admin',
+            'email' => 'shop-campaigns-create@test.test',
+            'password' => Hash::make('password123'),
+        ]);
+        $admin->assignRole('Admin');
+
+        Product::factory()->count(250)->create([
+            'is_public' => true,
+            'status' => 'active',
+        ]);
+
+        $this->actingAs($admin)
+            ->get('/admin/shop-campaigns/create')
             ->assertOk();
     }
 }

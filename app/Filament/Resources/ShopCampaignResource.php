@@ -6,8 +6,10 @@ use App\Filament\Concerns\AuthorizesWithPermissions;
 use App\Filament\Resources\ShopCampaignResource\Pages;
 use App\Filament\Support\OptimizedMediaUpload;
 use App\Models\Category;
+use App\Models\Product;
 use App\Models\ShopCampaign;
 use App\Rules\ValidShopCampaignSlug;
+use App\Support\ProductAdminSearch;
 use App\Support\PublicStorageUrl;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -49,7 +51,7 @@ class ShopCampaignResource extends Resource
                         ->maxLength(255)
                         ->live(onBlur: true)
                         ->afterStateUpdated(function (Forms\Set $set, ?string $state, ?ShopCampaign $record): void {
-                            if ($record !== null) {
+                            if ($record?->exists) {
                                 return;
                             }
 
@@ -125,7 +127,6 @@ class ShopCampaignResource extends Resource
                         )
                         ->multiple()
                         ->searchable()
-                        ->preload()
                         ->required(fn (Get $get): bool => $get('targeting_mode') === ShopCampaign::TARGETING_CATEGORIES)
                         ->visible(fn (Get $get): bool => $get('targeting_mode') === ShopCampaign::TARGETING_CATEGORIES)
                         ->columnSpanFull(),
@@ -138,7 +139,10 @@ class ShopCampaignResource extends Resource
                         ->relationship('products', 'name')
                         ->multiple()
                         ->searchable()
-                        ->preload()
+                        ->searchDebounce(300)
+                        ->getSearchResultsUsing(fn (string $search): array => ProductAdminSearch::optionsForSearch($search))
+                        ->getOptionLabelsUsing(fn (array $values): array => self::productOptionLabels($values))
+                        ->helperText('Pretražite po nazivu, brendu, SKU-u ili ID-u.')
                         ->required(fn (Get $get): bool => $get('targeting_mode') === ShopCampaign::TARGETING_PRODUCTS)
                         ->visible(fn (Get $get): bool => $get('targeting_mode') === ShopCampaign::TARGETING_PRODUCTS)
                         ->columnSpanFull(),
@@ -147,7 +151,9 @@ class ShopCampaignResource extends Resource
                         ->relationship('excludedProducts', 'name')
                         ->multiple()
                         ->searchable()
-                        ->preload()
+                        ->searchDebounce(300)
+                        ->getSearchResultsUsing(fn (string $search): array => ProductAdminSearch::optionsForSearch($search))
+                        ->getOptionLabelsUsing(fn (array $values): array => self::productOptionLabels($values))
                         ->visible(fn (Get $get): bool => $get('targeting_mode') === ShopCampaign::TARGETING_CATEGORIES)
                         ->helperText('Opcionalno — proizvodi iz odabranih kategorija koji ne trebaju bedž.')
                         ->columnSpanFull(),
@@ -255,5 +261,24 @@ class ShopCampaignResource extends Resource
             'create' => Pages\CreateShopCampaign::route('/create'),
             'edit' => Pages\EditShopCampaign::route('/{record}/edit'),
         ];
+    }
+
+    /**
+     * @param  array<int|string>  $values
+     * @return array<string, string>
+     */
+    private static function productOptionLabels(array $values): array
+    {
+        if ($values === []) {
+            return [];
+        }
+
+        return Product::query()
+            ->whereIn('id', $values)
+            ->get(['id', 'name', 'sku'])
+            ->mapWithKeys(fn (Product $product): array => [
+                (string) $product->id => ProductAdminSearch::formatOptionLabel($product),
+            ])
+            ->all();
     }
 }
