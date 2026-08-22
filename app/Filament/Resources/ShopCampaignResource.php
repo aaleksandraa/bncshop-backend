@@ -8,6 +8,7 @@ use App\Filament\Support\OptimizedMediaUpload;
 use App\Models\Category;
 use App\Models\ShopCampaign;
 use App\Rules\ValidShopCampaignSlug;
+use App\Support\PublicStorageUrl;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
@@ -201,10 +202,11 @@ class ShopCampaignResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\ImageColumn::make('badge_path')
+                Tables\Columns\ImageColumn::make('badge_preview')
                     ->label('Bedž')
-                    ->disk(app(\App\Services\Media\MediaStorage::class)->diskName())
-                    ->height(40),
+                    ->getStateUsing(fn (ShopCampaign $record): ?string => PublicStorageUrl::absoluteUrl($record->badge_path))
+                    ->height(40)
+                    ->square(false),
                 Tables\Columns\TextColumn::make('name')
                     ->label('Naziv')
                     ->searchable()

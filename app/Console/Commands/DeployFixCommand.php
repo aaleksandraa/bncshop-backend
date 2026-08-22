@@ -95,6 +95,13 @@ class DeployFixCommand extends Command
             $this->info('email_logs table exists.');
         }
 
+        if (! Schema::hasTable('shop_campaigns')) {
+            $this->error('shop_campaigns table is missing — admin Kampanje (/admin/shop-campaigns) will 500. Run: php artisan migrate --force');
+            $issues++;
+        } else {
+            $this->info('shop_campaigns table exists.');
+        }
+
         $orderNotify = \App\Support\OrderNotificationMail::recipients();
         $this->line('Order notification emails: '.($orderNotify !== [] ? implode(', ', $orderNotify) : '(none — set SELLER_EMAIL or ADMIN_EMAIL)'));
 
