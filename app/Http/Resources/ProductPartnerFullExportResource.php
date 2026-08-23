@@ -50,7 +50,7 @@ class ProductPartnerFullExportResource extends JsonResource
                 ->values()
                 ->map(fn ($image): array => [
                     'url' => PublicStorageUrl::absoluteFromResolved(
-                        $image->public_url ?: $image->image_url ?: $image->source_url,
+                        $image->resolvedUrl() ?: $image->public_url ?: $image->image_url ?: $image->source_url,
                     ),
                     'glavna' => (bool) ($image->is_primary ?? ($this->default_image_id === $image->id)),
                     'redoslijed' => (int) ($image->sort_order ?? 0),

@@ -4,6 +4,7 @@ namespace App\Services\Olx;
 
 use App\Models\Product;
 use App\Models\ProductImage;
+use App\Support\PublicStorageUrl;
 use Throwable;
 
 class OlxImageSyncService
@@ -250,16 +251,15 @@ class OlxImageSyncService
 
     private function resolveSourceUrl(ProductImage $image): ?string
     {
-        $url = $image->public_url ?: $image->image_url ?: $image->source_url;
+        $url = $image->resolvedUrl()
+            ?: $image->public_url
+            ?: $image->image_url
+            ?: $image->source_url;
 
         if (! filled($url)) {
             return null;
         }
 
-        if (str_starts_with($url, 'http://') || str_starts_with($url, 'https://')) {
-            return $url;
-        }
-
-        return rtrim((string) config('app.url'), '/').'/'.ltrim($url, '/');
+        return PublicStorageUrl::absoluteFromResolved($url);
     }
 }

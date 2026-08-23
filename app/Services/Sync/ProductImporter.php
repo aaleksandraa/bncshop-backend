@@ -379,30 +379,40 @@ class ProductImporter
                 ->where('external_image_id', $externalImageId ?: null)
                 ->first();
 
+            $publicUrl = $imageData['publicUrl'] ?? $imagePayload['imageUrl'] ?? $resolvedUrl ?: null;
+            $sourceUrl = $imageData['sourceUrl'] ?? null;
+
+            $imageAttributes = [
+                'stored_file_id' => $imageData['storedFileId'] ?? $externalImageId ?: null,
+                'source_url' => $sourceUrl,
+                'public_url' => $publicUrl,
+                'storage_key' => $imageData['storageKey'] ?? null,
+                'original_file_name' => $imageData['originalFileName'] ?? null,
+                'stored_file_name' => $imageData['storedFileName'] ?? null,
+                'content_type' => $imageData['contentType'] ?? null,
+                'file_extension' => $imageData['fileExtension'] ?? null,
+                'file_type' => isset($imageData['fileType']) ? (int) $imageData['fileType'] : null,
+                'is_public' => array_key_exists('isPublic', $imageData) ? (bool) $imageData['isPublic'] : null,
+                'file_size_bytes' => $imageData['fileSizeBytes'] ?? null,
+                'width' => $imageData['width'] ?? null,
+                'height' => $imageData['height'] ?? null,
+                'is_primary' => $isPrimary,
+                'sort_order' => $index,
+                'status' => 'active',
+            ];
+
+            // Keep R2/display path on image_url once we have a local copy. A1 URLs
+            // stay on public_url/source_url as the download source only.
+            if (blank($existingImage?->local_path)) {
+                $imageAttributes['image_url'] = $resolvedUrl !== '' ? $resolvedUrl : (string) $publicUrl;
+            }
+
             $image = ProductImage::query()->updateOrCreate(
                 [
                     'product_id' => $product->id,
                     'external_image_id' => $externalImageId ?: null,
                 ],
-                [
-                    'stored_file_id' => $imageData['storedFileId'] ?? $externalImageId ?: null,
-                    'image_url' => $resolvedUrl,
-                    'source_url' => $imageData['sourceUrl'] ?? null,
-                    'public_url' => $imageData['publicUrl'] ?? $imagePayload['imageUrl'] ?? $resolvedUrl ?: null,
-                    'storage_key' => $imageData['storageKey'] ?? null,
-                    'original_file_name' => $imageData['originalFileName'] ?? null,
-                    'stored_file_name' => $imageData['storedFileName'] ?? null,
-                    'content_type' => $imageData['contentType'] ?? null,
-                    'file_extension' => $imageData['fileExtension'] ?? null,
-                    'file_type' => isset($imageData['fileType']) ? (int) $imageData['fileType'] : null,
-                    'is_public' => array_key_exists('isPublic', $imageData) ? (bool) $imageData['isPublic'] : null,
-                    'file_size_bytes' => $imageData['fileSizeBytes'] ?? null,
-                    'width' => $imageData['width'] ?? null,
-                    'height' => $imageData['height'] ?? null,
-                    'is_primary' => $isPrimary,
-                    'sort_order' => $index,
-                    'status' => 'active',
-                ]
+                $imageAttributes,
             );
 
             if (
@@ -410,7 +420,7 @@ class ProductImporter
                 || $existingImage->sort_order !== $index
                 || $existingImage->is_primary !== $isPrimary
                 || $existingImage->status !== 'active'
-                || $existingImage->image_url !== $resolvedUrl
+                || (string) $existingImage->public_url !== (string) $publicUrl
             ) {
                 $changed = true;
             }
@@ -418,6 +428,8 @@ class ProductImporter
             if (config('bnc.product_image_download_on_import', true)) {
                 $this->productImageStorage->storeFromRemote($image, $product);
             }
+
+            $this->productImageStorage->forgetResolvedUrlCache($image);
 
             if ($isPrimary) {
                 $defaultImageRecord = $image;

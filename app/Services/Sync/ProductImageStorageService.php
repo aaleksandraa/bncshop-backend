@@ -21,6 +21,9 @@ class ProductImageStorageService
 
     /**
      * Download a remote product image and queue optimization/upload to media storage.
+     *
+     * Already-stored R2 copies are left alone so an A1 CDN host change does not
+     * re-download the catalogue. New images (no local_path) always go to R2.
      */
     public function storeFromRemote(ProductImage $image, Product $product, bool $force = false): bool
     {
@@ -30,11 +33,7 @@ class ProductImageStorageService
             return false;
         }
 
-        if (
-            ! $force
-            && filled($image->local_path)
-            && $this->remoteUrlUnchanged($image, $remoteUrl)
-        ) {
+        if (! $force && filled($image->local_path)) {
             return true;
         }
 
@@ -113,11 +112,24 @@ class ProductImageStorageService
 
     private function resolveUrlWithoutCache(ProductImage $image): ?string
     {
-        if (filled($image->local_path) && $this->mediaExists($image)) {
+        if (filled($image->local_path) && $this->shouldUseLocalPath($image)) {
             return PublicStorageUrl::url((string) $image->local_path);
         }
 
         return $image->public_url ?: $image->image_url ?: $image->source_url;
+    }
+
+    private function shouldUseLocalPath(ProductImage $image): bool
+    {
+        if (blank($image->local_path)) {
+            return false;
+        }
+
+        if (config('bnc.trust_local_image_path', true)) {
+            return true;
+        }
+
+        return $this->mediaExists($image);
     }
 
     private function mediaExists(ProductImage $image): bool
@@ -147,7 +159,7 @@ class ProductImageStorageService
         foreach ([$image->public_url, $image->image_url, $image->source_url] as $candidate) {
             $url = trim((string) $candidate);
 
-            if ($url !== '') {
+            if ($this->isRemoteSourceUrl($url)) {
                 return $url;
             }
         }
@@ -155,11 +167,36 @@ class ProductImageStorageService
         return null;
     }
 
-    private function remoteUrlUnchanged(ProductImage $image, string $remoteUrl): bool
+    /**
+     * Only fetch from supplier CDNs. Skip our own /storage and images.bnc.ba URLs.
+     */
+    private function isRemoteSourceUrl(string $url): bool
     {
-        $tracked = trim((string) ($image->public_url ?: $image->source_url ?: ''));
+        if ($url === '' || str_starts_with($url, '/')) {
+            return false;
+        }
 
-        return $tracked === '' || $tracked === $remoteUrl;
+        if (! str_starts_with($url, 'http://') && ! str_starts_with($url, 'https://')) {
+            return false;
+        }
+
+        $host = strtolower((string) parse_url($url, PHP_URL_HOST));
+
+        if ($host === '') {
+            return false;
+        }
+
+        if (
+            $host === 'images.bnc.ba'
+            || $host === 'bnc.ba'
+            || $host === 'bncshop.ba'
+            || str_ends_with($host, '.bnc.ba')
+            || str_ends_with($host, '.bncshop.ba')
+        ) {
+            return false;
+        }
+
+        return true;
     }
 
     private function resolveFileName(ProductImage $image): string
