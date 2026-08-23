@@ -33,7 +33,6 @@ class ProductImageStorageService
         if (
             ! $force
             && filled($image->local_path)
-            && $this->mediaExists($image)
             && $this->remoteUrlUnchanged($image, $remoteUrl)
         ) {
             return true;

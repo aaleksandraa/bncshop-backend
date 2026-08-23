@@ -12,8 +12,8 @@ use Illuminate\Console\Command;
 class SyncDiagnoseCommand extends Command
 {
     protected $signature = 'bnc:sync-diagnose
-                            {--release-stale : Mark running jobs older than 3h as failed}
-                            {--release-stale-minutes= : Mark running jobs older than N minutes as failed}
+                            {--release-stale : Označi running jobove bez aktivnosti (default 45 min) kao failed, ili ih nastavi ako imaju progress}
+                            {--release-stale-minutes= : Idle minute prije nego se running job smatra zaglavljenim}
                             {--heal-olx : Clear stale OLX connection errors from the old A1 import pipeline}';
 
     protected $description = 'Diagnose API import/export sync scheduler, queue, and source health';

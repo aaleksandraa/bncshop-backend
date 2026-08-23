@@ -30,6 +30,10 @@ return [
     'a1_api_incremental_page_size' => (int) env('A1_API_INCREMENTAL_PAGE_SIZE', 25),
     'a1_api_page_delay_ms' => (int) env('A1_API_PAGE_DELAY_MS', 1000),
     'a1_sync_failure_cooldown_minutes' => (int) env('A1_SYNC_FAILURE_COOLDOWN_MINUTES', 30),
+    'a1_sync_pages_per_job' => (int) env('A1_SYNC_PAGES_PER_JOB', 40),
+    'a1_sync_job_time_budget_seconds' => (int) env('A1_SYNC_JOB_TIME_BUDGET_SECONDS', 5400),
+    'a1_sync_job_timeout' => (int) env('A1_SYNC_JOB_TIMEOUT', 10800),
+    'a1_sync_stale_idle_minutes' => (int) env('A1_SYNC_STALE_IDLE_MINUTES', 45),
 
     'a1_api_base_url' => env('A1_API_BASE_URL', 'https://a1team.ba'),
     'a1_api_username' => env('A1_API_USERNAME', 'bnc'),

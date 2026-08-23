@@ -89,6 +89,13 @@ class IncrementalSyncScheduler
             return false;
         }
 
+        $message = (string) ($latestFailedJob->error_message ?? '');
+        if (str_contains($message, 'exceeded maximum running time')
+            || str_contains($message, 'timeout')
+            || str_contains($message, 'timed out')) {
+            $cooldownMinutes = min($cooldownMinutes, 5);
+        }
+
         return $latestFailedJob->completed_at->gt(now()->subMinutes($cooldownMinutes));
     }
 

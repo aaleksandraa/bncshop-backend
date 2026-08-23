@@ -2,6 +2,7 @@
 
 namespace App\Services\Sync;
 
+use App\Jobs\RunApiSyncJob;
 use App\Models\ApiImportJob;
 use App\Models\ApiSource;
 use Illuminate\Support\Carbon;
@@ -115,18 +116,75 @@ class SyncHealthChecker
         ];
     }
 
-    public function releaseStaleRunningJobs(int $maxAgeMinutes = 180): int
-    {
-        $cutoff = now()->subMinutes($maxAgeMinutes);
+    public const STALE_RUNNING_JOB_MESSAGE = 'Job marked failed: exceeded maximum running time (worker may have crashed).';
 
-        return ApiImportJob::query()
+    public function releaseStaleRunningJobs(?int $maxIdleMinutes = null): int
+    {
+        $idleMinutes = max(1, $maxIdleMinutes ?? (int) config('bnc.a1_sync_stale_idle_minutes', 45));
+        $cutoff = now()->subMinutes($idleMinutes);
+        $released = 0;
+
+        $jobs = ApiImportJob::query()
             ->where('status', 'running')
             ->where('started_at', '<', $cutoff)
-            ->update([
+            ->get();
+
+        foreach ($jobs as $job) {
+            if ($this->lastJobActivityAt($job)?->gte($cutoff)) {
+                continue;
+            }
+
+            $lastPage = $job->items()->max('page');
+            $source = $job->apiSource;
+
+            if ($lastPage !== null && $source?->usesIntegrationApiImport()) {
+                RunApiSyncJob::dispatch(
+                    $source,
+                    fullSync: $job->type === 'full',
+                    startProductPage: (int) $lastPage + 1,
+                    skipMetadata: true,
+                    importJobId: $job->id,
+                    modifiedAfter: is_string(data_get($job->stats, 'modified_after'))
+                        ? data_get($job->stats, 'modified_after')
+                        : null,
+                );
+
+                $job->forceFill([
+                    'stats' => array_merge($job->stats ?? [], [
+                        'resumed_from_idle' => true,
+                        'next_page' => (int) $lastPage + 1,
+                    ]),
+                ])->save();
+                $job->touch();
+
+                continue;
+            }
+
+            $job->update([
                 'status' => 'failed',
                 'completed_at' => now(),
-                'error_message' => 'Job marked failed: exceeded maximum running time (worker may have crashed).',
+                'error_message' => self::STALE_RUNNING_JOB_MESSAGE,
             ]);
+            $released++;
+        }
+
+        return $released;
+    }
+
+    private function lastJobActivityAt(ApiImportJob $job): ?Carbon
+    {
+        $lastItemAt = $job->items()->max('created_at');
+        $timestamps = array_filter([
+            $job->updated_at,
+            $job->started_at,
+            $lastItemAt !== null ? Carbon::parse($lastItemAt) : null,
+        ]);
+
+        if ($timestamps === []) {
+            return null;
+        }
+
+        return collect($timestamps)->sort()->last();
     }
 
     /**
@@ -160,8 +218,12 @@ class SyncHealthChecker
                     $runningProgress['last_page'] ?? 0,
                     $runningProgress['last_page_duration_sec'] ?? '?',
                 );
+            } elseif ($this->lastJobActivityAt($runningJob)?->lt(now()->subMinutes(
+                max(1, (int) config('bnc.a1_sync_stale_idle_minutes', 45))
+            ))) {
+                $issues[] = "Job #{$runningJob->id} nema aktivnosti predugo — moguće zaglavljen worker.";
             } elseif ($runningJob->started_at?->lt(now()->subHours(3))) {
-                $issues[] = "Job #{$runningJob->id} je u statusu running predugo — moguće zaglavljen worker.";
+                $issues[] = "Job #{$runningJob->id} još uvijek radi (catch-up od zadnjeg uspješnog synca). Neće se prekinuti dok ima napretka.";
             }
         }
 

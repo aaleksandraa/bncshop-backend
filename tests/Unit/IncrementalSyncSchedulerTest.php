@@ -206,4 +206,36 @@ class IncrementalSyncSchedulerTest extends TestCase
         $this->assertTrue($scheduler->hasRecentFailure($source));
         $this->assertFalse($scheduler->isDue($source));
     }
+
+    public function test_timeout_failure_uses_shorter_cooldown(): void
+    {
+        config(['bnc.a1_sync_failure_cooldown_minutes' => 30]);
+
+        $scheduler = new IncrementalSyncScheduler;
+
+        $source = ApiSource::query()->create([
+            'name' => 'A1',
+            'target_system_code' => 'bnc-shop',
+            'base_url' => 'https://example.test',
+            'username' => 'user',
+            'password' => 'pass',
+            'is_active' => true,
+            'auto_sync_enabled' => true,
+            'sync_interval_minutes' => 15,
+            'last_successful_sync_at' => now()->subHour(),
+        ]);
+
+        ApiImportJob::query()->create([
+            'api_source_id' => $source->id,
+            'type' => 'incremental',
+            'status' => 'failed',
+            'sync_started_at' => now()->subMinutes(20),
+            'started_at' => now()->subMinutes(20),
+            'completed_at' => now()->subMinutes(10),
+            'error_message' => 'Job marked failed: exceeded maximum running time (worker may have crashed).',
+        ]);
+
+        $this->assertFalse($scheduler->hasRecentFailure($source));
+        $this->assertTrue($scheduler->isDue($source));
+    }
 }
