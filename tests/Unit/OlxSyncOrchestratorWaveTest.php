@@ -142,6 +142,109 @@ class OlxSyncOrchestratorWaveTest extends TestCase
         Queue::assertNotPushed(RunOlxSyncJob::class);
     }
 
+    public function test_validation_skips_are_tallied_by_attribute(): void
+    {
+        Queue::fake();
+        config(['bnc.olx_sync_wave_size' => 40]);
+
+        $source = $this->makeOlxSource();
+        $product = $this->makeProduct();
+
+        $settings = Mockery::mock(OlxSyncSettings::class);
+        $settings->shouldReceive('isEnabled')->andReturn(true);
+        $settings->shouldReceive('resolveSource')->andReturn($source);
+        $settings->shouldReceive('hasRunningBulkSyncJob')->andReturn(false);
+        $settings->shouldReceive('all')->andReturn(['batch_size' => 20, 'daily_create_limit' => 350, 'max_creates_per_run' => 175]);
+
+        $client = Mockery::mock(OlxApiClient::class);
+        $client->shouldReceive('authenticate')->andReturn('token');
+
+        $detector = Mockery::mock(OlxChangeDetector::class);
+        $detector->shouldReceive('detect')->andReturn([
+            'create' => [$product->id],
+            'update' => [],
+            'hide' => [],
+            'unhide' => [],
+            'unchanged' => 0,
+            'scanned' => 1,
+        ]);
+
+        $exporter = Mockery::mock(OlxListingExporter::class);
+        $exporter->shouldReceive('export')->once()->andThrow(new \RuntimeException(
+            'Nedostaju obavezni OLX atributi: RAM (#246), OS (#238)',
+        ));
+
+        $this->app->instance(OlxSyncSettings::class, $settings);
+
+        $orchestrator = new OlxSyncOrchestrator(
+            $settings,
+            $client,
+            $detector,
+            $exporter,
+            app(OlxDailyCreateLimiter::class),
+        );
+
+        $stats = $orchestrator->run(false);
+
+        $this->assertSame(1, $stats['actions']['skipped_validation']);
+        $this->assertSame(0, $stats['actions']['created']);
+        $this->assertSame(1, $stats['skipped_validation_reasons']['RAM (#246)']);
+        $this->assertSame(1, $stats['skipped_validation_reasons']['OS (#238)']);
+        Queue::assertNotPushed(RunOlxSyncJob::class);
+    }
+
+    public function test_transient_network_error_requeues_create_for_next_wave(): void
+    {
+        Queue::fake();
+        config(['bnc.olx_sync_wave_size' => 40]);
+
+        $source = $this->makeOlxSource();
+        $product = $this->makeProduct();
+
+        $settings = Mockery::mock(OlxSyncSettings::class);
+        $settings->shouldReceive('isEnabled')->andReturn(true);
+        $settings->shouldReceive('resolveSource')->andReturn($source);
+        $settings->shouldReceive('hasRunningBulkSyncJob')->andReturn(false);
+        $settings->shouldReceive('all')->andReturn(['batch_size' => 20, 'daily_create_limit' => 350, 'max_creates_per_run' => 175]);
+
+        $client = Mockery::mock(OlxApiClient::class);
+        $client->shouldReceive('authenticate')->andReturn('token');
+
+        $detector = Mockery::mock(OlxChangeDetector::class);
+        $detector->shouldReceive('detect')->andReturn([
+            'create' => [$product->id],
+            'update' => [],
+            'hide' => [],
+            'unhide' => [],
+            'unchanged' => 0,
+            'scanned' => 1,
+        ]);
+
+        $exporter = Mockery::mock(OlxListingExporter::class);
+        $exporter->shouldReceive('export')->once()->andThrow(new \RuntimeException(
+            'cURL error 28: Operation timed out after 60087 milliseconds with 0 bytes received (see https://curl.se/libcurl/c/libcurl-errors.html) for https://api.olx.ba/listings',
+        ));
+
+        $this->app->instance(OlxSyncSettings::class, $settings);
+
+        $orchestrator = new OlxSyncOrchestrator(
+            $settings,
+            $client,
+            $detector,
+            $exporter,
+            app(OlxDailyCreateLimiter::class),
+        );
+
+        $stats = $orchestrator->run(false);
+
+        $this->assertTrue($stats['continued']);
+        $this->assertSame(1, $stats['actions']['retried_network']);
+        $this->assertSame([$product->id], $stats['pending']['create']);
+        $this->assertSame([], $stats['actions']['errors']);
+
+        Queue::assertPushed(RunOlxSyncJob::class);
+    }
+
     public function test_health_checker_resumes_idle_olx_job_with_pending_work(): void
     {
         Queue::fake();

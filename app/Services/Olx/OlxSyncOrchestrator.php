@@ -293,9 +293,23 @@ class OlxSyncOrchestrator
                             $createQuota = 0;
                             $stats['actions']['skipped_quota']++;
                             $stats['limits'] = $this->createLimiter->snapshot($maxCreatesPerRun);
-                        } elseif (str_contains($message, 'Nedostaju obavezni OLX atributi')
+                        } elseif ($this->isMissingRequiredAttributeError($message)
                             || str_contains($message, 'validation_failed')) {
                             $stats['actions']['skipped_validation']++;
+                            $this->tallyValidationSkip($stats, $message);
+                        } elseif ($this->isTransientOlxNetworkError($message)) {
+                            $attempts = (int) ($stats['network_retries'][$product->id] ?? 0);
+                            if ($attempts < 2) {
+                                $stats['network_retries'][$product->id] = $attempts + 1;
+                                $stats['actions']['retried_network'] = (int) ($stats['actions']['retried_network'] ?? 0) + 1;
+                                $stats['pending'][$setKey][] = $product->id;
+                            } else {
+                                $stats['actions']['errors'][] = [
+                                    'product_id' => $product->id,
+                                    'action' => $setKey,
+                                    'message' => $message,
+                                ];
+                            }
                         } else {
                             $stats['actions']['errors'][] = [
                                 'product_id' => $product->id,
@@ -318,13 +332,13 @@ class OlxSyncOrchestrator
             }
         }
 
-        $stats['pending'] = [
-            'create' => [],
-            'update' => [],
-            'hide' => [],
-            'unhide' => [],
-        ];
+        $stats['pending'] = $this->normalizePending($stats['pending'] ?? []);
         $stats['limits'] = $this->createLimiter->snapshot($maxCreatesPerRun);
+
+        if ($this->hasPendingWork($stats)) {
+            return $this->dispatchContinuation($job, $stats, $fullSync, $maxCreatesPerRun);
+        }
+
         $this->completeJob($source, $job, $syncStartedAt, $stats);
 
         return $stats;
@@ -365,6 +379,7 @@ class OlxSyncOrchestrator
                 'skipped_legacy' => 0,
                 'skipped_validation' => 0,
                 'skipped_quota' => 0,
+                'retried_network' => 0,
                 'errors' => [],
             ],
             'limits' => $this->createLimiter->snapshot($maxCreatesPerRun),
@@ -374,8 +389,83 @@ class OlxSyncOrchestrator
                 'hide' => [],
                 'unhide' => [],
             ],
+            'skipped_validation_reasons' => [],
+            'network_retries' => [],
             'waves' => 0,
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $pending
+     * @return array{create: list<int>, update: list<int>, hide: list<int>, unhide: list<int>}
+     */
+    private function normalizePending(array $pending): array
+    {
+        $normalized = [
+            'create' => [],
+            'update' => [],
+            'hide' => [],
+            'unhide' => [],
+        ];
+
+        foreach ($normalized as $key => $_) {
+            $normalized[$key] = array_values(array_unique(array_map('intval', $pending[$key] ?? [])));
+        }
+
+        return $normalized;
+    }
+
+    /**
+     * @param  array<string, mixed>  $stats
+     */
+    private function hasPendingWork(array $stats): bool
+    {
+        foreach ($stats['pending'] ?? [] as $ids) {
+            if (is_array($ids) && $ids !== []) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function isMissingRequiredAttributeError(string $message): bool
+    {
+        return str_contains($message, 'obavezni OLX atributi')
+            || str_contains($message, 'Nedostaju obavezni');
+    }
+
+    /**
+     * @param  array<string, mixed>  $stats
+     */
+    private function tallyValidationSkip(array &$stats, string $message): void
+    {
+        $stats['skipped_validation_reasons'] ??= [];
+        $payload = $message;
+
+        if (preg_match('/obavezni OLX atributi:\s*(.+)$/u', $message, $matches) === 1) {
+            $payload = $matches[1];
+        }
+
+        foreach (array_map('trim', explode(',', $payload)) as $reason) {
+            if ($reason === '') {
+                continue;
+            }
+
+            $stats['skipped_validation_reasons'][$reason] = (int) ($stats['skipped_validation_reasons'][$reason] ?? 0) + 1;
+        }
+    }
+
+    private function isTransientOlxNetworkError(string $message): bool
+    {
+        $haystack = strtolower($message);
+
+        return str_contains($haystack, 'curl error 28')
+            || str_contains($haystack, 'curl error 56')
+            || str_contains($haystack, 'connection reset')
+            || str_contains($haystack, 'operation timed out')
+            || str_contains($haystack, 'connection timed out')
+            || str_contains($haystack, 'ssl_read');
     }
 
     /**

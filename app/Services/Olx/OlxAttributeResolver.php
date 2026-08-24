@@ -62,7 +62,13 @@ class OlxAttributeResolver
 
         foreach ($bundle['attributes'] as $olxAttributeId => $meta) {
             $mapping = $bundle['mappings']->get($olxAttributeId);
-            $isRequired = (bool) ($mapping?->is_required_for_publish || $meta->required);
+            $canFillWithoutMapping = $this->warrantyMapper->warrantyAttributeId($olxCategoryId) === (int) $olxAttributeId;
+            // OLX schema marks many attrs required. Unmapped ones must not block the
+            // whole listing — only attrs we actually know how to fill.
+            $isRequired = (bool) (
+                $mapping?->is_required_for_publish
+                || ($meta->required && ($mapping !== null || $canFillWithoutMapping))
+            );
 
             if (! $isRequired) {
                 continue;

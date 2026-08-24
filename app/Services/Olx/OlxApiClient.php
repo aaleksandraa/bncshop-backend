@@ -2,7 +2,9 @@
 
 namespace App\Services\Olx;
 
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -160,7 +162,13 @@ class OlxApiClient
      */
     public function createListing(array $data): array
     {
-        return $this->requestJson('POST', '/listings', $data);
+        return $this->requestJson(
+            'POST',
+            '/listings',
+            $data,
+            (int) config('bnc.olx_api_timeout', 60),
+            (int) config('bnc.olx_api_retries', 3),
+        );
     }
 
     /**
@@ -293,15 +301,16 @@ class OlxApiClient
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>|array<int, mixed>|null
      */
-    private function requestJson(string $method, string $path, array $data = [], ?int $timeoutSeconds = null): mixed
+    private function requestJson(string $method, string $path, array $data = [], ?int $timeoutSeconds = null, ?int $retries = null): mixed
     {
         $this->throttle();
 
-        $response = $this->authorizedRequest($method, $path, $data, $timeoutSeconds, $timeoutSeconds !== null ? 0 : null);
+        $effectiveRetries = $retries ?? ($timeoutSeconds !== null ? 0 : null);
+        $response = $this->authorizedRequest($method, $path, $data, $timeoutSeconds, $effectiveRetries);
 
         if ($response->status() === 401) {
             $this->clearTokenCache();
-            $response = $this->authorizedRequest($method, $path, $data, $timeoutSeconds, $timeoutSeconds !== null ? 0 : null);
+            $response = $this->authorizedRequest($method, $path, $data, $timeoutSeconds, $effectiveRetries);
         }
 
         if (! $response->successful()) {
@@ -351,7 +360,17 @@ class OlxApiClient
 
         return Http::baseUrl($baseUrl)
             ->timeout($timeout)
-            ->retry($retryCount, 1000)
+            ->retry($retryCount, 2000, function ($exception): bool {
+                if ($exception instanceof ConnectionException) {
+                    return true;
+                }
+
+                if ($exception instanceof RequestException) {
+                    return in_array($exception->response?->status(), [429, 502, 503, 504], true);
+                }
+
+                return false;
+            })
             ->acceptJson()
             ->withOptions(['verify' => (bool) config('bnc.olx_api_verify_ssl', true)]);
     }
