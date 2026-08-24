@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\BlogPost;
 use App\Services\Blog\BlogPostBlockResolver;
 use App\Services\Catalog\ProductReadCache;
+use App\Support\ResourceSlug;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -53,15 +54,25 @@ class BlogPostController extends Controller
 
     public function show(string $slug): JsonResponse
     {
-        $payload = $this->productReadCache->rememberBlogPost($slug, 600, function () use ($slug): array {
+        $slug = ResourceSlug::abortIfInvalid($slug);
+
+        $payload = $this->productReadCache->rememberBlogPost($slug, 600, function () use ($slug): ?array {
             $post = BlogPost::query()
                 ->published()
                 ->with('author:id,name')
                 ->where('slug', $slug)
-                ->firstOrFail();
+                ->first();
+
+            if ($post === null) {
+                return null;
+            }
 
             return $this->blockResolver->present($post);
         });
+
+        if ($payload === null) {
+            abort(404);
+        }
 
         return $this->success($payload);
     }

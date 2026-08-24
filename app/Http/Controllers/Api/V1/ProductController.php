@@ -10,6 +10,7 @@ use App\Services\Catalog\ProductListingService;
 use App\Services\Catalog\ProductReadCache;
 use App\Services\Pricing\CouponEngine;
 use App\Support\PublicStorageUrl;
+use App\Support\ResourceSlug;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -67,6 +68,8 @@ class ProductController extends Controller
 
     public function show(Request $request, string $slug): JsonResponse
     {
+        $slug = ResourceSlug::abortIfInvalid($slug);
+
         $couponCode = $request->string('kupon')->trim()->toString()
             ?: $request->string('coupon')->trim()->toString();
 
@@ -96,7 +99,7 @@ class ProductController extends Controller
             return $this->success(PublicStorageUrl::rewriteStorageUrlsInValue($payload));
         }
 
-        $payload = $this->productReadCache->rememberProduct($slug, 900, function () use ($slug): array {
+        $payload = $this->productReadCache->rememberProduct($slug, 900, function () use ($slug): ?array {
             $product = Product::query()
                 ->public()
                 ->active()
@@ -110,10 +113,18 @@ class ProductController extends Controller
                     'tags',
                     'seoOverride',
                 ])
-                ->firstOrFail();
+                ->first();
+
+            if ($product === null) {
+                return null;
+            }
 
             return (new ProductResource($product))->resolve();
         });
+
+        if ($payload === null) {
+            abort(404);
+        }
 
         return $this->success(PublicStorageUrl::rewriteStorageUrlsInValue($payload));
     }

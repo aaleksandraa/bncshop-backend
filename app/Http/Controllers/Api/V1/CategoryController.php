@@ -9,6 +9,7 @@ use App\Models\Category;
 use App\Services\Catalog\CategoryNavBuilder;
 use App\Services\Catalog\ProductReadCache;
 use App\Services\Catalog\CategoryListingOrder;
+use App\Support\ResourceSlug;
 use Illuminate\Http\JsonResponse;
 
 class CategoryController extends Controller
@@ -41,6 +42,8 @@ class CategoryController extends Controller
 
     public function show(string $slug): JsonResponse
     {
+        $slug = ResourceSlug::abortIfInvalid($slug);
+
         $category = $this->productReadCache->rememberCategorySlug($slug, 300, function () use ($slug): ?Category {
             return Category::query()
                 ->active()

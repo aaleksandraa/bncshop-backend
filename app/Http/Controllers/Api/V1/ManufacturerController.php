@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\Concerns\RespondsWithJson;
 use App\Models\Manufacturer;
 use App\Services\Catalog\ProductReadCache;
 use App\Support\PublicStorageUrl;
+use App\Support\ResourceSlug;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -62,14 +63,20 @@ class ManufacturerController extends Controller
 
     public function show(string $slug): JsonResponse
     {
-        $payload = $this->productReadCache->rememberManufacturers("slug:{$slug}", 600, function () use ($slug): array {
+        $slug = ResourceSlug::abortIfInvalid($slug);
+
+        $payload = $this->productReadCache->rememberOptionalManufacturer($slug, 600, function () use ($slug): ?array {
             $manufacturer = Manufacturer::query()
                 ->where('slug', $slug)
                 ->with(['seoOverride'])
                 ->withCount([
                     'products as products_count' => fn ($builder) => $builder->public()->active(),
                 ])
-                ->firstOrFail();
+                ->first();
+
+            if ($manufacturer === null) {
+                return null;
+            }
 
             return [
                 'id' => $manufacturer->id,
@@ -85,6 +92,10 @@ class ManufacturerController extends Controller
                 'seo_override' => $manufacturer->seoOverride,
             ];
         });
+
+        if ($payload === null) {
+            abort(404);
+        }
 
         return $this->success($payload);
     }

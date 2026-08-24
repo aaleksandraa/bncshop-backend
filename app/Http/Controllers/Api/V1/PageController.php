@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\Api\V1\Concerns\RespondsWithJson;
 use App\Models\CmsPage;
 use App\Services\Catalog\ProductReadCache;
+use App\Support\ResourceSlug;
 use Illuminate\Http\JsonResponse;
 
 class PageController extends Controller
@@ -18,11 +19,17 @@ class PageController extends Controller
 
     public function show(string $slug): JsonResponse
     {
-        $payload = $this->productReadCache->rememberPage($slug, 600, function () use ($slug): array {
+        $slug = ResourceSlug::abortIfInvalid($slug);
+
+        $payload = $this->productReadCache->rememberPage($slug, 600, function () use ($slug): ?array {
             $page = CmsPage::query()
                 ->active()
                 ->where('slug', $slug)
-                ->firstOrFail();
+                ->first();
+
+            if ($page === null) {
+                return null;
+            }
 
             return [
                 'id' => $page->id,
@@ -33,6 +40,10 @@ class PageController extends Controller
                 'meta_description' => $page->meta_description,
             ];
         });
+
+        if ($payload === null) {
+            abort(404);
+        }
 
         return $this->success($payload);
     }

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\Api\V1\Concerns\RespondsWithJson;
 use App\Http\Requests\Api\V1\StoreAnalyticsEventRequest;
 use App\Jobs\TrackAnalyticsEventJob;
+use App\Support\CrawlerDetector;
 use Illuminate\Http\JsonResponse;
 
 class AnalyticsEventController extends Controller
@@ -14,6 +15,10 @@ class AnalyticsEventController extends Controller
 
     public function store(StoreAnalyticsEventRequest $request): JsonResponse
     {
+        if (CrawlerDetector::isCrawler($request->userAgent())) {
+            return $this->success(['queued' => false, 'ignored' => true], status: 202);
+        }
+
         $validated = $request->validated();
 
         TrackAnalyticsEventJob::dispatch(

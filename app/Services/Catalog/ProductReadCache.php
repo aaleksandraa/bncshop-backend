@@ -11,6 +11,13 @@ use Illuminate\Support\Facades\Cache;
 
 class ProductReadCache
 {
+    public const MISSING_TTL_SECONDS = 60;
+
+    /**
+     * @var array{__missing: true}
+     */
+    private const MISSING_SENTINEL = ['__missing' => true];
+
     public function rememberList(string $cacheKey, int $ttlSeconds, callable $callback): array
     {
         return $this->tagged(['products', 'products:list'])
@@ -24,12 +31,17 @@ class ProductReadCache
     }
 
     /**
-     * @return array<string, mixed>
+     * @param  callable(): (?array<string, mixed>)  $callback
+     * @return array<string, mixed>|null
      */
-    public function rememberProduct(string $slug, int $ttlSeconds, callable $callback): array
+    public function rememberProduct(string $slug, int $ttlSeconds, callable $callback): ?array
     {
-        return $this->tagged(['products', "product:{$slug}"])
-            ->remember("product:slug:{$slug}", $ttlSeconds, $callback);
+        return $this->rememberOptionalPayload(
+            "product:slug:{$slug}",
+            ['products', "product:{$slug}"],
+            $ttlSeconds,
+            $callback,
+        );
     }
 
     /**
@@ -93,21 +105,31 @@ class ProductReadCache
     }
 
     /**
-     * @return array<string, mixed>
+     * @param  callable(): (?array<string, mixed>)  $callback
+     * @return array<string, mixed>|null
      */
-    public function rememberPage(string $slug, int $ttlSeconds, callable $callback): array
+    public function rememberPage(string $slug, int $ttlSeconds, callable $callback): ?array
     {
-        return $this->tagged(['cms', "page:{$slug}"])
-            ->remember("page:slug:{$slug}", $ttlSeconds, $callback);
+        return $this->rememberOptionalPayload(
+            "page:slug:{$slug}",
+            ['cms', "page:{$slug}"],
+            $ttlSeconds,
+            $callback,
+        );
     }
 
     /**
-     * @return array<string, mixed>
+     * @param  callable(): (?array<string, mixed>)  $callback
+     * @return array<string, mixed>|null
      */
-    public function rememberCampaign(string $slug, int $ttlSeconds, callable $callback): array
+    public function rememberCampaign(string $slug, int $ttlSeconds, callable $callback): ?array
     {
-        return $this->tagged(['campaigns', "campaign:{$slug}"])
-            ->remember("campaign:slug:{$slug}", $ttlSeconds, $callback);
+        return $this->rememberOptionalPayload(
+            "campaign:slug:{$slug}",
+            ['campaigns', "campaign:{$slug}"],
+            $ttlSeconds,
+            $callback,
+        );
     }
 
     public function forgetCampaign(string $slug): void
@@ -131,12 +153,17 @@ class ProductReadCache
     }
 
     /**
-     * @return array<string, mixed>
+     * @param  callable(): (?array<string, mixed>)  $callback
+     * @return array<string, mixed>|null
      */
-    public function rememberBlogPost(string $slug, int $ttlSeconds, callable $callback): array
+    public function rememberBlogPost(string $slug, int $ttlSeconds, callable $callback): ?array
     {
-        return $this->tagged(['blog', "blog:{$slug}"])
-            ->remember("blog:slug:{$slug}", $ttlSeconds, $callback);
+        return $this->rememberOptionalPayload(
+            "blog:slug:{$slug}",
+            ['blog', "blog:{$slug}"],
+            $ttlSeconds,
+            $callback,
+        );
     }
 
     /**
@@ -273,6 +300,20 @@ class ProductReadCache
             ->remember("manufacturer:slug:{$slug}", $ttlSeconds, $callback);
     }
 
+    /**
+     * @param  callable(): (?array<string, mixed>)  $callback
+     * @return array<string, mixed>|null
+     */
+    public function rememberOptionalManufacturer(string $slug, int $ttlSeconds, callable $callback): ?array
+    {
+        return $this->rememberOptionalPayload(
+            "manufacturers:slug:{$slug}",
+            ['manufacturers', "manufacturer:{$slug}"],
+            $ttlSeconds,
+            $callback,
+        );
+    }
+
     public function flushProducts(): void
     {
         if (! $this->supportsTags()) {
@@ -304,6 +345,42 @@ class ProductReadCache
     public function supportsTags(): bool
     {
         return method_exists(Cache::getStore(), 'tags');
+    }
+
+    /**
+     * @param  callable(): (?array<string, mixed>)  $callback
+     * @param  array<int, string>  $tags
+     * @return array<string, mixed>|null
+     */
+    private function rememberOptionalPayload(
+        string $cacheKey,
+        array $tags,
+        int $hitTtlSeconds,
+        callable $callback,
+        int $missTtlSeconds = self::MISSING_TTL_SECONDS,
+    ): ?array {
+        $store = $this->tagged($tags);
+        $cached = $store->get($cacheKey);
+
+        if (is_array($cached) && ($cached['__missing'] ?? false) === true && count($cached) === 1) {
+            return null;
+        }
+
+        if (is_array($cached)) {
+            return $cached;
+        }
+
+        $value = $callback();
+
+        if ($value === null) {
+            $store->put($cacheKey, self::MISSING_SENTINEL, $missTtlSeconds);
+
+            return null;
+        }
+
+        $store->put($cacheKey, $value, $hitTtlSeconds);
+
+        return $value;
     }
 
     /**
