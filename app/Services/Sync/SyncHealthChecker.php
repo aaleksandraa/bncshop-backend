@@ -3,6 +3,7 @@
 namespace App\Services\Sync;
 
 use App\Jobs\RunApiSyncJob;
+use App\Jobs\RunOlxSyncJob;
 use App\Models\ApiImportJob;
 use App\Models\ApiSource;
 use Illuminate\Support\Carbon;
@@ -132,6 +133,39 @@ class SyncHealthChecker
         foreach ($jobs as $job) {
             if ($this->lastJobActivityAt($job)?->gte($cutoff)) {
                 continue;
+            }
+
+            if (in_array($job->type, ['olx_incremental', 'olx_full'], true)) {
+                $olxCutoff = now()->subMinutes(max(
+                    $idleMinutes,
+                    (int) config('bnc.olx_sync_stale_idle_minutes', 90),
+                ));
+
+                if ($this->lastJobActivityAt($job)?->gte($olxCutoff)) {
+                    continue;
+                }
+
+                $pending = data_get($job->stats, 'pending');
+                $hasPending = is_array($pending) && (
+                    ($pending['create'] ?? []) !== []
+                    || ($pending['update'] ?? []) !== []
+                    || ($pending['hide'] ?? []) !== []
+                    || ($pending['unhide'] ?? []) !== []
+                );
+
+                if ($hasPending) {
+                    RunOlxSyncJob::dispatch(
+                        $job->type === 'olx_full',
+                        null,
+                        is_numeric(data_get($job->stats, 'limits.max_per_run'))
+                            ? (int) data_get($job->stats, 'limits.max_per_run')
+                            : null,
+                        $job->id,
+                    );
+                    $job->touch();
+
+                    continue;
+                }
             }
 
             $lastPage = $job->items()->max('page');

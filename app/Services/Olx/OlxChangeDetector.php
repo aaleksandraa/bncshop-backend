@@ -24,7 +24,7 @@ class OlxChangeDetector
      *     scanned: int
      * }
      */
-    public function detect(bool $forceAll = false): array
+    public function detect(bool $forceAll = false, ?callable $onProgress = null): array
     {
         /** @var list<int> $create */
         $create = [];
@@ -48,7 +48,7 @@ class OlxChangeDetector
             ->whereIn('category_id', $eligibleIds)
             ->where('is_public', true)
             ->where('status', 'active')
-            ->chunkById(50, function ($products) use (&$create, &$update, &$hide, &$unhide, &$unchanged, &$scanned, $forceAll): void {
+            ->chunkById(50, function ($products) use (&$create, &$update, &$hide, &$unhide, &$unchanged, &$scanned, $forceAll, $onProgress): void {
                 foreach ($products as $product) {
                     $scanned++;
 
@@ -91,6 +91,10 @@ class OlxChangeDetector
                     }
 
                     $unchanged++;
+                }
+
+                if ($onProgress !== null) {
+                    $onProgress($scanned);
                 }
             });
 

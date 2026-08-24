@@ -129,6 +129,8 @@ return [
     'olx_max_images_per_listing' => (int) env('OLX_MAX_IMAGES_PER_LISTING', 8),
     'olx_daily_create_limit' => (int) env('OLX_DAILY_CREATE_LIMIT', 350),
     'olx_max_creates_per_run' => (int) env('OLX_MAX_CREATES_PER_RUN', 175),
+    'olx_sync_wave_size' => (int) env('OLX_SYNC_WAVE_SIZE', 40),
+    'olx_sync_stale_idle_minutes' => (int) env('OLX_SYNC_STALE_IDLE_MINUTES', 90),
     'olx_sync_memory_limit' => env('OLX_SYNC_MEMORY_LIMIT', '512M'),
     'olx_platform_max_images_per_listing' => (int) env('OLX_PLATFORM_MAX_IMAGES_PER_LISTING', 25),
     'olx_image_watermark_enabled' => env('OLX_IMAGE_WATERMARK_ENABLED', true),
