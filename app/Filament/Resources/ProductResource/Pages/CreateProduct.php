@@ -24,5 +24,6 @@ class CreateProduct extends CreateRecord
     protected function afterCreate(): void
     {
         $this->syncSetItemsIfNeeded();
+        $this->syncSetImageIfNeeded();
     }
 }

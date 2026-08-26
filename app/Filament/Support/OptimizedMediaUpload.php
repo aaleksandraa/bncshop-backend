@@ -9,7 +9,7 @@ use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
 class OptimizedMediaUpload
 {
-    public static function configure(BaseFileUpload $upload, string $directory): BaseFileUpload
+    public static function configure(BaseFileUpload $upload, string|\Closure $directory): BaseFileUpload
     {
         return $upload
             ->disk(MediaStorage::resolveDiskName())

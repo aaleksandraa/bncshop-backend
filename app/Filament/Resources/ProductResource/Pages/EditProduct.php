@@ -43,6 +43,7 @@ class EditProduct extends EditRecord
     protected function afterSave(): void
     {
         $this->syncSetItemsIfNeeded();
+        $this->syncSetImageIfNeeded();
 
         if ($this->record->isSet()) {
             return;

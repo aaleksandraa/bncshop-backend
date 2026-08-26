@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\ProductResource\Pages\Concerns;
 
+use App\Services\Catalog\ProductImageManagerService;
 use App\Services\Catalog\ProductSetService;
 use App\Services\Pricing\ProductPriceRecalculator;
 use Illuminate\Support\Str;
@@ -36,9 +37,29 @@ trait ManagesProductSet
      */
     protected function stripVirtualSetFields(array $data): array
     {
-        unset($data['set_items']);
+        unset($data['set_items'], $data['set_image_upload'], $data['clear_set_image']);
 
         return $data;
+    }
+
+    protected function syncSetImageIfNeeded(): void
+    {
+        if (! $this->record->isSet()) {
+            return;
+        }
+
+        $state = $this->form->getState();
+        $service = app(ProductImageManagerService::class);
+
+        if (! empty($state['clear_set_image'])) {
+            $service->removeAllImages($this->record);
+
+            return;
+        }
+
+        if (! empty($state['set_image_upload'])) {
+            $service->upsertPrimaryFromStoredKey($this->record, (string) $state['set_image_upload']);
+        }
     }
 
     protected function syncSetItemsIfNeeded(): void
@@ -83,6 +104,10 @@ trait ManagesProductSet
                     'quantity' => $item->quantity,
                 ])
                 ->all();
+
+            $data['set_image_upload'] = app(ProductImageManagerService::class)
+                ->primaryImageStorageKey($this->record);
+            $data['clear_set_image'] = false;
         }
 
         return $data;

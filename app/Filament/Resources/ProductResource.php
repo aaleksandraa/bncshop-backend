@@ -10,8 +10,10 @@ use App\Filament\Resources\ProductResource\RelationManagers;
 use App\Jobs\RunOlxSyncJob;
 use App\Models\Product;
 use App\Models\Supplier;
+use App\Filament\Support\OptimizedMediaUpload;
 use App\Services\Catalog\ProductSetService;
 use App\Services\Pricing\PriceCalculator;
+use App\Support\PublicStorageUrl;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -21,6 +23,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 
 class ProductResource extends Resource
@@ -183,6 +186,44 @@ class ProductResource extends Resource
 
                                         return 'Ušteda za kupca: '.number_format($savings, 2, ',', '.').' KM';
                                     }),
+                                Forms\Components\Section::make('Slika seta')
+                                    ->description('Opciono. Bez slike na shopu piše „Nema slike“. Dodatne slike uređujte na tabu Slike.')
+                                    ->schema([
+                                        Forms\Components\Placeholder::make('set_image_preview')
+                                            ->label('Trenutna slika')
+                                            ->content(function (?Product $record): HtmlString|string {
+                                                if ($record === null || $record->defaultImage === null) {
+                                                    return 'Nema slike';
+                                                }
+
+                                                $url = PublicStorageUrl::absoluteFromResolved($record->defaultImage->resolvedUrl());
+
+                                                if ($url === null || $url === '') {
+                                                    return 'Nema slike';
+                                                }
+
+                                                return new HtmlString(
+                                                    '<img src="'.e($url).'" alt="'.e($record->name).'" style="max-height:120px;max-width:220px;object-fit:contain;background:#fff;padding:8px;border-radius:8px;border:1px solid #e5e5e5;" />'
+                                                );
+                                            })
+                                            ->visible(fn (?Product $record): bool => $record !== null),
+                                        OptimizedMediaUpload::configure(
+                                            Forms\Components\FileUpload::make('set_image_upload')
+                                                ->label('Upload slike')
+                                                ->helperText('PNG, JPG ili WebP. Uploadom zamjenjujete postojeću glavnu sliku.')
+                                                ->image()
+                                                ->maxSize(5120)
+                                                ->imagePreviewHeight('160'),
+                                            fn (?Product $record): string => $record
+                                                ? 'products/'.Str::slug((string) $record->external_product_id, '_')
+                                                : 'products/pending',
+                                        ),
+                                        Forms\Components\Toggle::make('clear_set_image')
+                                            ->label('Ukloni sliku')
+                                            ->helperText('Sačuvajte proizvod da set ostane bez slike.')
+                                            ->visible(fn (?Product $record): bool => $record?->defaultImage !== null),
+                                    ])
+                                    ->columnSpanFull(),
                             ])
                             ->columns(2),
                         Forms\Components\Tabs\Tab::make('Cijene')
