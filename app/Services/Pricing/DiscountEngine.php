@@ -13,6 +13,7 @@ class DiscountEngine
     public function __construct(
         private readonly CategoryScopeResolver $categoryScopeResolver,
         private readonly PricingCache $pricingCache,
+        private readonly ProductSalePriceService $productSalePriceService,
     ) {}
 
     /**
@@ -49,7 +50,7 @@ class DiscountEngine
             return null;
         }
 
-        $regularPrice = (float) ($product->regular_price ?? $product->api_price ?? 0);
+        $regularPrice = $this->productSalePriceService->resolveEffectiveRegularPrice($product);
 
         return $this->resolveBestDiscount($applicable, $regularPrice);
     }

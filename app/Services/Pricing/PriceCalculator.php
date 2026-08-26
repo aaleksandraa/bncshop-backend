@@ -51,8 +51,22 @@ class PriceCalculator
         $badgeText = null;
 
         if ($priceLocked && $product->manual_price !== null) {
-            $base = (float) $product->manual_price;
+            $regularPrice = (float) $product->manual_price;
+            $base = $regularPrice;
             $discountSource = 'manual';
+
+            if ($this->productSalePriceService->isSaleDiscountApplicable($product)) {
+                $sellerDiscount = $this->productSalePriceService->findProductSaleDiscount($product);
+                $targetSalePrice = $this->productSalePriceService->resolveTargetSalePrice($product, $sellerDiscount);
+
+                if ($targetSalePrice !== null && $targetSalePrice < $regularPrice) {
+                    $base = $targetSalePrice;
+                    $discount = $sellerDiscount;
+                    $discountAmount = round($regularPrice - $targetSalePrice, 2);
+                    $discountSource = 'local';
+                    $badgeText = $sellerDiscount?->badge_text;
+                }
+            }
         } else {
             $discount = $this->discountEngine->bestForProduct($product);
 

@@ -36,6 +36,7 @@ class ProductResource extends JsonResource
             'is_set' => (bool) $this->is_set,
             'regular_price' => $this->regular_price,
             'display_price' => $this->display_price,
+            'on_sale' => (bool) $this->on_sale,
             'available_stock' => $this->available_stock,
             'stock_status' => $this->stock_status,
             'created_at' => $this->created_at,

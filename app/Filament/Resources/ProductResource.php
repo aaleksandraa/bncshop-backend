@@ -359,9 +359,30 @@ class ProductResource extends Resource
                                             ->numeric()
                                             ->prefix('KM')
                                             ->dehydrated(false)
+                                            ->rule(function (Forms\Get $get, ?Product $record): \Closure {
+                                                return function (string $attribute, mixed $value, \Closure $fail) use ($get, $record): void {
+                                                    if ($value === null || $value === '') {
+                                                        return;
+                                                    }
+
+                                                    $regularPrice = (float) ($get('regular_price') ?? 0);
+                                                    $apiPrice = (float) ($get('api_price') ?? 0);
+
+                                                    if ($record !== null) {
+                                                        $regularPrice = app(ProductSalePriceService::class)
+                                                            ->resolveEffectiveRegularPrice($record->fresh());
+                                                    } elseif ($apiPrice > 0) {
+                                                        $regularPrice = $apiPrice;
+                                                    }
+
+                                                    if ((float) $value >= $regularPrice) {
+                                                        $fail('Akcijska cijena mora biti manja od redovne cijene.');
+                                                    }
+                                                };
+                                            })
                                             ->helperText(function (Forms\Get $get): string {
                                                 if ((bool) $get('price_locked')) {
-                                                    return 'Upozorenje: zaključana ručna cijena preskače lokalne popuste na shopu.';
+                                                    return 'Zaključana ručna cijena preskače automatske popuste, ali ručno postavljena akcijska cijena i dalje važi.';
                                                 }
 
                                                 return 'Mora biti manja od redovne cijene. Ostavite prazno da uklonite akciju.';

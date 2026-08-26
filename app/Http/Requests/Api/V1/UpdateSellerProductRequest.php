@@ -55,7 +55,8 @@ class UpdateSellerProductRequest extends FormRequest
             }
 
             $salePrice = (float) $this->input('sale_price');
-            $regularPrice = (float) $product->regular_price;
+            $regularPrice = app(ProductSalePriceService::class)
+                ->resolveEffectiveRegularPrice($product);
 
             if ($salePrice >= $regularPrice) {
                 $validator->errors()->add(

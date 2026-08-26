@@ -73,22 +73,23 @@ class EditProduct extends EditRecord
 
         $state = $this->form->getState();
         $salePriceService = app(ProductSalePriceService::class);
+        $product = $this->record->fresh();
         $salePriceRaw = $state['sale_price'] ?? null;
         $salePrice = $salePriceRaw === null || $salePriceRaw === ''
             ? null
             : (float) $salePriceRaw;
 
         $salePriceService->upsert(
-            $this->record,
+            $product,
             $salePrice,
             is_string($state['sale_validity'] ?? null) ? $state['sale_validity'] : ProductSalePriceService::VALIDITY_NO_END,
             $state['sale_ends_at'] ?? null,
         );
 
-        app(PriceCalculator::class)->recalculateAndPersist($this->record->fresh());
+        app(PriceCalculator::class)->recalculateAndPersist($product->fresh());
 
         if ($this->record->wasChanged(['preferred_supplier_id', 'margin_percentage', 'price_locked', 'manual_price'])) {
-            app(ProductPriceRecalculator::class)->forProduct($this->record->fresh());
+            app(ProductPriceRecalculator::class)->forProduct($product->fresh());
         }
     }
 }

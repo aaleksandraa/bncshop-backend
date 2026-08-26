@@ -91,7 +91,7 @@ class ProductSalePriceService
             return round((float) $conditions['sale_price'], 2);
         }
 
-        $regularPrice = (float) $product->regular_price;
+        $regularPrice = $this->resolveEffectiveRegularPrice($product);
 
         return max(0, round($regularPrice - (float) $discount->value, 2));
     }
@@ -99,6 +99,48 @@ class ProductSalePriceService
     public function resolveSalePrice(Product $product): ?float
     {
         return $this->resolveTargetSalePrice($product);
+    }
+
+    public function resolveEffectiveRegularPrice(Product $product): float
+    {
+        if ($product->price_locked && $product->manual_price !== null) {
+            return (float) $product->manual_price;
+        }
+
+        $apiPrice = (float) ($product->api_price ?? 0);
+        $regularPrice = (float) ($product->regular_price ?? 0);
+
+        if ($product->isFromEline()) {
+            return $apiPrice > 0 ? $apiPrice : $regularPrice;
+        }
+
+        return $regularPrice > 0 ? $regularPrice : $apiPrice;
+    }
+
+    public function isSaleDiscountApplicable(Product $product, ?Discount $discount = null): bool
+    {
+        $discount ??= $this->findProductSaleDiscount($product);
+
+        if ($discount === null || ! $discount->is_active) {
+            return false;
+        }
+
+        if ($discount->starts_at !== null && $discount->starts_at->isFuture()) {
+            return false;
+        }
+
+        if ($discount->ends_at !== null && $discount->ends_at->isPast()) {
+            return false;
+        }
+
+        if ($this->isUntilStockDiscount($discount) && (int) $product->available_stock <= 0) {
+            return false;
+        }
+
+        $targetSalePrice = $this->resolveTargetSalePrice($product, $discount);
+
+        return $targetSalePrice !== null
+            && $targetSalePrice < $this->resolveEffectiveRegularPrice($product);
     }
 
     public function upsert(
@@ -117,7 +159,7 @@ class ProductSalePriceService
             return;
         }
 
-        $regularPrice = (float) $product->regular_price;
+        $regularPrice = $this->resolveEffectiveRegularPrice($product);
         $discountAmount = round($regularPrice - $salePrice, 2);
 
         if ($discountAmount <= 0) {
@@ -180,7 +222,7 @@ class ProductSalePriceService
             return true;
         }
 
-        $regularPrice = (float) $product->regular_price;
+        $regularPrice = $this->resolveEffectiveRegularPrice($product);
         $discountAmount = round($regularPrice - $targetSalePrice, 2);
 
         if ($discountAmount <= 0) {

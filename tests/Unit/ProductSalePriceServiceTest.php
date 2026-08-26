@@ -25,6 +25,7 @@ class ProductSalePriceServiceTest extends TestCase
         $product = Product::factory()->create([
             'regular_price' => 500,
             'display_price' => 500,
+            'api_price' => null,
         ]);
 
         app(ProductSalePriceService::class)->upsert(
@@ -88,6 +89,7 @@ class ProductSalePriceServiceTest extends TestCase
             'display_price' => 450,
             'available_stock' => 2,
             'on_sale' => true,
+            'api_price' => null,
         ]);
 
         $service = app(ProductSalePriceService::class);
@@ -187,5 +189,57 @@ class ProductSalePriceServiceTest extends TestCase
         $product->refresh();
         $this->assertFalse($product->on_sale);
         $this->assertSame(500.0, (float) $product->display_price);
+    }
+
+    public function test_price_locked_product_still_applies_seller_sale_price(): void
+    {
+        $product = Product::factory()->create([
+            'regular_price' => 500,
+            'display_price' => 500,
+            'price_locked' => true,
+            'manual_price' => 500,
+        ]);
+
+        app(ProductSalePriceService::class)->upsert(
+            $product,
+            450,
+            ProductSalePriceService::VALIDITY_NO_END,
+        );
+
+        app(PriceCalculator::class)->recalculateAndPersist($product->fresh());
+
+        $product->refresh();
+        $this->assertTrue($product->on_sale);
+        $this->assertSame(500.0, (float) $product->regular_price);
+        $this->assertSame(450.0, (float) $product->display_price);
+    }
+
+    public function test_upsert_uses_api_price_for_eline_when_regular_price_is_stale(): void
+    {
+        $product = Product::factory()->create([
+            'import_source' => 'eline',
+            'regular_price' => 0,
+            'api_price' => 500,
+            'display_price' => 500,
+            'available_stock' => 3,
+        ]);
+
+        app(ProductSalePriceService::class)->upsert(
+            $product,
+            450,
+            ProductSalePriceService::VALIDITY_NO_END,
+        );
+
+        $discount = app(ProductSalePriceService::class)->findProductSaleDiscount($product);
+
+        $this->assertNotNull($discount);
+        $this->assertTrue($discount->is_active);
+        $this->assertSame(50.0, (float) $discount->value);
+
+        app(PriceCalculator::class)->recalculateAndPersist($product->fresh());
+
+        $product->refresh();
+        $this->assertTrue($product->on_sale);
+        $this->assertSame(450.0, (float) $product->display_price);
     }
 }
