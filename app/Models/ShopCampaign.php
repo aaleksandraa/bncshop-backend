@@ -28,6 +28,9 @@ class ShopCampaign extends Model
         'page_title',
         'page_description',
         'hero_image_path',
+        'show_breadcrumbs',
+        'show_title',
+        'show_product_count',
         'meta_title',
         'meta_description',
     ];
@@ -41,6 +44,9 @@ class ShopCampaign extends Model
             'ends_at' => 'datetime',
             'include_subcategories' => 'boolean',
             'has_landing_page' => 'boolean',
+            'show_breadcrumbs' => 'boolean',
+            'show_title' => 'boolean',
+            'show_product_count' => 'boolean',
         ];
     }
 

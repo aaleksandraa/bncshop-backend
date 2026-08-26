@@ -32,6 +32,9 @@ class ShopCampaignFactory extends Factory
             'page_title' => $name,
             'page_description' => fake()->sentence(),
             'hero_image_path' => null,
+            'show_breadcrumbs' => true,
+            'show_title' => true,
+            'show_product_count' => true,
             'meta_title' => $name,
             'meta_description' => fake()->sentence(),
         ];

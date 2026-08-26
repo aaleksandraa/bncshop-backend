@@ -12,7 +12,7 @@ use Throwable;
 
 class CampaignResolver
 {
-    private const CACHE_KEY = 'shop_campaigns:active:v1';
+    private const CACHE_KEY = 'shop_campaigns:active:v2';
 
     private const CACHE_TTL = 60;
 
@@ -131,6 +131,9 @@ class CampaignResolver
             'title' => $campaign->publicPageTitle(),
             'description' => $campaign->page_description,
             'hero_image_url' => PublicStorageUrl::url($campaign->hero_image_path),
+            'show_breadcrumbs' => (bool) ($campaign->show_breadcrumbs ?? true),
+            'show_title' => (bool) ($campaign->show_title ?? true),
+            'show_product_count' => (bool) ($campaign->show_product_count ?? true),
             'meta_title' => $campaign->meta_title,
             'meta_description' => $campaign->meta_description,
         ];

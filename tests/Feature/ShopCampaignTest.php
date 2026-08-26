@@ -152,7 +152,35 @@ class ShopCampaignTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.slug', 'back-to-school')
             ->assertJsonPath('data.title', 'Back to school')
-            ->assertJsonPath('data.description', 'Posebna ponuda');
+            ->assertJsonPath('data.description', 'Posebna ponuda')
+            ->assertJsonPath('data.show_breadcrumbs', true)
+            ->assertJsonPath('data.show_title', true)
+            ->assertJsonPath('data.show_product_count', true);
+    }
+
+    public function test_campaign_endpoint_returns_landing_layout_toggles(): void
+    {
+        ShopCampaign::factory()->create([
+            'slug' => 'back-to-school',
+            'page_title' => 'Back to school',
+            'show_breadcrumbs' => false,
+            'show_title' => false,
+            'show_product_count' => false,
+            'hero_image_path' => 'campaigns/heroes/bts.webp',
+        ]);
+
+        app(CampaignResolver::class)->invalidateCache();
+
+        $response = $this->getJson('/api/v1/campaigns/back-to-school')
+            ->assertOk()
+            ->assertJsonPath('data.show_breadcrumbs', false)
+            ->assertJsonPath('data.show_title', false)
+            ->assertJsonPath('data.show_product_count', false);
+
+        $this->assertStringContainsString(
+            'campaigns/heroes/bts.webp',
+            (string) $response->json('data.hero_image_url'),
+        );
     }
 
     public function test_campaign_endpoint_returns_404_when_inactive(): void

@@ -164,7 +164,34 @@ class ShopCampaignResource extends Resource
                         ->label('Napravi stranicu')
                         ->default(true)
                         ->live()
-                        ->helperText('Npr. bnc.ba/back-to-school sa listom proizvoda.'),
+                        ->helperText('Npr. bnc.ba/backtoschool sa listom proizvoda.')
+                        ->columnSpanFull(),
+                    OptimizedMediaUpload::configure(
+                        Forms\Components\FileUpload::make('hero_image_path')
+                            ->label('Hero slika')
+                            ->helperText('Prikazuje se odmah na vrhu stranice, preko cijele širine, prije breadcrumb-a i naslova. PNG, JPG ili WebP, maks. 4 MB.')
+                            ->image()
+                            ->maxSize(4096)
+                            ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/webp'])
+                            ->imagePreviewHeight('160')
+                            ->visible(fn (Get $get): bool => (bool) $get('has_landing_page')),
+                        'campaigns/heroes',
+                    )->columnSpanFull(),
+                    Forms\Components\Toggle::make('show_breadcrumbs')
+                        ->label('Prikaži breadcrumb')
+                        ->default(true)
+                        ->helperText('Npr. Početna / Back to school')
+                        ->visible(fn (Get $get): bool => (bool) $get('has_landing_page')),
+                    Forms\Components\Toggle::make('show_title')
+                        ->label('Prikaži naslov')
+                        ->default(true)
+                        ->helperText('H1 naslov i opis iznad proizvoda.')
+                        ->visible(fn (Get $get): bool => (bool) $get('has_landing_page')),
+                    Forms\Components\Toggle::make('show_product_count')
+                        ->label('Prikaži broj proizvoda')
+                        ->default(true)
+                        ->helperText('Npr. „Prikazano 3 od 3 proizvoda”.')
+                        ->visible(fn (Get $get): bool => (bool) $get('has_landing_page')),
                     Forms\Components\TextInput::make('page_title')
                         ->label('Naslov stranice')
                         ->maxLength(255)
@@ -174,17 +201,6 @@ class ShopCampaignResource extends Resource
                         ->rows(3)
                         ->visible(fn (Get $get): bool => (bool) $get('has_landing_page'))
                         ->columnSpanFull(),
-                    OptimizedMediaUpload::configure(
-                        Forms\Components\FileUpload::make('hero_image_path')
-                            ->label('Hero slika')
-                            ->helperText('Opcionalna slika iznad naslova.')
-                            ->image()
-                            ->maxSize(4096)
-                            ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/webp'])
-                            ->imagePreviewHeight('120')
-                            ->visible(fn (Get $get): bool => (bool) $get('has_landing_page')),
-                        'campaigns/heroes',
-                    )->columnSpanFull(),
                     Forms\Components\TextInput::make('meta_title')
                         ->label('Meta naslov')
                         ->maxLength(255)
