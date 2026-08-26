@@ -34,6 +34,7 @@ class Product extends Model
         'is_public',
         'is_new',
         'is_refurbished',
+        'is_set',
         'status',
         'margin_percentage',
         'api_price',
@@ -77,6 +78,7 @@ class Product extends Model
             'is_public' => 'boolean',
             'is_new' => 'boolean',
             'is_refurbished' => 'boolean',
+            'is_set' => 'boolean',
             'margin_percentage' => 'decimal:2',
             'api_price' => 'decimal:2',
             'api_final_price' => 'decimal:2',
@@ -144,6 +146,7 @@ class Product extends Model
             'is_refurbished' => $this->is_refurbished,
             'import_source' => $this->import_source,
             'on_sale' => (bool) $this->on_sale,
+            'is_set' => (bool) $this->is_set,
             'filter_attributes' => $filterAttributes,
         ];
     }
@@ -238,6 +241,22 @@ class Product extends Model
     public function seoOverride(): MorphOne
     {
         return $this->morphOne(SeoOverride::class, 'seoable');
+    }
+
+    public function setItems(): HasMany
+    {
+        return $this->hasMany(ProductSetItem::class, 'set_product_id')
+            ->orderBy('sort_order');
+    }
+
+    public function parentSets(): HasMany
+    {
+        return $this->hasMany(ProductSetItem::class, 'component_product_id');
+    }
+
+    public function isSet(): bool
+    {
+        return (bool) $this->is_set;
     }
 
     public function syncStockStatus(): void

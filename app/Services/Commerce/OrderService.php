@@ -307,15 +307,7 @@ class OrderService
         if ($to === 'vraćeno' && $restoreStockOnReturn) {
             foreach ($order->items as $item) {
                 if ($item->product) {
-                    $product = $item->product;
-                    if ($product->manual_stock_override !== null) {
-                        $product->manual_stock_override += (int) $item->quantity;
-                    } else {
-                        $product->api_stock += (int) $item->quantity;
-                    }
-                    $product->available_stock += (int) $item->quantity;
-                    $product->syncStockStatus();
-                    $product->save();
+                    $this->stockService->restore($item->product, (int) $item->quantity);
                 }
             }
         }

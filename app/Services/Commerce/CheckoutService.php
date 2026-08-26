@@ -14,6 +14,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\User;
 use App\Support\OrderNotificationMail;
+use App\Services\Catalog\ProductSetService;
 use App\Services\Loyalty\LoyaltyService;
 use App\Services\Loyalty\LoyaltySettings;
 use App\Services\Marketing\BrevoService;
@@ -43,6 +44,7 @@ class CheckoutService
         private readonly BrevoService $brevoService,
         private readonly BrevoSettings $brevoSettings,
         private readonly CheckoutSettings $checkoutSettings,
+        private readonly ProductSetService $productSetService,
     ) {}
 
     /**
@@ -271,6 +273,11 @@ class CheckoutService
                 }
 
                 $priceResult = $this->priceCalculator->calculate($product, $coupon);
+                $discountSnapshot = $item->discount_snapshot ?? [];
+
+                if ($product->isSet()) {
+                    $discountSnapshot['set_composition'] = $this->productSetService->snapshotForOrder($product);
+                }
 
                 OrderItem::query()->create([
                     'order_id' => $order->id,
@@ -292,7 +299,7 @@ class CheckoutService
                         'name' => $attr->attribute_name_snapshot,
                         'value' => $attr->normalized_value ?? $attr->raw_value,
                     ])->values()->all(),
-                    'discount_snapshot' => $item->discount_snapshot,
+                    'discount_snapshot' => $discountSnapshot,
                     'discount_id' => $priceResult->discount?->id,
                 ]);
 

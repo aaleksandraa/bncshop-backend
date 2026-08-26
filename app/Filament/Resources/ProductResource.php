@@ -10,6 +10,7 @@ use App\Filament\Resources\ProductResource\RelationManagers;
 use App\Jobs\RunOlxSyncJob;
 use App\Models\Product;
 use App\Models\Supplier;
+use App\Services\Catalog\ProductSetService;
 use App\Services\Pricing\PriceCalculator;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -84,6 +85,9 @@ class ProductResource extends Resource
                                     ->label('Gaming'),
                                 Forms\Components\Toggle::make('is_new')
                                     ->label('Novo'),
+                                Forms\Components\Toggle::make('is_set')
+                                    ->label('Ovo je set proizvoda')
+                                    ->live(),
                                 Forms\Components\Toggle::make('is_refurbished')
                                     ->label('Refurbished')
                                     ->visible(fn (?Product $record): bool => $record?->import_source === 'eline'),
@@ -109,7 +113,80 @@ class ProductResource extends Resource
                                     ->required(),
                             ])
                             ->columns(2),
+                        Forms\Components\Tabs\Tab::make('Set')
+                            ->visible(fn (Forms\Get $get): bool => (bool) $get('is_set'))
+                            ->schema([
+                                Forms\Components\Repeater::make('set_items')
+                                    ->label('Proizvodi u setu')
+                                    ->schema([
+                                        Forms\Components\Select::make('component_product_id')
+                                            ->label('Proizvod')
+                                            ->searchable()
+                                            ->required()
+                                            ->getSearchResultsUsing(function (string $search, ?Product $record): array {
+                                                return Product::query()
+                                                    ->where('is_set', false)
+                                                    ->when($record?->id, fn (Builder $query) => $query->where('id', '!=', $record->id))
+                                                    ->where(function (Builder $query) use ($search): void {
+                                                        $query
+                                                            ->where('name', 'ilike', "%{$search}%")
+                                                            ->orWhere('sku', 'ilike', "%{$search}%");
+                                                    })
+                                                    ->orderBy('name')
+                                                    ->limit(50)
+                                                    ->get()
+                                                    ->mapWithKeys(fn (Product $product): array => [
+                                                        $product->id => $product->name.' — '.number_format((float) $product->display_price, 2, ',', '.').' KM',
+                                                    ])
+                                                    ->all();
+                                            })
+                                            ->getOptionLabelUsing(fn ($value): ?string => Product::query()->find($value)?->name)
+                                            ->live(),
+                                        Forms\Components\TextInput::make('quantity')
+                                            ->label('Količina')
+                                            ->numeric()
+                                            ->minValue(1)
+                                            ->default(1)
+                                            ->required()
+                                            ->live(),
+                                    ])
+                                    ->minItems(2)
+                                    ->reorderable()
+                                    ->columnSpanFull()
+                                    ->live(),
+                                Forms\Components\Placeholder::make('set_components_sum')
+                                    ->label('Zbir cijena dijelova')
+                                    ->content(function (Forms\Get $get): string {
+                                        $sum = static::calculateSetComponentsSumFromForm($get('set_items'));
+
+                                        return number_format($sum, 2, ',', '.').' KM';
+                                    }),
+                                Forms\Components\TextInput::make('manual_price')
+                                    ->label('Cijena seta (KM)')
+                                    ->numeric()
+                                    ->prefix('KM')
+                                    ->required()
+                                    ->live(onBlur: true)
+                                    ->helperText(function (Forms\Get $get): ?string {
+                                        $sum = static::calculateSetComponentsSumFromForm($get('set_items'));
+                                        $setPrice = (float) ($get('manual_price') ?? 0);
+
+                                        if ($sum <= 0 || $setPrice <= 0) {
+                                            return 'Upišite cijenu seta nižu od zbira dijelova za akcijsku ponudu.';
+                                        }
+
+                                        if ($setPrice >= $sum) {
+                                            return 'Upozorenje: cijena seta nije niža od zbira — nema uštede za kupca.';
+                                        }
+
+                                        $savings = $sum - $setPrice;
+
+                                        return 'Ušteda za kupca: '.number_format($savings, 2, ',', '.').' KM';
+                                    }),
+                            ])
+                            ->columns(2),
                         Forms\Components\Tabs\Tab::make('Cijene')
+                            ->visible(fn (Forms\Get $get): bool => ! (bool) $get('is_set'))
                             ->schema([
                                 Forms\Components\Placeholder::make('pricing_supplier')
                                     ->label('Odabrani dobavljač')
@@ -233,6 +310,18 @@ class ProductResource extends Resource
                             ->columns(2),
                         Forms\Components\Tabs\Tab::make('Zalihe')
                             ->schema([
+                                Forms\Components\Placeholder::make('set_available_stock')
+                                    ->label('Dostupno setova')
+                                    ->visible(fn (Forms\Get $get, ?Product $record): bool => (bool) $get('is_set') && $record !== null)
+                                    ->content(function (?Product $record): string {
+                                        if ($record === null) {
+                                            return 'Sačuvajte set da vidite dostupnost.';
+                                        }
+
+                                        $available = app(ProductSetService::class)->availableSetQuantity($record);
+
+                                        return (string) $available;
+                                    }),
                                 Forms\Components\TextInput::make('api_stock')
                                     ->label('API zaliha')
                                     ->numeric()
@@ -243,10 +332,12 @@ class ProductResource extends Resource
                                     ->disabled(),
                                 Forms\Components\TextInput::make('available_stock')
                                     ->label('Dostupno')
-                                    ->numeric(),
+                                    ->numeric()
+                                    ->disabled(fn (Forms\Get $get): bool => (bool) $get('is_set')),
                                 Forms\Components\TextInput::make('manual_stock_override')
                                     ->label('Ručni override zalihe')
-                                    ->numeric(),
+                                    ->numeric()
+                                    ->visible(fn (Forms\Get $get): bool => ! (bool) $get('is_set')),
                                 Forms\Components\Select::make('stock_status')
                                     ->label('Status zalihe')
                                     ->options([
@@ -386,6 +477,11 @@ class ProductResource extends Resource
                 Tables\Columns\IconColumn::make('is_new')
                     ->label('Novo')
                     ->boolean(),
+                Tables\Columns\TextColumn::make('is_set')
+                    ->label('Tip')
+                    ->badge()
+                    ->formatStateUsing(fn (bool $state): string => $state ? 'Set' : 'Proizvod')
+                    ->color(fn (bool $state): string => $state ? 'info' : 'gray'),
                 Tables\Columns\IconColumn::make('is_refurbished')
                     ->label('Refurbished')
                     ->boolean()
@@ -432,6 +528,8 @@ class ProductResource extends Resource
                     ->label('Gaming'),
                 TernaryFilter::make('is_new')
                     ->label('Novo'),
+                TernaryFilter::make('is_set')
+                    ->label('Set'),
                 TernaryFilter::make('is_refurbished')
                     ->label('Refurbished'),
                 SelectFilter::make('import_source')
@@ -548,5 +646,41 @@ class ProductResource extends Resource
     {
         return parent::getEloquentQuery()
             ->with(['manufacturer', 'category', 'defaultImage', 'seoOverride', 'preferredSupplier']);
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>|null  $items
+     */
+    public static function calculateSetComponentsSumFromForm(?array $items): float
+    {
+        if ($items === null || $items === []) {
+            return 0.0;
+        }
+
+        $ids = collect($items)
+            ->pluck('component_product_id')
+            ->filter()
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values();
+
+        if ($ids->isEmpty()) {
+            return 0.0;
+        }
+
+        $products = Product::query()->whereIn('id', $ids)->get()->keyBy('id');
+
+        return round(
+            collect($items)->sum(function (array $row) use ($products): float {
+                $product = $products->get((int) ($row['component_product_id'] ?? 0));
+
+                if ($product === null) {
+                    return 0.0;
+                }
+
+                return (float) $product->display_price * max(1, (int) ($row['quantity'] ?? 1));
+            }),
+            2,
+        );
     }
 }

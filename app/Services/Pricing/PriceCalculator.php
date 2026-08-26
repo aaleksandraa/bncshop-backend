@@ -5,6 +5,7 @@ namespace App\Services\Pricing;
 use App\Models\Coupon;
 use App\Models\Product;
 use App\Models\ProductPriceHistory;
+use App\Services\Catalog\ProductSetService;
 use App\Services\Sync\FieldLockService;
 
 class PriceCalculator
@@ -15,10 +16,15 @@ class PriceCalculator
         private readonly SupplierOfferSelector $supplierOfferSelector,
         private readonly MarginRuleResolver $marginRuleResolver,
         private readonly FieldLockService $fieldLockService,
+        private readonly ProductSetService $productSetService,
     ) {}
 
     public function calculate(Product $product, ?Coupon $coupon = null): PriceResult
     {
+        if ($product->isSet()) {
+            return $this->calculateSet($product, $coupon);
+        }
+
         $priceLocked = (bool) $product->price_locked;
         $wholesalePrice = null;
         $appliedMargin = null;
@@ -94,6 +100,13 @@ class PriceCalculator
 
     public function recalculateAndPersist(Product $product): PriceResult
     {
+        if ($product->isSet()) {
+            $this->productSetService->refreshSetDerivedState($product->fresh(['setItems.componentProduct']));
+            $fresh = $product->fresh(['setItems.componentProduct']);
+
+            return $this->calculateSet($fresh);
+        }
+
         $oldRegularPrice = (float) ($product->regular_price ?? 0);
         $oldDisplayPrice = (float) ($product->display_price ?? 0);
 
@@ -138,6 +151,41 @@ class PriceCalculator
         }
 
         return $result;
+    }
+
+    private function calculateSet(Product $product, ?Coupon $coupon = null): PriceResult
+    {
+        $regularPrice = $this->productSetService->componentsSum($product);
+        $displayPrice = (float) ($product->manual_price ?? $product->display_price ?? 0);
+        $discountAmount = max(0, round($regularPrice - $displayPrice, 2));
+
+        if ($coupon) {
+            $beforeCoupon = $displayPrice;
+            $displayPrice = $this->couponEngine->apply($displayPrice, $coupon, $product);
+            if ($displayPrice < $beforeCoupon) {
+                $discountAmount += round($beforeCoupon - $displayPrice, 2);
+            }
+        }
+
+        $onSale = $displayPrice > 0 && $displayPrice < $regularPrice;
+
+        return new PriceResult(
+            displayPrice: $displayPrice,
+            regularPrice: $regularPrice,
+            originalPrice: $onSale ? $regularPrice : null,
+            discountSource: $onSale ? 'set_bundle' : 'none',
+            discountAmount: $discountAmount,
+            discount: null,
+            coupon: $coupon,
+            badgeText: $onSale ? 'Set akcija' : null,
+            onSale: $onSale,
+            priceLocked: true,
+            wholesalePrice: null,
+            appliedMargin: null,
+            marginSource: 'set',
+            supplierName: null,
+            appliedPriceAdjustment: null,
+        );
     }
 
     private function grossFromWholesale(float $wholesalePrice, float $marginPercentage, float $adjustment = 0): float

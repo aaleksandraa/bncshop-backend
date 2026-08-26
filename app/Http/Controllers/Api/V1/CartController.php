@@ -50,7 +50,10 @@ class CartController extends Controller
         $item = $this->cartService->addItem($cart, $product, $request->integer('quantity'));
 
         return $this->success([
-            'item' => (new CartItemResource($item->load('product.defaultImage')))->resolve(),
+            'item' => (new CartItemResource($item->load([
+                'product.defaultImage',
+                'product.setItems.componentProduct',
+            ])))->resolve(),
             'subtotal' => $this->cartService->subtotal($cart->fresh(CartService::CART_RELATIONS)),
         ], $this->cartMeta($cart), 201);
     }
@@ -63,7 +66,10 @@ class CartController extends Controller
         $updated = $this->cartService->updateItem($item, $request->integer('quantity'));
 
         return $this->success([
-            'item' => $updated->exists ? (new CartItemResource($updated->load('product.defaultImage')))->resolve() : null,
+            'item' => $updated->exists ? (new CartItemResource($updated->load([
+                'product.defaultImage',
+                'product.setItems.componentProduct',
+            ])))->resolve() : null,
             'subtotal' => $this->cartService->subtotal($cart->fresh(CartService::CART_RELATIONS)),
         ], $this->cartMeta($cart));
     }

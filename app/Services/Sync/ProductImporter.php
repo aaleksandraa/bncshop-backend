@@ -33,6 +33,11 @@ class ProductImporter
         $externalId = (string) ($payload['productId'] ?? $payload['external_product_id'] ?? '');
         $product = Product::query()->firstOrNew(['external_product_id' => $externalId]);
         $wasExisting = $product->exists;
+
+        if ($wasExisting && $product->is_set) {
+            return new ProductUpsertResult($product, false, []);
+        }
+
         $wasPublic = $wasExisting ? (bool) $product->is_public : null;
         $snapshot = $wasExisting ? ProductImportChangeTracker::snapshot($product) : [];
 

@@ -111,7 +111,12 @@ class ProductPriceRecalculator
 
     public function forProduct(Product $product): void
     {
-        $this->priceCalculator->recalculateAndPersist($product->fresh());
+        $fresh = $product->fresh();
+        $this->priceCalculator->recalculateAndPersist($fresh);
+
+        if (! $fresh->isSet()) {
+            app(\App\Services\Catalog\ProductSetService::class)->refreshSetsContaining($fresh);
+        }
     }
 
     /**

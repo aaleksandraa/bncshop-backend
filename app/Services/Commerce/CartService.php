@@ -21,6 +21,7 @@ class CartService
     /** @var list<string> */
     public const CART_RELATIONS = [
         'items.product.defaultImage',
+        'items.product.setItems.componentProduct',
         'loyaltyReward.product.defaultImage',
     ];
 

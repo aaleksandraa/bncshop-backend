@@ -86,6 +86,7 @@ class ProductController extends Controller
                     'attributeValues.attributeDefinition.categoryMappings',
                     'tags',
                     'seoOverride',
+                    'setItems.componentProduct.defaultImage',
                 ])
                 ->firstOrFail();
 
@@ -112,6 +113,7 @@ class ProductController extends Controller
                     'attributeValues.attributeDefinition.categoryMappings',
                     'tags',
                     'seoOverride',
+                    'setItems.componentProduct.defaultImage',
                 ])
                 ->first();
 

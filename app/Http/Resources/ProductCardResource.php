@@ -29,6 +29,7 @@ class ProductCardResource extends JsonResource
             'is_new' => $this->is_new,
             'is_gaming' => $this->is_gaming,
             'is_refurbished' => $this->is_refurbished,
+            'is_set' => (bool) $this->is_set,
             'on_sale' => (bool) $this->on_sale,
             'campaign_badges' => app(CampaignResolver::class)->badgesForProduct($this->resource),
             'manufacturer' => $this->whenLoaded('manufacturer', fn () => $this->manufacturer ? [
@@ -43,6 +44,17 @@ class ProductCardResource extends JsonResource
                 'full_slug' => $this->category->full_slug,
             ] : null),
             'default_image' => $this->whenLoaded('defaultImage', fn () => $this->formatImage($this->defaultImage)),
+            'set_items' => $this->when(
+                $this->is_set && $this->relationLoaded('setItems'),
+                fn () => $this->setItems
+                    ->sortBy('sort_order')
+                    ->values()
+                    ->map(fn ($item): array => [
+                        'name' => $item->componentProduct?->name,
+                        'quantity' => (int) $item->quantity,
+                    ])
+                    ->all(),
+            ),
         ];
     }
 

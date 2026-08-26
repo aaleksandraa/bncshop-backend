@@ -124,6 +124,11 @@ class ElineProductImporter
 
         $product = Product::query()->firstOrNew(['external_product_id' => $externalId]);
         $wasExisting = $product->exists;
+
+        if ($wasExisting && $product->is_set) {
+            return null;
+        }
+
         $snapshot = $wasExisting ? ProductImportChangeTracker::snapshot($product) : [];
 
         if (! $wasExisting) {

@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\ProductResource\Pages;
 
 use App\Filament\Resources\ProductResource;
+use App\Filament\Resources\ProductResource\Pages\Concerns\ManagesProductSet;
 use App\Services\Pricing\ProductPriceRecalculator;
 use App\Services\Sync\FieldLockService;
 use Filament\Actions;
@@ -10,6 +11,8 @@ use Filament\Resources\Pages\EditRecord;
 
 class EditProduct extends EditRecord
 {
+    use ManagesProductSet;
+
     protected static string $resource = ProductResource::class;
 
     protected function getHeaderActions(): array
@@ -19,8 +22,32 @@ class EditProduct extends EditRecord
         ];
     }
 
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    protected function mutateFormDataBeforeFill(array $data): array
+    {
+        return $this->mutateSetFormData($data);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        return $this->stripVirtualSetFields($this->prepareSetProductData($data));
+    }
+
     protected function afterSave(): void
     {
+        $this->syncSetItemsIfNeeded();
+
+        if ($this->record->isSet()) {
+            return;
+        }
+
         if ($this->record->wasChanged('margin_percentage')) {
             $lockService = app(FieldLockService::class);
             $margin = (float) ($this->record->margin_percentage ?? 0);

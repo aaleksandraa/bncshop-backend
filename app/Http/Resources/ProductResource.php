@@ -5,6 +5,7 @@ namespace App\Http\Resources;
 use App\Models\Product;
 use App\Services\Catalog\AttributeDisplayService;
 use App\Services\Catalog\CampaignResolver;
+use App\Services\Catalog\ProductSetService;
 use App\Support\PublicStorageUrl;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -32,6 +33,7 @@ class ProductResource extends JsonResource
             'is_gaming' => $this->is_gaming,
             'is_new' => $this->is_new,
             'is_refurbished' => $this->is_refurbished,
+            'is_set' => (bool) $this->is_set,
             'regular_price' => $this->regular_price,
             'display_price' => $this->display_price,
             'available_stock' => $this->available_stock,
@@ -62,6 +64,10 @@ class ProductResource extends JsonResource
             )),
             'tags' => $this->whenLoaded('tags'),
             'campaign_badges' => app(CampaignResolver::class)->badgesForProduct($this->resource),
+            'set_items' => $this->when(
+                $this->is_set && $this->relationLoaded('setItems'),
+                fn () => $this->formatSetItems(),
+            ),
             'seo_override' => $this->whenLoaded('seoOverride'),
         ];
     }
@@ -87,5 +93,33 @@ class ProductResource extends JsonResource
             'is_primary' => $image->is_primary,
             'sort_order' => $image->sort_order,
         ];
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function formatSetItems(): array
+    {
+        return app(ProductSetService::class)
+            ->loadSetItemsForDisplay($this->resource)
+            ->map(function ($item): array {
+                $component = $item->componentProduct;
+                $unitPrice = $component !== null ? (float) $component->display_price : 0.0;
+                $quantity = (int) $item->quantity;
+
+                return [
+                    'product_id' => $component?->id,
+                    'name' => $component?->name,
+                    'slug' => $component?->slug,
+                    'quantity' => $quantity,
+                    'display_price' => $unitPrice,
+                    'line_total' => round($unitPrice * $quantity, 2),
+                    'default_image' => $component !== null
+                        ? $this->formatImage($component->defaultImage)
+                        : null,
+                ];
+            })
+            ->values()
+            ->all();
     }
 }
