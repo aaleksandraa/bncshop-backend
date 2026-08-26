@@ -14,6 +14,7 @@ class OlxOsValueNormalizerTest extends TestCase
         $this->assertSame('Nema', $normalizer->normalize('FreeDOS'));
         $this->assertSame('Nema', $normalizer->normalize('Bez OS-a'));
         $this->assertSame('Win 11', $normalizer->normalize('Windows 11 Home'));
+        $this->assertSame('Win 11', $normalizer->normalize('W11Pro'));
         $this->assertSame('Win 10', $normalizer->normalize('Microsoft Windows 10 Pro'));
         $this->assertSame('Mac OS', $normalizer->normalize('Apple Mac OS'));
         $this->assertSame('Linux', $normalizer->normalize('Ubuntu Linux'));

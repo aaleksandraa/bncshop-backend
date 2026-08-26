@@ -20,11 +20,11 @@ return [
 
     // Desktop računari
     38 => [
-        ['olx_attribute_id' => 245, 'bnc_attribute_aliases' => ['Procesor', 'CPU'], 'is_required_for_publish' => true, 'value_mappings' => [
-            'Intel' => 'Intel', 'AMD' => 'AMD', 'Apple' => 'Apple', 'Ryzen' => 'AMD', 'Core i3' => 'Intel', 'Core i5' => 'Intel', 'Core i7' => 'Intel', 'Core i9' => 'Intel',
+        ['olx_attribute_id' => 245, 'bnc_attribute_aliases' => ['Procesor', 'CPU', 'Model procesora', 'Proizvođač procesora', 'Tip/serija procesora', 'Arhitektura / jezgra procesora', 'Instaliran procesor', 'Vrsta procesora'], 'is_required_for_publish' => true, 'value_mappings' => [
+            'Intel' => 'Intel', 'AMD' => 'AMD', 'Apple' => 'Ostalo', 'Ryzen' => 'AMD', 'Core i3' => 'Intel', 'Core i5' => 'Intel', 'Core i7' => 'Intel', 'Core i9' => 'Intel',
         ]],
         ['olx_attribute_id' => 1156, 'bnc_attribute_aliases' => ['Brzina procesora', 'Brzina procesora (GHz)', 'GHz'], 'default_value' => '2.5', 'is_required_for_publish' => true],
-        ['olx_attribute_id' => 238, 'attribute_definition_id' => 1170, 'bnc_attribute_aliases' => ['Operativni sistem', 'Operativni Sustav', 'Operativni sistem - uređaj', 'Operativni Sustavi', 'OS'], 'is_required_for_publish' => true, 'value_mappings' => [
+        ['olx_attribute_id' => 238, 'attribute_definition_id' => 1170, 'bnc_attribute_aliases' => ['Operativni sistem', 'Operativni Sustav', 'Operativni sistem - uređaj', 'Operativni Sustavi', 'OS'], 'default_value' => 'Nema', 'is_required_for_publish' => true, 'value_mappings' => [
             'FreeDOS' => 'Nema', 'DOS' => 'Nema', 'Bez OS-a' => 'Nema', 'Bez OS' => 'Nema', 'Without OS' => 'Nema', 'No OS' => 'Nema',
             'Win 11' => 'Win 11', 'Windows 11' => 'Win 11', 'Win 10' => 'Win 10', 'Windows 10' => 'Win 10',
             'macOS' => 'Mac OS', 'Mac OS' => 'Mac OS', 'Apple Mac OS' => 'Mac OS', 'Linux' => 'Linux', 'Ostalo' => 'Nema',
@@ -39,7 +39,7 @@ return [
     // Laptopi
     39 => [
         ['olx_attribute_id' => 264, 'bnc_attribute_aliases' => ['RAM', 'Memorija RAM', 'Memorija', 'Kapacitet RAM'], 'is_required_for_publish' => true],
-        ['olx_attribute_id' => 261, 'attribute_definition_id' => 1170, 'bnc_attribute_aliases' => ['Operativni sistem', 'Operativni Sustav', 'Operativni sistem - uređaj', 'Operativni Sustavi', 'OS'], 'is_required_for_publish' => true, 'value_mappings' => [
+        ['olx_attribute_id' => 261, 'attribute_definition_id' => 1170, 'bnc_attribute_aliases' => ['Operativni sistem', 'Operativni Sustav', 'Operativni sistem - uređaj', 'Operativni Sustavi', 'OS'], 'default_value' => 'Nema', 'is_required_for_publish' => true, 'value_mappings' => [
             'FreeDOS' => 'Nema', 'DOS' => 'Nema', 'Bez OS-a' => 'Nema', 'Bez OS' => 'Nema', 'Without OS' => 'Nema', 'No OS' => 'Nema',
             'Win 11' => 'Win 11', 'Windows 11' => 'Win 11', 'Win 10' => 'Win 10', 'Windows 10' => 'Win 10',
             'macOS' => 'Mac OS', 'Mac OS' => 'Mac OS', 'Apple Mac OS' => 'Mac OS', 'Linux' => 'Linux', 'Ostalo' => 'Nema',
@@ -47,8 +47,8 @@ return [
         ['olx_attribute_id' => 4784, 'bnc_attribute_aliases' => ['SSD', 'Kapacitet SSD', 'SSD (GB)', 'SSD kapacitet']],
         ['olx_attribute_id' => 2465, 'bnc_attribute_aliases' => ['SSD'], 'default_value' => 'Ne'],
         ['olx_attribute_id' => 265, 'attribute_definition_id' => 349, 'bnc_attribute_aliases' => ['Dijagonala (inch)', 'Dijagonala ekrana', 'Dijagonala', 'Display', 'Ekran', 'Veličina ekrana', 'Veličina (inch)'], 'is_required_for_publish' => true],
-        ['olx_attribute_id' => 262, 'bnc_attribute_aliases' => ['Procesor', 'CPU'], 'is_required_for_publish' => true, 'value_mappings' => [
-            'Intel' => 'Intel', 'AMD' => 'AMD', 'Apple' => 'Apple', 'Ryzen' => 'AMD', 'Core i3' => 'Intel', 'Core i5' => 'Intel', 'Core i7' => 'Intel', 'Core i9' => 'Intel',
+        ['olx_attribute_id' => 262, 'bnc_attribute_aliases' => ['Procesor', 'CPU', 'Model procesora', 'Proizvođač procesora', 'Tip/serija procesora', 'Arhitektura / jezgra procesora', 'Instaliran procesor', 'Vrsta procesora'], 'is_required_for_publish' => true, 'value_mappings' => [
+            'Intel' => 'Intel', 'AMD' => 'AMD', 'Apple' => 'Ostalo', 'Ryzen' => 'AMD', 'Core i3' => 'Intel', 'Core i5' => 'Intel', 'Core i7' => 'Intel', 'Core i9' => 'Intel',
         ]],
         ['olx_attribute_id' => 3872, 'bnc_attribute_aliases' => ['Vrsta graficke', 'Grafička kartica tip'], 'default_value' => 'Integrisana', 'is_required_for_publish' => true],
         ['olx_attribute_id' => 1159, 'bnc_attribute_aliases' => ['Brzina procesora', 'Brzina procesora (GHz)']],

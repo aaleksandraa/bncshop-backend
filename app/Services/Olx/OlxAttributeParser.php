@@ -32,16 +32,28 @@ class OlxAttributeParser
 
     public function parseRam(string $text): ?string
     {
-        if (preg_match('/(\d+)\s*GB\s*RAM/i', $text, $m)) {
+        $valid = [1, 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64];
+
+        if (preg_match('/(\d+)\s*GB\s*RAM/i', $text, $m) && in_array((int) $m[1], $valid, true)) {
             return $this->formatRamSelect((int) $m[1]);
         }
 
-        if (preg_match('/\b(\d+)\s*GB\b/i', $text, $m)) {
-            $gb = (int) $m[1];
+        if (preg_match('/(\d+)\s*GB\s*DDR/i', $text, $m) && in_array((int) $m[1], $valid, true)) {
+            return $this->formatRamSelect((int) $m[1]);
+        }
 
-            if (in_array($gb, [1, 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64], true)) {
-                return $this->formatRamSelect($gb);
+        if (preg_match_all('/(\d+)\s*GB/i', $text, $matches)) {
+            foreach ($matches[1] as $raw) {
+                $gb = (int) $raw;
+
+                if (in_array($gb, $valid, true)) {
+                    return $this->formatRamSelect($gb);
+                }
             }
+        }
+
+        if (preg_match('/\b(?:i[3579]|r[357]|ryzen)\s*\/\s*(\d+)\s*\//i', $text, $m) && in_array((int) $m[1], $valid, true)) {
+            return $this->formatRamSelect((int) $m[1]);
         }
 
         if (preg_match('/\b(\d+)\s*\/\s*(\d+)\b/', $text, $m)) {
@@ -74,15 +86,15 @@ class OlxAttributeParser
 
     public function parseOs(string $text): ?string
     {
-        if (preg_match('/Win(?:dows)?\s*11/i', $text)) {
+        if (preg_match('/Win(?:dows)?\s*11|\bW11|Win11/i', $text)) {
             return 'Win 11';
         }
 
-        if (preg_match('/Win(?:dows)?\s*10/i', $text)) {
+        if (preg_match('/Win(?:dows)?\s*10|\bW10|Win10/i', $text)) {
             return 'Win 10';
         }
 
-        if (preg_match('/\b(freedos|free\s+dos|bez\s+os|without\s+os|no\s+os|nema\s+os)\b/i', $text)) {
+        if (preg_match('/\b(freedos|free\s+dos|bez\s+os|without\s+os|no\s+os|nema\s+os|noos)\b/i', $text)) {
             return 'Nema';
         }
 
@@ -90,11 +102,11 @@ class OlxAttributeParser
             return 'Nema';
         }
 
-        if (preg_match('/\bLinux\b/i', $text)) {
+        if (preg_match('/\b(linux|ubuntu)\b/i', $text)) {
             return 'Linux';
         }
 
-        if (preg_match('/\b(mac\s*os|macos|apple\s+os)\b/i', $text)) {
+        if (preg_match('/\b(mac\s*os|macos|apple\s+os|macbook)\b/i', $text)) {
             return 'Mac OS';
         }
 
@@ -115,8 +127,8 @@ class OlxAttributeParser
             return $this->normalizeInch(str_replace(',', '.', $m[1]));
         }
 
-        if (preg_match('/(\d+(?:\.\d+)?)\s*["\']/', $text, $m)) {
-            return $this->normalizeInch($m[1]);
+        if (preg_match('/(\d+(?:[.,]\d+)?)\s*(?:\'\'|"|″)/', $text, $m)) {
+            return $this->normalizeInch(str_replace(',', '.', $m[1]));
         }
 
         if (preg_match('/(\d+(?:[.,]\d+)?)\s*inch/i', $text, $m)) {
@@ -125,6 +137,26 @@ class OlxAttributeParser
 
         if (preg_match('/\b(\d+(?:\.\d+)?)\s*in\b/i', $text, $m)) {
             return $this->normalizeInch($m[1]);
+        }
+
+        if (preg_match('/(\d{2}(?:[.,]\d+)?)\s*(?:FHD|UHD|QHD|HD\b)/i', $text, $m)) {
+            return $this->normalizeInch(str_replace(',', '.', $m[1]));
+        }
+
+        if (preg_match('/(?:monitor|display)\s+\S+\s+(\d{2}(?:\.\d)?)\b/i', $text, $m)) {
+            return $this->normalizeInch($m[1]);
+        }
+
+        if (preg_match('/\bTV\s+(\d{2,3})[A-Z]/i', $text, $m)) {
+            return $this->normalizeInch($m[1]);
+        }
+
+        if (preg_match('/\b(\d{2,3})MLED/i', $text, $m)) {
+            return $this->normalizeInch($m[1]);
+        }
+
+        if (preg_match('/\b(\d{2}(?:[.,]\d+)?)\s+\d+\s*GB\b/i', $text, $m)) {
+            return $this->normalizeInch(str_replace(',', '.', $m[1]));
         }
 
         return null;
@@ -152,7 +184,15 @@ class OlxAttributeParser
             return 'Intel';
         }
 
-        if (preg_match('/\bCeleron\b|\bPentium\b|\bXeon\b/i', $text)) {
+        if (preg_match('/\bCeleron\b|\bPentium\b|\bXeon\b|\bN\d{3,5}\b/i', $text)) {
+            return 'Intel';
+        }
+
+        if (preg_match('/\b(?:core\s+)?ultra\s*[3-9]|\bU[3579]-\d/i', $text)) {
+            return 'Intel';
+        }
+
+        if (preg_match('/\bCore\s*[3579]\b/i', $text)) {
             return 'Intel';
         }
 

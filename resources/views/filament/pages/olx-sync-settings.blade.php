@@ -75,6 +75,21 @@
                     </p>
                 </div>
             </div>
+            @php
+                $skipReasons = $stats['skipped_validation_reasons'] ?? [];
+            @endphp
+            @if (is_array($skipReasons) && $skipReasons !== [])
+                <div class="mt-4 rounded-lg border border-warning-300 bg-warning-50 p-3 dark:border-warning-700 dark:bg-warning-950">
+                    <p class="text-sm font-medium text-warning-800 dark:text-warning-200">
+                        Razlozi validacije ({{ $actions['skipped_validation'] ?? 0 }} oglasa)
+                    </p>
+                    <ul class="mt-2 space-y-1 text-xs text-warning-700 dark:text-warning-300">
+                        @foreach ($skipReasons as $reason => $count)
+                            <li>{{ $reason }}: {{ $count }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
             @if (count($errors) > 0)
                 <div class="mt-4 rounded-lg border border-danger-300 bg-danger-50 p-3 dark:border-danger-700 dark:bg-danger-950">
                     <p class="text-sm font-medium text-danger-800 dark:text-danger-200">

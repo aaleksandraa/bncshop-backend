@@ -37,14 +37,48 @@ class OlxAttributeParserTest extends TestCase
         $this->assertSame('55', $parsed['display_inch']);
     }
 
-    public function test_parses_display_inch_only_from_explicit_markers(): void
+    public function test_parses_ram_skipping_invalid_gb_tokens(): void
+    {
+        $parser = new OlxAttributeParser;
+
+        $this->assertSame('16 GB', $parser->parseRam('Ryzen 3 308GB DDR5, 16GB'));
+        $this->assertSame('8 GB', $parser->parseRam('HP 250R G10 I5/8/512 5GHz8GB DDR4, 512GB SSD'));
+        $this->assertSame('16 GB', $parser->parseRam('Core5 120 1.4/5GHz16GB DDR5, 512GB SSD'));
+    }
+
+    public function test_parses_os_shortcuts_and_ubuntu(): void
+    {
+        $parser = new OlxAttributeParser;
+
+        $this->assertSame('Win 11', $parser->parseOs('HP Z2 Mini U7-265/32GB Win11p'));
+        $this->assertSame('Win 11', $parser->parseOs('Dell Pro /W11Pro/3Y'));
+        $this->assertSame('Linux', $parser->parseOs('Dell Pro Max 16 Plus Ubuntu'));
+        $this->assertSame('Mac OS', $parser->parseOs('Apple MacBook Air 13 M4'));
+    }
+
+    public function test_parses_intel_ultra_and_core_without_i(): void
+    {
+        $parser = new OlxAttributeParser;
+
+        $this->assertSame('Intel', $parser->parseProcessorBrand('ThinkCentre NEO 50 Tower G6, Ultra 7 265 20C'));
+        $this->assertSame('Intel', $parser->parseProcessorBrand('HP Z2 Mini G1i U7-265/32GB'));
+        $this->assertSame('Intel', $parser->parseProcessorBrand('Acer Aspire Lite Core5 120'));
+        $this->assertSame('Apple', $parser->parseProcessorBrand('Apple Macbook Air 13 2023 M4'));
+    }
+
+    public function test_parses_display_from_fhd_and_monitor_size(): void
     {
         $parser = new OlxAttributeParser;
 
         $this->assertSame('55', $parser->parseDisplayInch('TCL 55" 4K UHD Google TV'));
         $this->assertSame('15.6', $parser->parseDisplayInch('ASUS VivoBook 15.6 inch FHD'));
-        $this->assertNull($parser->parseDisplayInch('Dahua ADS LCD panel LS550UCM-EF'));
+        $this->assertSame('15.6', $parser->parseDisplayInch('HP 15-FD0154WM 15.6 FHD Touch, i5-1334u'));
+        $this->assertSame('17.3', $parser->parseDisplayInch('Acer Aspire A17-51M 17,3 FHD, Core5'));
+        $this->assertSame('27', $parser->parseDisplayInch('Monitor Dell 27 SE2726H, 1920x1080, FHD'));
+        $this->assertSame('65', $parser->parseDisplayInch('Philips 65MLED920/12 AMBILIGHT 4K'));
+        $this->assertSame('24', $parser->parseDisplayInch('TESLA TV 24E655BHS HD Google'));
         $this->assertNull($parser->parseDisplayInch('TCL 55P6L 4K UHD Google TV'));
+        $this->assertNull($parser->parseDisplayInch('Dahua ADS LCD panel LS550UCM-EF'));
     }
 
     public function test_does_not_infer_os_from_product_title_without_version(): void

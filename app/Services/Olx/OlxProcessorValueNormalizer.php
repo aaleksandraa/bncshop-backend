@@ -19,7 +19,7 @@ class OlxProcessorValueNormalizer
             return 'Apple';
         }
 
-        if (preg_match('/\b(intel|core\s*i[3579]|celeron|pentium|xeon|n\d{3,5}|ultra\s*\d)\b/i', $trimmed)) {
+        if (preg_match('/\b(intel|core\s*i[3579]|core\s*[3579]\b|celeron|pentium|xeon|n\d{3,5}|ultra\s*[3-9]|u[3579]-\d)\b/i', $trimmed)) {
             return 'Intel';
         }
 

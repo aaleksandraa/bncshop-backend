@@ -79,6 +79,17 @@ class OlxAttributeNormalizer
         return false;
     }
 
+    public function otherOption(OlxCategoryAttribute $meta): ?string
+    {
+        foreach ($this->optionValues($meta) as $option) {
+            if (strcasecmp($option, 'Ostalo') === 0) {
+                return $option;
+            }
+        }
+
+        return null;
+    }
+
     /**
      * @return array<int, string>
      */

@@ -262,7 +262,11 @@ class ApiImportJobResource extends Resource
         }
 
         $filtered = $stats;
-        unset($filtered['products']);
+        unset(
+            $filtered['products'],
+            $filtered['pending'],
+            $filtered['network_retries'],
+        );
 
         return $filtered;
     }

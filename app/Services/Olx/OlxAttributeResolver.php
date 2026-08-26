@@ -25,7 +25,8 @@ class OlxAttributeResolver
     public function resolveForProduct(Product $product, int $olxCategoryId): array
     {
         $product->loadMissing(['attributeValues.attributeDefinition', 'manufacturer']);
-        $parsed = $this->parser->parseFromProductText($product->name.' '.(string) $product->description);
+        $searchText = $this->productSearchText($product);
+        $parsed = $this->parser->parseFromProductText($searchText);
         $bundle = $this->categoryBundle($olxCategoryId);
         $attributes = $bundle['attributes'];
         $mappings = $bundle['mappings'];
@@ -33,7 +34,7 @@ class OlxAttributeResolver
         $payload = [];
 
         foreach ($attributes as $olxAttributeId => $meta) {
-            $value = $this->resolveSingle($product, $olxCategoryId, (int) $olxAttributeId, $meta, $mappings->get($olxAttributeId), $parsed);
+            $value = $this->resolveSingle($product, $olxCategoryId, (int) $olxAttributeId, $meta, $mappings->get($olxAttributeId), $parsed, $searchText);
 
             if ($value === null || $value === '') {
                 continue;
@@ -113,6 +114,7 @@ class OlxAttributeResolver
         OlxCategoryAttribute $meta,
         ?OlxAttributeMapping $mapping,
         array $parsed,
+        string $searchText,
     ): ?string {
         if ($mapping?->attribute_definition_id) {
             $fromLinked = $this->valueFromDefinitionId($product, (int) $mapping->attribute_definition_id, $mapping, $meta);
@@ -122,8 +124,10 @@ class OlxAttributeResolver
             }
         }
 
-        if ($mapping?->bnc_attribute_aliases) {
-            $fromAlias = $this->valueFromAliases($product, $mapping->bnc_attribute_aliases, $mapping, $meta);
+        $aliases = $this->mergedAliases($olxAttributeId, $mapping);
+
+        if ($aliases !== []) {
+            $fromAlias = $this->valueFromAliases($product, $aliases, $mapping, $meta);
 
             if ($fromAlias !== null) {
                 return $fromAlias;
@@ -144,7 +148,7 @@ class OlxAttributeResolver
             return $warranty !== null ? $this->finalizeValue($warranty, $meta, $mapping) : null;
         }
 
-        $fromParser = $this->valueFromParser($olxAttributeId, $parsed, $product);
+        $fromParser = $this->valueFromParser($olxAttributeId, $parsed, $searchText);
 
         if ($fromParser !== null) {
             return $this->finalizeValue($fromParser, $meta, $mapping);
@@ -154,7 +158,76 @@ class OlxAttributeResolver
             return $this->finalizeValue((string) $mapping->default_value, $meta, $mapping);
         }
 
+        if (in_array($olxAttributeId, [238, 261], true)) {
+            return $this->finalizeValue('Nema', $meta, $mapping);
+        }
+
+        if ($mapping?->is_required_for_publish || $meta->required) {
+            $other = $this->normalizer->otherOption($meta);
+
+            if ($other !== null) {
+                return $other;
+            }
+        }
+
         return null;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function mergedAliases(int $olxAttributeId, ?OlxAttributeMapping $mapping): array
+    {
+        return array_values(array_unique(array_filter([
+            ...($mapping?->bnc_attribute_aliases ?? []),
+            ...$this->extraAliases($olxAttributeId),
+        ])));
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function extraAliases(int $olxAttributeId): array
+    {
+        return match ($olxAttributeId) {
+            245, 262 => [
+                'Model procesora',
+                'Proizvođač procesora',
+                'Tip/serija procesora',
+                'Arhitektura / jezgra procesora',
+                'Instaliran procesor',
+                'Specifikacija procesora',
+                'Vrsta procesora',
+            ],
+            246, 264 => [
+                'Kapacitet memorije',
+                'Kapacitet RAM',
+            ],
+            238, 261 => [
+                'Operativni sistem dodatno',
+            ],
+            265, 1143, 3457 => [
+                'Dijagonala ekrana',
+                'Dijagonala TV-a (inch)',
+            ],
+            default => [],
+        };
+    }
+
+    private function productSearchText(Product $product): string
+    {
+        $product->loadMissing(['attributeValues.attributeDefinition']);
+        $parts = [$product->name, (string) $product->description];
+
+        foreach ($product->attributeValues as $value) {
+            $raw = trim((string) ($value->display_value ?? $value->normalized_value ?? $value->raw_value ?? ''));
+
+            if ($raw !== '') {
+                $parts[] = $raw;
+            }
+        }
+
+        return trim(implode(' ', $parts));
     }
 
     /**
@@ -174,12 +247,16 @@ class OlxAttributeResolver
             foreach ($aliases as $alias) {
                 foreach ($labels as $label) {
                     if (strcasecmp((string) $label, (string) $alias) === 0) {
-                        return $this->finalizeValue(
+                        $finalized = $this->finalizeValue(
                             trim((string) ($value->display_value ?? $value->normalized_value ?? $value->raw_value ?? '')),
                             $meta,
                             $mapping,
                             $definition?->internal_type ?? 'text',
                         );
+
+                        if ($finalized !== null) {
+                            return $finalized;
+                        }
                     }
                 }
             }
@@ -227,10 +304,8 @@ class OlxAttributeResolver
     /**
      * @param  array<string, string|null>  $parsed
      */
-    private function valueFromParser(int $olxAttributeId, array $parsed, Product $product): ?string
+    private function valueFromParser(int $olxAttributeId, array $parsed, string $searchText): ?string
     {
-        $text = $product->name.' '.(string) $product->description;
-
         return match ($olxAttributeId) {
             238, 261, 5255, 5060 => $parsed['os'] ?? $parsed['smartwatch_os'],
             264, 246 => $parsed['ram'],
@@ -238,19 +313,18 @@ class OlxAttributeResolver
             265, 3457, 1143, 5067 => $parsed['display_inch'],
             262, 245 => $parsed['processor_brand'],
             2465 => ($parsed['ssd_gb'] !== null && (int) $parsed['ssd_gb'] > 0) ? 'Da' : null,
-            2339, 2170 => $parsed['connection'] ?? $this->parser->parseConnection($text),
+            2339, 2170 => $parsed['connection'] ?? $this->parser->parseConnection($searchText),
             369 => $parsed['monitor_type'],
             7525 => $parsed['tv_technology'],
             3459, 6671, 2342 => $parsed['resolution'],
             3178 => $parsed['headphone_type'],
             7445 => $parsed['video_resolution'],
             7522 => $parsed['printer_type'],
-            5060 => $parsed['smartwatch_os'],
             5058, 7978, 1123, 3460 => $parsed['color'],
             7126, 7164, 7167, 7153, 7204 => $parsed['listing_type'],
-            3180, 273, 7446 => str_contains(strtolower($text), 'wireless') || str_contains(strtolower($text), 'bluetooth') ? 'Da' : null,
-            3177, 3179, 3100, 2326 => str_contains(strtolower($text), 'gaming') ? 'Da' : null,
-            1156 => $this->parseProcessorGhz($text),
+            3180, 273, 7446 => str_contains(strtolower($searchText), 'wireless') || str_contains(strtolower($searchText), 'bluetooth') ? 'Da' : null,
+            3177, 3179, 3100, 2326 => str_contains(strtolower($searchText), 'gaming') ? 'Da' : null,
+            1156 => $this->parseProcessorGhz($searchText),
             default => null,
         };
     }
@@ -288,7 +362,7 @@ class OlxAttributeResolver
             $snapped = $this->normalizer->snapToSelectOption($value, $meta);
 
             if (! $this->normalizer->isValidOption($snapped, $meta)) {
-                return null;
+                return $this->normalizer->otherOption($meta);
             }
 
             return $snapped;

@@ -17,11 +17,11 @@ class OlxOsValueNormalizer
 
         $lower = mb_strtolower($trimmed);
 
-        if (str_contains($lower, 'win 11') || str_contains($lower, 'windows 11')) {
+        if (str_contains($lower, 'win 11') || str_contains($lower, 'windows 11') || preg_match('/\b(w11|win11)/u', $lower)) {
             return 'Win 11';
         }
 
-        if (str_contains($lower, 'win 10') || str_contains($lower, 'windows 10')) {
+        if (str_contains($lower, 'win 10') || str_contains($lower, 'windows 10') || preg_match('/\b(w10|win10)/u', $lower)) {
             return 'Win 10';
         }
 
@@ -29,11 +29,11 @@ class OlxOsValueNormalizer
             return 'Nema';
         }
 
-        if (str_contains($lower, 'mac os') || str_contains($lower, 'macos')) {
+        if (str_contains($lower, 'mac os') || str_contains($lower, 'macos') || str_contains($lower, 'macbook')) {
             return 'Mac OS';
         }
 
-        if (str_contains($lower, 'linux')) {
+        if (str_contains($lower, 'linux') || str_contains($lower, 'ubuntu')) {
             return 'Linux';
         }
 
