@@ -88,7 +88,10 @@ class ProductResource extends Resource
                                 Forms\Components\Toggle::make('is_gaming')
                                     ->label('Gaming'),
                                 Forms\Components\Toggle::make('is_new')
-                                    ->label('Novo'),
+                                    ->label('Novo')
+                                    ->helperText(fn (Forms\Get $get, ?Product $record): ?string => ($get('is_set') || ($record?->import_source === 'manual') || $record === null)
+                                        ? 'Ručni proizvodi i setovi bez ove oznake prikazuju se kao polovni (Refurbished).'
+                                        : null),
                                 Forms\Components\Toggle::make('is_set')
                                     ->label('Ovo je set proizvoda')
                                     ->live(),

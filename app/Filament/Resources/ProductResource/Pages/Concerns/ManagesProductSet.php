@@ -28,6 +28,24 @@ trait ManagesProductSet
             $data['display_price'] = $data['manual_price'] ?? $data['display_price'] ?? null;
         }
 
+        return $this->applyManualProductConditionFlags($data);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    protected function applyManualProductConditionFlags(array $data): array
+    {
+        $importSource = $data['import_source'] ?? null;
+        $isManual = $importSource === 'manual' || $importSource === null || ! empty($data['is_set']);
+
+        if (! $isManual) {
+            return $data;
+        }
+
+        $data['is_refurbished'] = empty($data['is_new']);
+
         return $data;
     }
 

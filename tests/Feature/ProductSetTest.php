@@ -120,6 +120,37 @@ class ProductSetTest extends TestCase
             ->assertJsonPath('data.set_items.1.name', 'Monitor');
     }
 
+    public function test_manual_product_without_new_flag_is_refurbished(): void
+    {
+        $trait = new class
+        {
+            use \App\Filament\Resources\ProductResource\Pages\Concerns\ManagesProductSet {
+                applyManualProductConditionFlags as public;
+            }
+        };
+
+        $polovan = $trait->applyManualProductConditionFlags([
+            'import_source' => 'manual',
+            'is_set' => true,
+            'is_new' => false,
+        ]);
+
+        $novo = $trait->applyManualProductConditionFlags([
+            'import_source' => 'manual',
+            'is_new' => true,
+        ]);
+
+        $imported = $trait->applyManualProductConditionFlags([
+            'import_source' => 'a1',
+            'is_new' => false,
+            'is_refurbished' => false,
+        ]);
+
+        $this->assertTrue($polovan['is_refurbished']);
+        $this->assertFalse($novo['is_refurbished']);
+        $this->assertFalse($imported['is_refurbished']);
+    }
+
     private function createSetProduct(string $name = 'Test set', float $price = 1000): Product
     {
         return Product::factory()->create([
