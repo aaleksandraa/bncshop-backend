@@ -5,6 +5,7 @@ namespace App\Http\Resources;
 use App\Models\Product;
 use App\Models\ProductImage;
 use App\Services\Catalog\CampaignResolver;
+use App\Services\Catalog\ProductGratisService;
 use App\Support\PublicStorageUrl;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -55,6 +56,7 @@ class ProductCardResource extends JsonResource
                     ])
                     ->all(),
             ),
+            'gratis_offers' => app(ProductGratisService::class)->displayPayloadsFor($this->resource),
         ];
     }
 

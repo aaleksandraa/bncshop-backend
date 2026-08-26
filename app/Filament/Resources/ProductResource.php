@@ -9,8 +9,10 @@ use App\Filament\Resources\ProductResource\Pages;
 use App\Filament\Resources\ProductResource\RelationManagers;
 use App\Jobs\RunOlxSyncJob;
 use App\Models\Product;
+use App\Models\ProductGratisOffer;
 use App\Models\Supplier;
 use App\Filament\Support\OptimizedMediaUpload;
+use App\Services\Catalog\ProductGratisService;
 use App\Services\Catalog\ProductSetService;
 use App\Services\Pricing\PriceCalculator;
 use App\Services\Pricing\ProductSalePriceService;
@@ -230,6 +232,120 @@ class ProductResource extends Resource
                                     ->columnSpanFull(),
                             ])
                             ->columns(2),
+                        Forms\Components\Tabs\Tab::make('Gratis')
+                            ->visible(fn (Forms\Get $get): bool => ! (bool) $get('is_set'))
+                            ->schema([
+                                Forms\Components\Placeholder::make('gratis_help')
+                                    ->label('Gratis ponude')
+                                    ->content('Dodajte jednu ili više gratis ponuda. Tip „Proizvod iz kataloga“ automatski dodaje gift u korpu (0 KM). Tip „Samo tekst i slika“ je samo marketing prikaz na shopu.')
+                                    ->columnSpanFull(),
+                                Forms\Components\Repeater::make('gratis_offers')
+                                    ->label('Ponude')
+                                    ->dehydrated(false)
+                                    ->schema([
+                                        Forms\Components\Hidden::make('id'),
+                                        Forms\Components\Radio::make('type')
+                                            ->label('Tip ponude')
+                                            ->options([
+                                                ProductGratisOffer::TYPE_PRODUCT => 'Proizvod iz kataloga (automatski u korpi)',
+                                                ProductGratisOffer::TYPE_TEXT => 'Samo tekst i slika (marketing)',
+                                            ])
+                                            ->default(ProductGratisOffer::TYPE_TEXT)
+                                            ->required()
+                                            ->live(),
+                                        Forms\Components\Select::make('gift_product_id')
+                                            ->label('Gratis proizvod')
+                                            ->searchable()
+                                            ->visible(fn (Forms\Get $get): bool => $get('type') === ProductGratisOffer::TYPE_PRODUCT)
+                                            ->required(fn (Forms\Get $get): bool => $get('type') === ProductGratisOffer::TYPE_PRODUCT)
+                                            ->getSearchResultsUsing(function (string $search, ?Product $record): array {
+                                                return Product::query()
+                                                    ->where('is_set', false)
+                                                    ->when($record?->id, fn (Builder $query) => $query->where('id', '!=', $record->id))
+                                                    ->where(function (Builder $query) use ($search): void {
+                                                        $query
+                                                            ->where('name', 'ilike', "%{$search}%")
+                                                            ->orWhere('sku', 'ilike', "%{$search}%");
+                                                    })
+                                                    ->orderBy('name')
+                                                    ->limit(50)
+                                                    ->get()
+                                                    ->mapWithKeys(fn (Product $product): array => [
+                                                        $product->id => $product->name.' — '.number_format((float) $product->display_price, 2, ',', '.').' KM',
+                                                    ])
+                                                    ->all();
+                                            })
+                                            ->getOptionLabelUsing(fn ($value): ?string => Product::query()->find($value)?->name),
+                                        Forms\Components\TextInput::make('gift_quantity_per_parent')
+                                            ->label('Gratis komada po 1 komadu ovog proizvoda')
+                                            ->numeric()
+                                            ->minValue(1)
+                                            ->default(1)
+                                            ->visible(fn (Forms\Get $get): bool => $get('type') === ProductGratisOffer::TYPE_PRODUCT),
+                                        Forms\Components\TextInput::make('title')
+                                            ->label('Naslov')
+                                            ->maxLength(255)
+                                            ->required(fn (Forms\Get $get): bool => $get('type') === ProductGratisOffer::TYPE_TEXT)
+                                            ->helperText(fn (Forms\Get $get): ?string => $get('type') === ProductGratisOffer::TYPE_PRODUCT
+                                                ? 'Opcionalno — ako ostane prazno, koristi se naziv gift proizvoda.'
+                                                : null),
+                                        Forms\Components\Textarea::make('description')
+                                            ->label('Opis')
+                                            ->rows(3)
+                                            ->columnSpanFull(),
+                                        OptimizedMediaUpload::configure(
+                                            Forms\Components\FileUpload::make('image_path')
+                                                ->label('Promo slika')
+                                                ->helperText('Opcionalno. Za tekstualnu ponudu preporučeno.')
+                                                ->image()
+                                                ->maxSize(5120)
+                                                ->imagePreviewHeight('120'),
+                                            'products/gratis',
+                                        )->columnSpanFull(),
+                                        Forms\Components\DateTimePicker::make('starts_at')
+                                            ->label('Početak')
+                                            ->native(false),
+                                        Forms\Components\DateTimePicker::make('ends_at')
+                                            ->label('Kraj')
+                                            ->native(false),
+                                        Forms\Components\Toggle::make('until_stock')
+                                            ->label('Do isteka zaliha gift proizvoda')
+                                            ->visible(fn (Forms\Get $get): bool => $get('type') === ProductGratisOffer::TYPE_PRODUCT),
+                                        Forms\Components\Toggle::make('is_active')
+                                            ->label('Aktivno')
+                                            ->default(true),
+                                    ])
+                                    ->columns(2)
+                                    ->reorderable()
+                                    ->collapsible()
+                                    ->columnSpanFull()
+                                    ->itemLabel(fn (array $state): ?string => filled($state['title'] ?? null)
+                                        ? (string) $state['title']
+                                        : (Product::query()->find($state['gift_product_id'] ?? null)?->name)),
+                                Forms\Components\Placeholder::make('gratis_preview')
+                                    ->label('Aktivne ponude na shopu')
+                                    ->visible(fn (?Product $record): bool => $record !== null)
+                                    ->content(function (?Product $record): string {
+                                        if ($record === null) {
+                                            return '—';
+                                        }
+
+                                        $offers = app(ProductGratisService::class)->displayPayloadsFor($record->fresh());
+
+                                        if ($offers === []) {
+                                            return 'Nema aktivnih gratis ponuda.';
+                                        }
+
+                                        return collect($offers)
+                                            ->map(fn (array $offer): string => sprintf(
+                                                '%s (%s)',
+                                                $offer['title'],
+                                                $offer['type'] === ProductGratisOffer::TYPE_PRODUCT ? 'proizvod' : 'tekst',
+                                            ))
+                                            ->implode("\n");
+                                    })
+                                    ->columnSpanFull(),
+                            ]),
                         Forms\Components\Tabs\Tab::make('Cijene')
                             ->visible(fn (Forms\Get $get): bool => ! (bool) $get('is_set'))
                             ->schema([

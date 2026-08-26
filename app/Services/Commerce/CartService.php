@@ -9,6 +9,7 @@ use App\Models\Customer;
 use App\Models\LoyaltyReward;
 use App\Models\Product;
 use App\Models\User;
+use App\Services\Catalog\ProductGratisService;
 use App\Services\Loyalty\LoyaltyService;
 use App\Services\Loyalty\LoyaltySettings;
 use App\Services\Pricing\CouponEngine;
@@ -22,6 +23,10 @@ class CartService
     public const CART_RELATIONS = [
         'items.product.defaultImage',
         'items.product.setItems.componentProduct',
+        'items.product.gratisOffers.giftProduct',
+        'items.parentItem',
+        'items.gratisOffer',
+        'items.gratisGiftItems.product.defaultImage',
         'loyaltyReward.product.defaultImage',
     ];
 
@@ -30,6 +35,7 @@ class CartService
         private readonly CouponEngine $couponEngine,
         private readonly LoyaltyService $loyaltyService,
         private readonly LoyaltySettings $loyaltySettings,
+        private readonly ProductGratisService $productGratisService,
     ) {}
 
     public function getOrCreate(?string $sessionId = null, ?User $user = null): Cart
@@ -60,22 +66,26 @@ class CartService
 
     public function addItem(Cart $cart, Product $product, int $quantity): CartItem
     {
-        $priceResult = $this->priceCalculator->calculate($product, $this->resolveCoupon($cart));
-
-        $item = CartItem::query()->where('cart_id', $cart->id)
+        $existing = CartItem::query()->where('cart_id', $cart->id)
             ->where('product_id', $product->id)
             ->where('is_loyalty_reward', false)
+            ->where('is_gratis_gift', false)
             ->first();
 
-        if ($item) {
-            $item->update([
-                'quantity' => $item->quantity + $quantity,
+        $targetQuantity = ($existing?->quantity ?? 0) + $quantity;
+        $this->assertGiftStockForProduct($product, $targetQuantity);
+
+        $priceResult = $this->priceCalculator->calculate($product, $this->resolveCoupon($cart));
+
+        if ($existing) {
+            $existing->update([
+                'quantity' => $targetQuantity,
                 'unit_price' => $priceResult->displayPrice,
                 'discount_snapshot' => $priceResult->toArray(),
                 'price_confirmed' => true,
             ]);
 
-            $item = $item->fresh(['product.defaultImage']);
+            $item = $existing->fresh(['product.defaultImage']);
         } else {
             $item = CartItem::query()->create([
                 'cart_id' => $cart->id,
@@ -87,9 +97,10 @@ class CartService
             ])->load(['product.defaultImage']);
         }
 
+        $this->syncGratisGiftsForItem($item->fresh(['product.gratisOffers.giftProduct']));
         $this->tryActivatePendingCoupon($cart);
 
-        return $item->fresh(['product.defaultImage']);
+        return $item->fresh(['product.defaultImage', 'gratisGiftItems.product.defaultImage']);
     }
 
     public function updateItem(CartItem $item, int $quantity): CartItem
@@ -98,11 +109,17 @@ class CartService
             throw new RuntimeException('Nagrada lojalnosti se ne može mijenjati.');
         }
 
+        if ($item->is_gratis_gift) {
+            throw new RuntimeException('Gratis stavku nije moguće mijenjati.');
+        }
+
         if ($quantity <= 0) {
             $item->delete();
 
             return $item;
         }
+
+        $this->assertGiftStockForProduct($item->product, $quantity);
 
         $priceResult = $this->priceCalculator->calculate(
             $item->product,
@@ -116,7 +133,10 @@ class CartService
             'price_confirmed' => true,
         ]);
 
-        return $item->fresh(['product.defaultImage']);
+        $item = $item->fresh(['product.defaultImage', 'product.gratisOffers.giftProduct']);
+        $this->syncGratisGiftsForItem($item);
+
+        return $item->fresh(['product.defaultImage', 'gratisGiftItems.product.defaultImage']);
     }
 
     public function removeItem(CartItem $item): void
@@ -129,7 +149,103 @@ class CartService
             return;
         }
 
+        if ($item->is_gratis_gift) {
+            throw new RuntimeException('Gratis stavku nije moguće ukloniti odvojeno.');
+        }
+
         $item->delete();
+    }
+
+    public function syncGratisGiftsForItem(CartItem $parentItem): void
+    {
+        if ($parentItem->is_gratis_gift || $parentItem->is_loyalty_reward) {
+            return;
+        }
+
+        $parentItem->loadMissing(['product.gratisOffers.giftProduct']);
+        $product = $parentItem->product;
+
+        if ($product === null) {
+            return;
+        }
+
+        $offers = $this->productGratisService->applicableProductOffersFor($product);
+        $activeOfferIds = $offers->pluck('id')->all();
+
+        $parentItem->gratisGiftItems()
+            ->when(
+                $activeOfferIds !== [],
+                fn ($query) => $query->whereNotIn('product_gratis_offer_id', $activeOfferIds),
+                fn ($query) => $query,
+            )
+            ->delete();
+
+        foreach ($offers as $offer) {
+            $gift = $offer->giftProduct;
+
+            if ($gift === null) {
+                continue;
+            }
+
+            $quantity = $this->productGratisService->requiredGiftQuantity($offer, (int) $parentItem->quantity);
+
+            $existing = CartItem::query()
+                ->where('cart_id', $parentItem->cart_id)
+                ->where('parent_cart_item_id', $parentItem->id)
+                ->where('product_gratis_offer_id', $offer->id)
+                ->first();
+
+            if ($quantity <= 0) {
+                $existing?->delete();
+
+                continue;
+            }
+
+            $payload = [
+                'product_id' => $gift->id,
+                'quantity' => $quantity,
+                'unit_price' => 0,
+                'discount_snapshot' => [
+                    'gratis_gift' => true,
+                    'offer_id' => $offer->id,
+                    'parent_product_id' => $product->id,
+                    'parent_product_name' => $product->name,
+                    'gratis_label' => $this->productGratisService->resolveTitle($offer),
+                ],
+                'price_confirmed' => true,
+                'is_gratis_gift' => true,
+                'parent_cart_item_id' => $parentItem->id,
+                'product_gratis_offer_id' => $offer->id,
+            ];
+
+            if ($existing !== null) {
+                $existing->update($payload);
+            } else {
+                CartItem::query()->create(array_merge($payload, [
+                    'cart_id' => $parentItem->cart_id,
+                ]));
+            }
+        }
+    }
+
+    public function assertGiftStockForProduct(Product $product, int $parentQuantity): void
+    {
+        foreach ($this->productGratisService->applicableProductOffersFor($product) as $offer) {
+            $this->productGratisService->assertGiftStockAvailable($offer, $parentQuantity);
+        }
+    }
+
+    public function syncGratisGiftsForCart(Cart $cart): void
+    {
+        $cart->loadMissing(['items.product.gratisOffers.giftProduct']);
+
+        foreach ($cart->items as $item) {
+            if ($item->is_gratis_gift || $item->is_loyalty_reward) {
+                continue;
+            }
+
+            $this->syncGratisGiftsForItem($item);
+        }
     }
 
     /**
@@ -252,7 +368,7 @@ class CartService
         $changes = [];
 
         foreach ($cart->items as $item) {
-            if ($item->is_loyalty_reward) {
+            if ($item->is_loyalty_reward || $item->is_gratis_gift) {
                 continue;
             }
 
@@ -282,6 +398,7 @@ class CartService
     {
         return $cart->items()
             ->where('is_loyalty_reward', false)
+            ->where('is_gratis_gift', false)
             ->where('price_confirmed', false)
             ->exists();
     }
@@ -290,6 +407,7 @@ class CartService
     {
         $cart->items()
             ->where('is_loyalty_reward', false)
+            ->where('is_gratis_gift', false)
             ->update(['price_confirmed' => true]);
     }
 
@@ -299,6 +417,7 @@ class CartService
 
         return round((float) $cart->items
             ->where('is_loyalty_reward', false)
+            ->where('is_gratis_gift', false)
             ->sum(fn (CartItem $item): float => (float) $item->unit_price * (int) $item->quantity), 2);
     }
 
@@ -308,6 +427,7 @@ class CartService
 
         return round((float) $cart->items
             ->where('is_loyalty_reward', false)
+            ->where('is_gratis_gift', false)
             ->sum(function (CartItem $item): float {
                 if (! $item->product) {
                     return (float) $item->unit_price * (int) $item->quantity;
@@ -400,6 +520,7 @@ class CartService
 
         return round((float) $cart->items
             ->where('is_loyalty_reward', false)
+            ->where('is_gratis_gift', false)
             ->sum(fn (CartItem $item): float => (float) ($item->product?->regular_price ?? $item->unit_price) * (int) $item->quantity), 2);
     }
 
@@ -444,6 +565,9 @@ class CartService
             return true;
         }
 
-        return $cart->items()->where('is_loyalty_reward', false)->count() === 0;
+        return $cart->items()
+            ->where('is_loyalty_reward', false)
+            ->where('is_gratis_gift', false)
+            ->count() === 0;
     }
 }

@@ -5,6 +5,7 @@ namespace App\Http\Resources;
 use App\Models\Product;
 use App\Services\Catalog\AttributeDisplayService;
 use App\Services\Catalog\CampaignResolver;
+use App\Services\Catalog\ProductGratisService;
 use App\Services\Catalog\ProductSetService;
 use App\Support\PublicStorageUrl;
 use Illuminate\Http\Request;
@@ -69,6 +70,7 @@ class ProductResource extends JsonResource
                 $this->is_set && $this->relationLoaded('setItems'),
                 fn () => $this->formatSetItems(),
             ),
+            'gratis_offers' => app(ProductGratisService::class)->displayPayloadsFor($this->resource),
             'seo_override' => $this->whenLoaded('seoOverride'),
         ];
     }

@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\ProductResource\Pages;
 
 use App\Filament\Resources\ProductResource;
+use App\Filament\Resources\ProductResource\Pages\Concerns\ManagesProductGratis;
 use App\Filament\Resources\ProductResource\Pages\Concerns\ManagesProductSet;
 use App\Filament\Resources\ProductResource\Pages\Concerns\ManagesProductSalePrice;
 use App\Services\Pricing\ProductPriceRecalculator;
@@ -13,6 +14,7 @@ use Filament\Resources\Pages\EditRecord;
 
 class EditProduct extends EditRecord
 {
+    use ManagesProductGratis;
     use ManagesProductSet;
     use ManagesProductSalePrice;
 
@@ -32,6 +34,7 @@ class EditProduct extends EditRecord
     protected function mutateFormDataBeforeFill(array $data): array
     {
         $data = $this->mutateSetFormData($data);
+        $data = $this->mutateGratisFormData($data);
 
         if ($this->record !== null && ! $this->record->isSet()) {
             $data = array_merge(
@@ -49,7 +52,9 @@ class EditProduct extends EditRecord
      */
     protected function mutateFormDataBeforeSave(array $data): array
     {
-        return $this->stripVirtualSetFields($this->prepareSetProductData($data));
+        return $this->stripVirtualGratisFields(
+            $this->stripVirtualSetFields($this->prepareSetProductData($data)),
+        );
     }
 
     protected function afterSave(): void
@@ -73,6 +78,7 @@ class EditProduct extends EditRecord
         }
 
         $this->persistProductSalePriceFromForm();
+        $this->syncGratisOffersIfNeeded();
 
         if ($this->record->wasChanged(['preferred_supplier_id', 'margin_percentage', 'price_locked', 'manual_price'])) {
             app(ProductPriceRecalculator::class)->forProduct($this->record->fresh());

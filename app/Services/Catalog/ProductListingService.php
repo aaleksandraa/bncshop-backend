@@ -168,6 +168,7 @@ class ProductListingService
                 'manufacturer:id,name,slug,logo_path,logo_url',
                 'category:id,name,full_slug',
                 'defaultImage:id,product_id,local_path,public_url,image_url,source_url,is_primary,sort_order,width,height',
+                'gratisOffers.giftProduct.defaultImage',
             ]);
 
         $this->applyDatabaseFilters($query, $request);
@@ -387,6 +388,7 @@ class ProductListingService
                 'manufacturer:id,name,slug,logo_path,logo_url',
                 'category:id,name,full_slug',
                 'defaultImage:id,product_id,local_path,public_url,image_url,source_url,is_primary,sort_order,width,height',
+                'gratisOffers.giftProduct.defaultImage',
             ])
             ->whereIn('id', $ids)
             ->get()

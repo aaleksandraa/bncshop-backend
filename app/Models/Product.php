@@ -249,6 +249,17 @@ class Product extends Model
             ->orderBy('sort_order');
     }
 
+    public function gratisOffers(): HasMany
+    {
+        return $this->hasMany(ProductGratisOffer::class)
+            ->orderBy('sort_order');
+    }
+
+    public function gratisGiftOffers(): HasMany
+    {
+        return $this->hasMany(ProductGratisOffer::class, 'gift_product_id');
+    }
+
     public function parentSets(): HasMany
     {
         return $this->hasMany(ProductSetItem::class, 'component_product_id');

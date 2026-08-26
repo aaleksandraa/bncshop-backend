@@ -87,6 +87,7 @@ class ProductController extends Controller
                     'tags',
                     'seoOverride',
                     'setItems.componentProduct.defaultImage',
+                    'gratisOffers.giftProduct.defaultImage',
                 ])
                 ->firstOrFail();
 
@@ -114,6 +115,7 @@ class ProductController extends Controller
                     'tags',
                     'seoOverride',
                     'setItems.componentProduct.defaultImage',
+                    'gratisOffers.giftProduct.defaultImage',
                 ])
                 ->first();
 

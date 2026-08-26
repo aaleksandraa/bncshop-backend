@@ -30,6 +30,8 @@ class CartController extends Controller
     public function index(Request $request): JsonResponse
     {
         $cart = $this->resolveCart($request, $this->cartService);
+        $this->cartService->syncGratisGiftsForCart($cart);
+        $cart = $cart->fresh(CartService::CART_RELATIONS);
         $summary = $this->cartService->summary($cart);
 
         return $this->success([

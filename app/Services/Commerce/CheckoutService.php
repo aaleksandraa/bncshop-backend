@@ -103,9 +103,27 @@ class CheckoutService
 
         $this->cartService->tryActivatePendingCoupon($cart, $user);
         $cart->refresh();
+        $this->cartService->syncGratisGiftsForCart($cart->fresh(CartService::CART_RELATIONS));
+        $cart->refresh();
 
         foreach ($cart->items as $item) {
             if ($item->is_loyalty_reward) {
+                continue;
+            }
+
+            if ($item->is_gratis_gift) {
+                $product = $item->product;
+
+                if (! $product || ! $product->is_public || $product->status !== 'active') {
+                    $errors[] = "Gratis proizvod {$item->product?->name} nije dostupan.";
+
+                    continue;
+                }
+
+                if (! $this->stockService->canFulfill($product, (int) $item->quantity)) {
+                    $errors[] = "Nedovoljna zaliha gratis proizvoda ({$product->name}).";
+                }
+
                 continue;
             }
 
@@ -240,6 +258,7 @@ class CheckoutService
             foreach ($cart->items as $item) {
                 $product = $item->product;
                 $isLoyaltyItem = (bool) $item->is_loyalty_reward;
+                $isGratisItem = (bool) $item->is_gratis_gift;
                 $selectedSupplierSku = $product->supplierOffers
                     ->where('is_selected_price_source', true)
                     ->value('supplier_sku');
@@ -264,6 +283,33 @@ class CheckoutService
                         'supplier_name' => null,
                         'attributes_snapshot' => [],
                         'discount_snapshot' => ['loyalty_reward' => true],
+                        'discount_id' => null,
+                    ]);
+
+                    $this->stockService->reserve($product, (int) $item->quantity);
+
+                    continue;
+                }
+
+                if ($isGratisItem) {
+                    OrderItem::query()->create([
+                        'order_id' => $order->id,
+                        'product_id' => $product->id,
+                        'external_product_id' => $product->external_product_id,
+                        'product_name' => $product->name,
+                        'sku' => $orderCode,
+                        'barcode' => $product->barcode,
+                        'brand_name' => $product->manufacturer?->name,
+                        'category_path' => $product->category?->path ?? $product->category?->full_slug,
+                        'unit_price' => 0,
+                        'discount_amount' => 0,
+                        'final_price' => 0,
+                        'quantity' => (int) $item->quantity,
+                        'line_total' => 0,
+                        'supplier_sku' => $selectedSupplierSku,
+                        'supplier_name' => null,
+                        'attributes_snapshot' => [],
+                        'discount_snapshot' => $item->discount_snapshot ?? ['gratis_gift' => true],
                         'discount_id' => null,
                     ]);
 
