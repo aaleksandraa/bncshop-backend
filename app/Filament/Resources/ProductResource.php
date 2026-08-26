@@ -296,9 +296,10 @@ class ProductResource extends Resource
                                         OptimizedMediaUpload::configure(
                                             Forms\Components\FileUpload::make('image_path')
                                                 ->label('Promo slika')
-                                                ->helperText('Opcionalno. Za tekstualnu ponudu preporučeno.')
+                                                ->helperText('Opcionalno. PNG, JPG ili WebP, maks. 5 MB. Za tekstualnu ponudu preporučeno.')
                                                 ->image()
                                                 ->maxSize(5120)
+                                                ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/webp'])
                                                 ->imagePreviewHeight('120'),
                                             'products/gratis',
                                         )->columnSpanFull(),

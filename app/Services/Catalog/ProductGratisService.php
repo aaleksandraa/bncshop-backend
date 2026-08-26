@@ -4,10 +4,13 @@ namespace App\Services\Catalog;
 
 use App\Models\Product;
 use App\Models\ProductGratisOffer;
+use App\Services\Media\MediaStorage;
 use App\Support\PublicStorageUrl;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use Throwable;
 
 class ProductGratisService
@@ -208,7 +211,7 @@ class ProductGratisService
                     : 1,
                 'title' => filled($row['title'] ?? null) ? (string) $row['title'] : null,
                 'description' => filled($row['description'] ?? null) ? (string) $row['description'] : null,
-                'image_path' => filled($row['image_path'] ?? null) ? (string) $row['image_path'] : null,
+                'image_path' => $this->normalizeImagePath($row['image_path'] ?? null),
                 'starts_at' => $row['starts_at'] ?? null,
                 'ends_at' => $row['ends_at'] ?? null,
                 'until_stock' => $type === ProductGratisOffer::TYPE_PRODUCT
@@ -321,6 +324,77 @@ class ProductGratisService
                     $label.'.gift_product_id' => 'Set proizvod se ne može dodati kao gratis.',
                 ]);
             }
+        }
+    }
+
+    /**
+     * Filament FileUpload (especially inside a repeater) stores state as an array
+     * of temp files or stored keys. Casting that array to string 500s on Laravel 11.
+     */
+    public function normalizeImagePath(mixed $value): ?string
+    {
+        if ($value instanceof TemporaryUploadedFile) {
+            return $this->storeGratisUpload($value);
+        }
+
+        if (is_array($value)) {
+            foreach ($value as $item) {
+                $normalized = $this->normalizeImagePath($item);
+                if ($normalized !== null) {
+                    return $normalized;
+                }
+            }
+
+            return null;
+        }
+
+        if (! is_string($value)) {
+            return null;
+        }
+
+        $path = ltrim(str_replace('\\', '/', trim($value)), '/');
+
+        if (str_starts_with($path, 'storage/')) {
+            $path = substr($path, strlen('storage/'));
+        }
+
+        if ($path === '' || str_contains($path, '..')) {
+            return null;
+        }
+
+        return $path;
+    }
+
+    private function storeGratisUpload(TemporaryUploadedFile $file): ?string
+    {
+        try {
+            $realPath = $file->getRealPath();
+            if (! is_string($realPath) || $realPath === '' || ! is_readable($realPath)) {
+                return null;
+            }
+
+            $contents = (string) file_get_contents($realPath);
+            if ($contents === '') {
+                return null;
+            }
+
+            $original = $file->getClientOriginalName();
+            $baseName = pathinfo($original, PATHINFO_FILENAME);
+            $baseName = Str::slug($baseName) ?: (string) Str::uuid();
+            $mediaStorage = app(MediaStorage::class);
+
+            if (str_ends_with(strtolower($original), '.svg')) {
+                return $mediaStorage->storeOptimized(
+                    'products/gratis/'.$baseName.'.svg',
+                    $contents,
+                )->key;
+            }
+
+            return $mediaStorage->storeFromBinary($contents, 'products/gratis', $baseName)->key;
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return null;
         }
     }
 

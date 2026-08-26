@@ -46,6 +46,41 @@ class ProductGratisTest extends TestCase
         $this->assertSame(2, $parent->fresh()->gratisOffers()->count());
     }
 
+    public function test_sync_offers_accepts_filament_file_upload_array_state(): void
+    {
+        $parent = $this->createProduct('Laptop promo slika', 1200, 5);
+
+        app(ProductGratisService::class)->syncOffers($parent, [
+            [
+                'type' => ProductGratisOffer::TYPE_TEXT,
+                'title' => 'Miš na poklon',
+                'image_path' => ['uuid-1' => 'products/gratis/mis.webp'],
+                'is_active' => true,
+            ],
+        ]);
+
+        $this->assertSame(
+            'products/gratis/mis.webp',
+            $parent->fresh()->gratisOffers()->value('image_path'),
+        );
+    }
+
+    public function test_normalize_image_path_handles_filament_upload_shapes(): void
+    {
+        $service = app(ProductGratisService::class);
+
+        $this->assertNull($service->normalizeImagePath([]));
+        $this->assertNull($service->normalizeImagePath(['uuid' => '']));
+        $this->assertSame(
+            'products/gratis/a.webp',
+            $service->normalizeImagePath(['uuid' => 'products/gratis/a.webp']),
+        );
+        $this->assertSame(
+            'products/gratis/b.webp',
+            $service->normalizeImagePath('storage/products/gratis/b.webp'),
+        );
+    }
+
     public function test_api_returns_gratis_offers_on_detail_and_listing(): void
     {
         $parent = $this->createProduct('Laptop API', 1200, 5);
