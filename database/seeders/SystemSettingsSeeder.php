@@ -122,7 +122,8 @@ class SystemSettingsSeeder extends Seeder
             ],
             'homepage_hero' => [
                 'value' => [
-                    'welcome_enabled' => true,
+                    'welcome_enabled_desktop' => true,
+                    'welcome_enabled_mobile' => true,
                     'banners' => [],
                 ],
                 'group' => 'homepage',

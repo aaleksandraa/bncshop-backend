@@ -82,12 +82,16 @@ class HomepageSettingsPage extends Page implements HasForms
         return $form
             ->schema([
                 Section::make('Welcome blok i mobilni baneri')
-                    ->description('Welcome blok je lijevi dio hero sekcije („Dobrodošli…”). Na mobitelu se umjesto njega može prikazati slider banera odmah ispod headera, preko cijele širine ekrana (bez paddinga).')
+                    ->description('Welcome blok je tekst „Dobrodošli / Tehnologija koja je jednostavna…”. Na webu stoji lijevo od ponude sedmice. Na mobitelu, kad je uključen, ostaje prvi kao do sada. Baneri se prikazuju samo kad je welcome na mobitelu isključen.')
                     ->schema([
-                        Toggle::make('welcome_enabled')
-                            ->label('Prikaži welcome blok')
+                        Toggle::make('welcome_enabled_desktop')
+                            ->label('Prikaži welcome blok na webu')
                             ->default(true)
-                            ->helperText('Na desktopu se prikazuje lijevo od ponude sedmice. Na mobitelu se sakriva ako postoji bar jedan baner.'),
+                            ->helperText('Desktop — lijevo od ponude sedmice.'),
+                        Toggle::make('welcome_enabled_mobile')
+                            ->label('Prikaži welcome blok na mobitelu')
+                            ->default(true)
+                            ->helperText('Kad je uključeno, welcome je prva stvar ispod headera, kao i ranije. Mobilni baneri se tada ne prikazuju iznad njega.'),
                         Repeater::make('banners')
                             ->label('Mobilni baneri')
                             ->schema([
@@ -122,7 +126,8 @@ class HomepageSettingsPage extends Page implements HasForms
                             ->maxItems(8)
                             ->columnSpanFull(),
                     ])
-                    ->statePath('hero'),
+                    ->statePath('hero')
+                    ->columns(2),
                 Section::make('Ponuda sedmice')
                     ->description('Odaberite proizvode i način prikaza u hero sekciji.')
                     ->schema([

@@ -122,7 +122,8 @@ class HomepageSettingsTest extends TestCase
         $settings = app(HomepageSettings::class);
 
         $settings->saveHero([
-            'welcome_enabled' => false,
+            'welcome_enabled_desktop' => false,
+            'welcome_enabled_mobile' => true,
             'banners' => [
                 [
                     'image_path' => 'homepage/banners/laptops.webp',
@@ -146,7 +147,8 @@ class HomepageSettingsTest extends TestCase
             ->where('key', 'homepage_hero')
             ->value('value');
 
-        $this->assertFalse($stored['welcome_enabled'] ?? true);
+        $this->assertFalse($stored['welcome_enabled_desktop'] ?? true);
+        $this->assertTrue($stored['welcome_enabled_mobile'] ?? false);
         $this->assertSame([
             [
                 'image_path' => 'homepage/banners/laptops.webp',
@@ -161,7 +163,8 @@ class HomepageSettingsTest extends TestCase
         ], $stored['banners'] ?? null);
 
         $payload = $settings->heroPayload();
-        $this->assertFalse($payload['welcome_enabled']);
+        $this->assertFalse($payload['welcome_enabled_desktop']);
+        $this->assertTrue($payload['welcome_enabled_mobile']);
         $this->assertCount(2, $payload['banners']);
         $this->assertSame('/storage/homepage/banners/laptops.webp', $payload['banners'][0]['image_url']);
         $this->assertSame('/kategorija/laptopi', $payload['banners'][0]['url']);
@@ -172,7 +175,26 @@ class HomepageSettingsTest extends TestCase
         $settings = app(HomepageSettings::class);
         $hero = $settings->hero();
 
-        $this->assertTrue($hero['welcome_enabled']);
+        $this->assertTrue($hero['welcome_enabled_desktop']);
+        $this->assertTrue($hero['welcome_enabled_mobile']);
         $this->assertSame([], $hero['banners']);
+    }
+
+    public function test_legacy_welcome_enabled_maps_to_desktop_and_mobile(): void
+    {
+        SystemSetting::query()->create([
+            'key' => 'homepage_hero',
+            'group' => 'homepage',
+            'value' => [
+                'welcome_enabled' => false,
+                'banners' => [],
+            ],
+        ]);
+
+        $hero = app(HomepageSettings::class)->hero();
+
+        $this->assertFalse($hero['welcome_enabled_desktop']);
+        $this->assertFalse($hero['welcome_enabled_mobile']);
+        $this->assertArrayNotHasKey('welcome_enabled', $hero);
     }
 }

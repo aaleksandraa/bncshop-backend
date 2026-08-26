@@ -14,7 +14,8 @@ class HomepageHeroApiTest extends TestCase
     {
         $this->getJson('/api/v1/homepage/hero')
             ->assertOk()
-            ->assertJsonPath('data.welcome_enabled', true)
+            ->assertJsonPath('data.welcome_enabled_desktop', true)
+            ->assertJsonPath('data.welcome_enabled_mobile', true)
             ->assertJsonPath('data.banners', []);
     }
 
@@ -37,7 +38,8 @@ class HomepageHeroApiTest extends TestCase
 
         $response = $this->getJson('/api/v1/homepage/hero')
             ->assertOk()
-            ->assertJsonPath('data.welcome_enabled', false)
+            ->assertJsonPath('data.welcome_enabled_desktop', false)
+            ->assertJsonPath('data.welcome_enabled_mobile', false)
             ->assertJsonPath('data.banners.0.url', '/kategorija/laptopi')
             ->assertJsonPath('data.banners.0.alt', 'Laptopi na akciji');
 

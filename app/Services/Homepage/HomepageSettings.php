@@ -348,13 +348,14 @@ class HomepageSettings
     public function heroDefaults(): array
     {
         return [
-            'welcome_enabled' => true,
+            'welcome_enabled_desktop' => true,
+            'welcome_enabled_mobile' => true,
             'banners' => [],
         ];
     }
 
     /**
-     * @return array{welcome_enabled: bool, banners: array<int, array{image_path: string, url: string, alt: string|null}>}
+     * @return array{welcome_enabled_desktop: bool, welcome_enabled_mobile: bool, banners: array<int, array{image_path: string, url: string, alt: string|null}>}
      */
     public function hero(): array
     {
@@ -368,7 +369,10 @@ class HomepageSettings
             }
 
             $merged = array_merge($this->heroDefaults(), $stored);
-            $merged['welcome_enabled'] = (bool) ($merged['welcome_enabled'] ?? true);
+            $flags = $this->resolveWelcomeFlags($stored);
+            $merged['welcome_enabled_desktop'] = $flags['desktop'];
+            $merged['welcome_enabled_mobile'] = $flags['mobile'];
+            unset($merged['welcome_enabled']);
             $merged['banners'] = $this->normalizeStoredBanners($merged['banners'] ?? []);
 
             return $merged;
@@ -378,7 +382,7 @@ class HomepageSettings
     /**
      * Public storefront payload for the homepage hero.
      *
-     * @return array{welcome_enabled: bool, banners: array<int, array{image_url: string, url: string, alt: string|null}>}
+     * @return array{welcome_enabled_desktop: bool, welcome_enabled_mobile: bool, banners: array<int, array{image_url: string, url: string, alt: string|null}>}
      */
     public function heroPayload(): array
     {
@@ -405,7 +409,8 @@ class HomepageSettings
         }
 
         return [
-            'welcome_enabled' => (bool) ($config['welcome_enabled'] ?? true),
+            'welcome_enabled_desktop' => (bool) ($config['welcome_enabled_desktop'] ?? true),
+            'welcome_enabled_mobile' => (bool) ($config['welcome_enabled_mobile'] ?? true),
             'banners' => $banners,
         ];
     }
@@ -447,7 +452,8 @@ class HomepageSettings
             [
                 'group' => 'homepage',
                 'value' => [
-                    'welcome_enabled' => (bool) ($data['welcome_enabled'] ?? true),
+                    'welcome_enabled_desktop' => (bool) ($data['welcome_enabled_desktop'] ?? $data['welcome_enabled'] ?? true),
+                    'welcome_enabled_mobile' => (bool) ($data['welcome_enabled_mobile'] ?? $data['welcome_enabled'] ?? true),
                     'banners' => $banners,
                 ],
             ],
@@ -459,6 +465,26 @@ class HomepageSettings
     public function flushHeroCache(): void
     {
         Cache::forget('homepage:hero:settings');
+    }
+
+    /**
+     * @param  array<string, mixed>  $stored
+     * @return array{desktop: bool, mobile: bool}
+     */
+    private function resolveWelcomeFlags(array $stored): array
+    {
+        $legacy = array_key_exists('welcome_enabled', $stored)
+            ? (bool) $stored['welcome_enabled']
+            : true;
+
+        return [
+            'desktop' => array_key_exists('welcome_enabled_desktop', $stored)
+                ? (bool) $stored['welcome_enabled_desktop']
+                : $legacy,
+            'mobile' => array_key_exists('welcome_enabled_mobile', $stored)
+                ? (bool) $stored['welcome_enabled_mobile']
+                : $legacy,
+        ];
     }
 
     /**
