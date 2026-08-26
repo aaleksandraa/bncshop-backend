@@ -4,7 +4,7 @@ namespace App\Filament\Resources\ProductResource\Pages;
 
 use App\Filament\Resources\ProductResource;
 use App\Filament\Resources\ProductResource\Pages\Concerns\ManagesProductSet;
-use App\Services\Pricing\PriceCalculator;
+use App\Filament\Resources\ProductResource\Pages\Concerns\ManagesProductSalePrice;
 use App\Services\Pricing\ProductPriceRecalculator;
 use App\Services\Pricing\ProductSalePriceService;
 use App\Services\Sync\FieldLockService;
@@ -14,6 +14,7 @@ use Filament\Resources\Pages\EditRecord;
 class EditProduct extends EditRecord
 {
     use ManagesProductSet;
+    use ManagesProductSalePrice;
 
     protected static string $resource = ProductResource::class;
 
@@ -71,25 +72,10 @@ class EditProduct extends EditRecord
             }
         }
 
-        $state = $this->form->getState();
-        $salePriceService = app(ProductSalePriceService::class);
-        $product = $this->record->fresh();
-        $salePriceRaw = $state['sale_price'] ?? null;
-        $salePrice = $salePriceRaw === null || $salePriceRaw === ''
-            ? null
-            : (float) $salePriceRaw;
-
-        $salePriceService->upsert(
-            $product,
-            $salePrice,
-            is_string($state['sale_validity'] ?? null) ? $state['sale_validity'] : ProductSalePriceService::VALIDITY_NO_END,
-            $state['sale_ends_at'] ?? null,
-        );
-
-        app(PriceCalculator::class)->recalculateAndPersist($product->fresh());
+        $this->persistProductSalePriceFromForm();
 
         if ($this->record->wasChanged(['preferred_supplier_id', 'margin_percentage', 'price_locked', 'manual_price'])) {
-            app(ProductPriceRecalculator::class)->forProduct($product->fresh());
+            app(ProductPriceRecalculator::class)->forProduct($this->record->fresh());
         }
     }
 }
