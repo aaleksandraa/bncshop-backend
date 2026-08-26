@@ -5,6 +5,8 @@ namespace App\Services\Media;
 use Intervention\Image\Drivers\Gd\Driver as GdDriver;
 use Intervention\Image\Drivers\Imagick\Driver as ImagickDriver;
 use Intervention\Image\ImageManager;
+use RuntimeException;
+use Throwable;
 
 class ImageOptimizer
 {
@@ -37,7 +39,15 @@ class ImageOptimizer
             );
         }
 
-        $image = $this->manager->read($contents);
+        try {
+            $image = $this->manager->read($contents);
+        } catch (Throwable $exception) {
+            throw new RuntimeException(
+                'Sliku nije moguće obraditi. Pokušajte JPG, PNG ili WebP, ili manju datoteku.',
+                0,
+                $exception,
+            );
+        }
         unset($contents);
 
         $image->orient();

@@ -16,4 +16,19 @@ class EditShopCampaign extends EditRecord
             Actions\DeleteAction::make(),
         ];
     }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        $data = ShopCampaignResource::normalizeFormData($data);
+
+        if (blank($data['badge_path'] ?? null) && filled($this->record?->badge_path)) {
+            $data['badge_path'] = $this->record->badge_path;
+        }
+
+        return $data;
+    }
 }

@@ -71,6 +71,9 @@ class B2bPanelProvider extends PanelProvider
                 AuthenticateB2bPanel::class,
             ])
             ->routes(function (): void {
+                Route::get('/media-preview', \App\Http\Controllers\Admin\MediaPreviewController::class)
+                    ->name('media-preview');
+
                 Route::get('/b2b-orders/{order}/invoice', B2bOrderInvoiceController::class)
                     ->name('b2b-orders.invoice');
             });

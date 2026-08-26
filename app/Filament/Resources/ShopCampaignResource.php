@@ -11,12 +11,14 @@ use App\Models\ShopCampaign;
 use App\Rules\ValidShopCampaignSlug;
 use App\Support\ProductAdminSearch;
 use App\Support\PublicStorageUrl;
+use App\Support\UploadedMediaPath;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class ShopCampaignResource extends Resource
@@ -277,6 +279,27 @@ class ShopCampaignResource extends Resource
             'create' => Pages\CreateShopCampaign::route('/create'),
             'edit' => Pages\EditShopCampaign::route('/{record}/edit'),
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    public static function normalizeFormData(array $data): array
+    {
+        foreach (['badge_path' => 'campaigns/badges', 'hero_image_path' => 'campaigns/heroes'] as $field => $directory) {
+            if (array_key_exists($field, $data)) {
+                $data[$field] = UploadedMediaPath::normalize($data[$field], $directory);
+            }
+        }
+
+        foreach (['show_breadcrumbs', 'show_title', 'show_product_count'] as $column) {
+            if (array_key_exists($column, $data) && ! Schema::hasColumn('shop_campaigns', $column)) {
+                unset($data[$column]);
+            }
+        }
+
+        return $data;
     }
 
     /**

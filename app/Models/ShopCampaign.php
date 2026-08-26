@@ -2,9 +2,11 @@
 
 namespace App\Models;
 
+use App\Support\UploadedMediaPath;
+use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class ShopCampaign extends Model
 {
@@ -48,6 +50,20 @@ class ShopCampaign extends Model
             'show_title' => 'boolean',
             'show_product_count' => 'boolean',
         ];
+    }
+
+    protected function badgePath(): Attribute
+    {
+        return Attribute::make(
+            set: fn (mixed $value): ?string => UploadedMediaPath::normalize($value, 'campaigns/badges'),
+        );
+    }
+
+    protected function heroImagePath(): Attribute
+    {
+        return Attribute::make(
+            set: fn (mixed $value): ?string => UploadedMediaPath::normalize($value, 'campaigns/heroes'),
+        );
     }
 
     public function categories(): BelongsToMany

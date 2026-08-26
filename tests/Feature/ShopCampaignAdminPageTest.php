@@ -8,6 +8,7 @@ use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class ShopCampaignAdminPageTest extends TestCase
@@ -54,5 +55,32 @@ class ShopCampaignAdminPageTest extends TestCase
         $this->actingAs($admin)
             ->get('/admin/shop-campaigns/create')
             ->assertOk();
+    }
+
+    public function test_admin_media_preview_streams_stored_file_for_authenticated_admin(): void
+    {
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        $admin = User::createAccount([
+            'name' => 'Admin',
+            'email' => 'media-preview-admin@test.test',
+            'password' => Hash::make('password123'),
+        ]);
+        $admin->assignRole('Admin');
+
+        Storage::disk('public')->put('campaigns/badges/preview-test.webp', 'webp-bytes');
+
+        $guestStatus = $this->get('/admin/media-preview?path=campaigns/badges/preview-test.webp')->status();
+        $this->assertContains($guestStatus, [302, 401, 403]);
+
+        $response = $this->actingAs($admin)
+            ->get('/admin/media-preview?path=campaigns/badges/preview-test.webp')
+            ->assertOk();
+
+        $this->assertSame('webp-bytes', $response->streamedContent());
+
+        $this->actingAs($admin)
+            ->get('/admin/media-preview?path=../.env')
+            ->assertNotFound();
     }
 }

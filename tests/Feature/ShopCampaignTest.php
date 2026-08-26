@@ -2,11 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Filament\Resources\ShopCampaignResource;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\ShopCampaign;
 use App\Services\Catalog\CampaignResolver;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 class ShopCampaignTest extends TestCase
@@ -238,5 +241,43 @@ class ShopCampaignTest extends TestCase
             ->assertOk()
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0', 'skola/torbe');
+    }
+
+    public function test_campaign_saves_filament_upload_array_as_string_path(): void
+    {
+        $campaign = ShopCampaign::factory()->create([
+            'badge_path' => 'campaigns/badges/old.webp',
+            'hero_image_path' => null,
+        ]);
+
+        $campaign->update([
+            'badge_path' => ['uuid-badge' => 'campaigns/badges/new.webp'],
+            'hero_image_path' => ['uuid-hero' => 'campaigns/heroes/hero.webp'],
+        ]);
+
+        $campaign->refresh();
+
+        $this->assertSame('campaigns/badges/new.webp', $campaign->badge_path);
+        $this->assertSame('campaigns/heroes/hero.webp', $campaign->hero_image_path);
+    }
+
+    public function test_normalize_form_data_drops_layout_toggles_when_columns_missing(): void
+    {
+        Schema::table('shop_campaigns', function (Blueprint $table): void {
+            $table->dropColumn(['show_breadcrumbs', 'show_title', 'show_product_count']);
+        });
+
+        $data = ShopCampaignResource::normalizeFormData([
+            'name' => 'Back to school',
+            'hero_image_path' => ['uuid' => 'campaigns/heroes/a.webp'],
+            'show_breadcrumbs' => false,
+            'show_title' => false,
+            'show_product_count' => false,
+        ]);
+
+        $this->assertSame('campaigns/heroes/a.webp', $data['hero_image_path']);
+        $this->assertArrayNotHasKey('show_breadcrumbs', $data);
+        $this->assertArrayNotHasKey('show_title', $data);
+        $this->assertArrayNotHasKey('show_product_count', $data);
     }
 }

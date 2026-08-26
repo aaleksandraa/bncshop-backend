@@ -84,6 +84,9 @@ class AdminPanelProvider extends PanelProvider
                 Authenticate::class,
             ])
             ->routes(function (): void {
+                Route::get('/media-preview', \App\Http\Controllers\Admin\MediaPreviewController::class)
+                    ->name('media-preview');
+
                 Route::get('/loyalty-cards/{loyaltyCard}/print', \App\Http\Controllers\Admin\LoyaltyCardPrintController::class)
                     ->name('loyalty-cards.print');
 

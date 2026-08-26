@@ -57,21 +57,26 @@ class MediaStorage
 
     public function existsOnAnyDisk(string $key, ?string $disk = null): bool
     {
+        return $this->diskNameForExistingKey($key, $disk) !== null;
+    }
+
+    public function diskNameForExistingKey(string $key, ?string $disk = null): ?string
+    {
         $key = $this->normalizeKey($key);
 
         if ($disk !== null && Storage::disk($disk)->exists($key)) {
-            return true;
-        }
-
-        if (Storage::disk('public')->exists($key)) {
-            return true;
+            return $disk;
         }
 
         if ($this->usesR2() && Storage::disk('r2')->exists($key)) {
-            return true;
+            return 'r2';
         }
 
-        return false;
+        if (Storage::disk('public')->exists($key)) {
+            return 'public';
+        }
+
+        return null;
     }
 
     /**
