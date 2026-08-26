@@ -9,6 +9,7 @@ use App\Services\Catalog\ProductGratisService;
 use App\Support\PublicStorageUrl;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Throwable;
 
 /** @mixin Product */
 class ProductCardResource extends JsonResource
@@ -32,7 +33,7 @@ class ProductCardResource extends JsonResource
             'is_refurbished' => $this->is_refurbished,
             'is_set' => (bool) $this->is_set,
             'on_sale' => (bool) $this->on_sale,
-            'campaign_badges' => app(CampaignResolver::class)->badgesForProduct($this->resource),
+            'campaign_badges' => $this->campaignBadges(),
             'manufacturer' => $this->whenLoaded('manufacturer', fn () => $this->manufacturer ? [
                 'id' => $this->manufacturer->id,
                 'name' => $this->manufacturer->name,
@@ -56,7 +57,7 @@ class ProductCardResource extends JsonResource
                     ])
                     ->all(),
             ),
-            'gratis_offers' => app(ProductGratisService::class)->displayPayloadsFor($this->resource),
+            'gratis_offers' => $this->gratisOffers(),
         ];
     }
 
@@ -80,5 +81,33 @@ class ProductCardResource extends JsonResource
             'height' => $image->height ?? null,
             'is_primary' => $image->is_primary ?? false,
         ];
+    }
+
+    /**
+     * @return list<array{slug: string, name: string, image_url: string|null, landing_path: string|null, alt: string}>
+     */
+    private function campaignBadges(): array
+    {
+        try {
+            return app(CampaignResolver::class)->badgesForProduct($this->resource);
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return [];
+        }
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function gratisOffers(): array
+    {
+        try {
+            return app(ProductGratisService::class)->displayPayloadsFor($this->resource);
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return [];
+        }
     }
 }

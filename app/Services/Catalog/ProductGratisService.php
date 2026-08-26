@@ -6,7 +6,9 @@ use App\Models\Product;
 use App\Models\ProductGratisOffer;
 use App\Support\PublicStorageUrl;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
+use Throwable;
 
 class ProductGratisService
 {
@@ -14,12 +16,43 @@ class ProductGratisService
         private readonly ProductReadCache $productReadCache,
     ) {}
 
+    public function tablesReady(): bool
+    {
+        try {
+            return Schema::hasTable('product_gratis_offers');
+        } catch (Throwable) {
+            return false;
+        }
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function cardEagerLoads(): array
+    {
+        if (! $this->tablesReady()) {
+            return [];
+        }
+
+        return ['gratisOffers.giftProduct.defaultImage'];
+    }
+
     /**
      * @return Collection<int, ProductGratisOffer>
      */
     public function activeOffersFor(Product $product): Collection
     {
-        $product->loadMissing(['gratisOffers.giftProduct.defaultImage']);
+        if (! $this->tablesReady()) {
+            return collect();
+        }
+
+        try {
+            $product->loadMissing(['gratisOffers.giftProduct.defaultImage']);
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return collect();
+        }
 
         return $product->gratisOffers
             ->filter(fn (ProductGratisOffer $offer): bool => $this->isOfferApplicable($offer, $product))

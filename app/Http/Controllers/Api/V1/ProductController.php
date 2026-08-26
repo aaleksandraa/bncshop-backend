@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\Api\V1\Concerns\RespondsWithJson;
 use App\Http\Resources\ProductResource;
 use App\Models\Product;
+use App\Services\Catalog\ProductGratisService;
 use App\Services\Catalog\ProductListingService;
 use App\Services\Catalog\ProductReadCache;
 use App\Services\Pricing\CouponEngine;
@@ -87,7 +88,7 @@ class ProductController extends Controller
                     'tags',
                     'seoOverride',
                     'setItems.componentProduct.defaultImage',
-                    'gratisOffers.giftProduct.defaultImage',
+                    ...app(ProductGratisService::class)->cardEagerLoads(),
                 ])
                 ->firstOrFail();
 
@@ -115,7 +116,7 @@ class ProductController extends Controller
                     'tags',
                     'seoOverride',
                     'setItems.componentProduct.defaultImage',
-                    'gratisOffers.giftProduct.defaultImage',
+                    ...app(ProductGratisService::class)->cardEagerLoads(),
                 ])
                 ->first();
 

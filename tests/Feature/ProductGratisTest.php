@@ -10,7 +10,9 @@ use App\Models\SystemSetting;
 use App\Services\Catalog\ProductGratisService;
 use App\Services\Commerce\CartService;
 use App\Services\Commerce\CheckoutService;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
@@ -69,6 +71,25 @@ class ProductGratisTest extends TestCase
             ->assertJsonFragment([
                 'slug' => $parent->slug,
             ]);
+    }
+
+    public function test_product_listing_survives_missing_gratis_offers_table(): void
+    {
+        $product = $this->createProduct('Listing without gratis table', 199, 3);
+
+        Schema::table('cart_items', function (Blueprint $table): void {
+            $table->dropConstrainedForeignId('product_gratis_offer_id');
+        });
+        Schema::dropIfExists('product_gratis_offers');
+
+        $this->getJson('/api/v1/products?per_page=8')
+            ->assertOk()
+            ->assertJsonPath('data.0.slug', $product->slug)
+            ->assertJsonPath('data.0.gratis_offers', []);
+
+        $this->getJson('/api/v1/products/'.$product->slug)
+            ->assertOk()
+            ->assertJsonPath('data.gratis_offers', []);
     }
 
     public function test_adding_parent_to_cart_creates_zero_price_gift_line(): void

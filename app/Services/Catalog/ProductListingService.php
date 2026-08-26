@@ -160,6 +160,7 @@ class ProductListingService
                 'is_gaming',
                 'is_refurbished',
                 'on_sale',
+                'is_set',
                 'manufacturer_id',
                 'category_id',
                 'default_image_id',
@@ -168,7 +169,7 @@ class ProductListingService
                 'manufacturer:id,name,slug,logo_path,logo_url',
                 'category:id,name,full_slug',
                 'defaultImage:id,product_id,local_path,public_url,image_url,source_url,is_primary,sort_order,width,height',
-                'gratisOffers.giftProduct.defaultImage',
+                ...app(ProductGratisService::class)->cardEagerLoads(),
             ]);
 
         $this->applyDatabaseFilters($query, $request);
@@ -380,6 +381,7 @@ class ProductListingService
                 'is_gaming',
                 'is_refurbished',
                 'on_sale',
+                'is_set',
                 'manufacturer_id',
                 'category_id',
                 'default_image_id',
@@ -388,7 +390,7 @@ class ProductListingService
                 'manufacturer:id,name,slug,logo_path,logo_url',
                 'category:id,name,full_slug',
                 'defaultImage:id,product_id,local_path,public_url,image_url,source_url,is_primary,sort_order,width,height',
-                'gratisOffers.giftProduct.defaultImage',
+                ...app(ProductGratisService::class)->cardEagerLoads(),
             ])
             ->whereIn('id', $ids)
             ->get()

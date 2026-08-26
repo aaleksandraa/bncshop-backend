@@ -8,6 +8,7 @@ use App\Support\PublicStorageUrl;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
+use Throwable;
 
 class CampaignResolver
 {
@@ -91,12 +92,18 @@ class CampaignResolver
      */
     public function badgesForProduct(Product $product): array
     {
-        return $this->activeCampaigns()
-            ->filter(fn (ShopCampaign $campaign): bool => $this->matches($product, $campaign))
-            ->take(2)
-            ->map(fn (ShopCampaign $campaign): array => $this->badgePayload($campaign))
-            ->values()
-            ->all();
+        try {
+            return $this->activeCampaigns()
+                ->filter(fn (ShopCampaign $campaign): bool => $this->matches($product, $campaign))
+                ->take(2)
+                ->map(fn (ShopCampaign $campaign): array => $this->badgePayload($campaign))
+                ->values()
+                ->all();
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return [];
+        }
     }
 
     /**

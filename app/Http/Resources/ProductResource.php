@@ -10,6 +10,7 @@ use App\Services\Catalog\ProductSetService;
 use App\Support\PublicStorageUrl;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Throwable;
 
 /** @mixin Product */
 class ProductResource extends JsonResource
@@ -65,12 +66,12 @@ class ProductResource extends JsonResource
                 $this->category_id,
             )),
             'tags' => $this->whenLoaded('tags'),
-            'campaign_badges' => app(CampaignResolver::class)->badgesForProduct($this->resource),
+            'campaign_badges' => $this->campaignBadges(),
             'set_items' => $this->when(
                 $this->is_set && $this->relationLoaded('setItems'),
                 fn () => $this->formatSetItems(),
             ),
-            'gratis_offers' => app(ProductGratisService::class)->displayPayloadsFor($this->resource),
+            'gratis_offers' => $this->gratisOffers(),
             'seo_override' => $this->whenLoaded('seoOverride'),
         ];
     }
@@ -124,5 +125,33 @@ class ProductResource extends JsonResource
             })
             ->values()
             ->all();
+    }
+
+    /**
+     * @return list<array{slug: string, name: string, image_url: string|null, landing_path: string|null, alt: string}>
+     */
+    private function campaignBadges(): array
+    {
+        try {
+            return app(CampaignResolver::class)->badgesForProduct($this->resource);
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return [];
+        }
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function gratisOffers(): array
+    {
+        try {
+            return app(ProductGratisService::class)->displayPayloadsFor($this->resource);
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return [];
+        }
     }
 }
