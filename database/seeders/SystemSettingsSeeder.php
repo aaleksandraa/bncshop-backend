@@ -120,6 +120,13 @@ class SystemSettingsSeeder extends Seeder
                 ],
                 'group' => 'homepage',
             ],
+            'homepage_hero' => [
+                'value' => [
+                    'welcome_enabled' => true,
+                    'banners' => [],
+                ],
+                'group' => 'homepage',
+            ],
             'brevo' => [
                 'value' => [
                     'enabled' => false,

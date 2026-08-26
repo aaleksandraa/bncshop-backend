@@ -2,11 +2,14 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Support\OptimizedMediaUpload;
 use App\Models\Category;
 use App\Models\Product;
 use App\Services\Homepage\HomepageSettings;
 use App\Support\CategoryAdminSearch;
 use App\Support\ProductAdminSearch;
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -67,6 +70,7 @@ class HomepageSettingsPage extends Page implements HasForms
         );
 
         $this->form->fill([
+            'hero' => $settings->hero(),
             'weekly_offer' => $weeklyOffer,
             'category_chips' => $categoryChips,
             'featured_products' => $featuredProducts,
@@ -77,6 +81,48 @@ class HomepageSettingsPage extends Page implements HasForms
     {
         return $form
             ->schema([
+                Section::make('Welcome blok i mobilni baneri')
+                    ->description('Welcome blok je lijevi dio hero sekcije („Dobrodošli…”). Na mobitelu se umjesto njega može prikazati slider banera odmah ispod headera, preko cijele širine ekrana (bez paddinga).')
+                    ->schema([
+                        Toggle::make('welcome_enabled')
+                            ->label('Prikaži welcome blok')
+                            ->default(true)
+                            ->helperText('Na desktopu se prikazuje lijevo od ponude sedmice. Na mobitelu se sakriva ako postoji bar jedan baner.'),
+                        Repeater::make('banners')
+                            ->label('Mobilni baneri')
+                            ->schema([
+                                OptimizedMediaUpload::configure(
+                                    FileUpload::make('image_path')
+                                        ->label('Slika banera')
+                                        ->helperText('Preporučeno 1200×600 px (omjer 2:1). PNG, JPG ili WebP, maks. 4 MB.')
+                                        ->image()
+                                        ->required()
+                                        ->maxSize(4096)
+                                        ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/webp'])
+                                        ->imagePreviewHeight('140'),
+                                    'homepage/banners',
+                                ),
+                                TextInput::make('url')
+                                    ->label('Link')
+                                    ->required()
+                                    ->maxLength(255)
+                                    ->placeholder('/kategorija/laptopi')
+                                    ->helperText('Putanja na shopu, npr. /kategorija/laptopi, /proizvod/slug ili /back-to-school. Možete zalijepiti i puni URL.'),
+                                TextInput::make('alt')
+                                    ->label('Alt tekst (opcionalno)')
+                                    ->maxLength(255),
+                            ])
+                            ->defaultItems(0)
+                            ->reorderable()
+                            ->collapsible()
+                            ->itemLabel(fn (array $state): ?string => filled($state['url'] ?? null)
+                                ? (string) $state['url']
+                                : 'Novi baner')
+                            ->addActionLabel('Dodaj baner')
+                            ->maxItems(8)
+                            ->columnSpanFull(),
+                    ])
+                    ->statePath('hero'),
                 Section::make('Ponuda sedmice')
                     ->description('Odaberite proizvode i način prikaza u hero sekciji.')
                     ->schema([
@@ -288,6 +334,7 @@ class HomepageSettingsPage extends Page implements HasForms
         }
 
         $state = $this->form->getState();
+        $hero = (array) ($state['hero'] ?? []);
         $weeklyOffer = (array) ($state['weekly_offer'] ?? []);
         $categoryChips = (array) ($state['category_chips'] ?? []);
         $featuredProducts = (array) ($state['featured_products'] ?? []);
@@ -320,6 +367,7 @@ class HomepageSettingsPage extends Page implements HasForms
         );
         $featuredProducts['product_ids'] = $featuredProductIds;
 
+        $settings->saveHero($hero);
         $settings->saveWeeklyOffer($weeklyOffer);
         $settings->saveCategoryChips($categoryChips);
         $settings->saveFeaturedProducts($featuredProducts);
@@ -343,6 +391,7 @@ class HomepageSettingsPage extends Page implements HasForms
         );
 
         $this->form->fill([
+            'hero' => $settings->hero(),
             'weekly_offer' => $savedWeeklyOffer,
             'category_chips' => $savedCategoryChips,
             'featured_products' => $savedFeaturedProducts,

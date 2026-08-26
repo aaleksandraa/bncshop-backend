@@ -36,6 +36,7 @@ class AddPublicApiCacheHeaders
         'api/v1/homepage/weekly-offer' => 'public, max-age=60, s-maxage=120, stale-while-revalidate=300',
         'api/v1/homepage/category-chips' => 'public, max-age=60, s-maxage=120, stale-while-revalidate=300',
         'api/v1/homepage/featured-products' => 'public, max-age=60, s-maxage=120, stale-while-revalidate=300',
+        'api/v1/homepage/hero' => 'public, max-age=60, s-maxage=120, stale-while-revalidate=300',
         'api/v1/filters' => 'public, max-age=300, s-maxage=300, stale-while-revalidate=600',
         'api/v1/layout/shell' => 'public, max-age=300, s-maxage=300, stale-while-revalidate=600',
         'api/v1/settings/public' => 'public, max-age=600, s-maxage=600, stale-while-revalidate=900',

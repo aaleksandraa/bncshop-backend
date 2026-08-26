@@ -6,6 +6,7 @@ use App\Models\Product;
 use App\Models\SystemSetting;
 use App\Services\Catalog\ProductReadCache;
 use App\Support\CategoryPriorityLookup;
+use App\Support\PublicStorageUrl;
 use Illuminate\Support\Facades\Cache;
 
 class HomepageSettings
@@ -339,5 +340,232 @@ class HomepageSettings
     public function flushFeaturedProductsCache(): void
     {
         Cache::forget('homepage:featured-products:settings');
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function heroDefaults(): array
+    {
+        return [
+            'welcome_enabled' => true,
+            'banners' => [],
+        ];
+    }
+
+    /**
+     * @return array{welcome_enabled: bool, banners: array<int, array{image_path: string, url: string, alt: string|null}>}
+     */
+    public function hero(): array
+    {
+        return Cache::remember('homepage:hero:settings', 300, function (): array {
+            $stored = SystemSetting::query()
+                ->where('key', 'homepage_hero')
+                ->value('value');
+
+            if (! is_array($stored)) {
+                return $this->heroDefaults();
+            }
+
+            $merged = array_merge($this->heroDefaults(), $stored);
+            $merged['welcome_enabled'] = (bool) ($merged['welcome_enabled'] ?? true);
+            $merged['banners'] = $this->normalizeStoredBanners($merged['banners'] ?? []);
+
+            return $merged;
+        });
+    }
+
+    /**
+     * Public storefront payload for the homepage hero.
+     *
+     * @return array{welcome_enabled: bool, banners: array<int, array{image_url: string, url: string, alt: string|null}>}
+     */
+    public function heroPayload(): array
+    {
+        $config = $this->hero();
+
+        $banners = [];
+        foreach ((array) ($config['banners'] ?? []) as $banner) {
+            if (! is_array($banner)) {
+                continue;
+            }
+
+            $imageUrl = PublicStorageUrl::url($banner['image_path'] ?? null);
+            $url = $this->sanitizeShopUrl($banner['url'] ?? null);
+
+            if ($imageUrl === null || $url === null) {
+                continue;
+            }
+
+            $banners[] = [
+                'image_url' => $imageUrl,
+                'url' => $url,
+                'alt' => filled($banner['alt'] ?? null) ? (string) $banner['alt'] : null,
+            ];
+        }
+
+        return [
+            'welcome_enabled' => (bool) ($config['welcome_enabled'] ?? true),
+            'banners' => $banners,
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    public function saveHero(array $data): void
+    {
+        $banners = [];
+
+        foreach (array_values((array) ($data['banners'] ?? [])) as $banner) {
+            if (! is_array($banner)) {
+                continue;
+            }
+
+            $imagePath = $this->normalizeUploadPath($banner['image_path'] ?? null);
+            $url = $this->sanitizeShopUrl($banner['url'] ?? null);
+
+            if ($imagePath === null || $url === null) {
+                continue;
+            }
+
+            $banners[] = [
+                'image_path' => $imagePath,
+                'url' => $url,
+                'alt' => filled($banner['alt'] ?? null)
+                    ? mb_substr(trim((string) $banner['alt']), 0, 255)
+                    : null,
+            ];
+
+            if (count($banners) >= 8) {
+                break;
+            }
+        }
+
+        SystemSetting::query()->updateOrCreate(
+            ['key' => 'homepage_hero'],
+            [
+                'group' => 'homepage',
+                'value' => [
+                    'welcome_enabled' => (bool) ($data['welcome_enabled'] ?? true),
+                    'banners' => $banners,
+                ],
+            ],
+        );
+
+        $this->flushHeroCache();
+    }
+
+    public function flushHeroCache(): void
+    {
+        Cache::forget('homepage:hero:settings');
+    }
+
+    /**
+     * @param  mixed  $banners
+     * @return array<int, array{image_path: string, url: string, alt: string|null}>
+     */
+    private function normalizeStoredBanners(mixed $banners): array
+    {
+        if (! is_array($banners)) {
+            return [];
+        }
+
+        $normalized = [];
+
+        foreach (array_values($banners) as $banner) {
+            if (! is_array($banner)) {
+                continue;
+            }
+
+            $imagePath = $this->normalizeUploadPath($banner['image_path'] ?? null);
+            $url = $this->sanitizeShopUrl($banner['url'] ?? null);
+
+            if ($imagePath === null || $url === null) {
+                continue;
+            }
+
+            $normalized[] = [
+                'image_path' => $imagePath,
+                'url' => $url,
+                'alt' => filled($banner['alt'] ?? null) ? (string) $banner['alt'] : null,
+            ];
+        }
+
+        return $normalized;
+    }
+
+    public function sanitizeShopUrl(mixed $url): ?string
+    {
+        if (! is_string($url)) {
+            return null;
+        }
+
+        $url = trim($url);
+
+        if ($url === '') {
+            return null;
+        }
+
+        $lower = strtolower($url);
+
+        foreach (['javascript:', 'data:', 'vbscript:', 'file:'] as $scheme) {
+            if (str_starts_with($lower, $scheme)) {
+                return null;
+            }
+        }
+
+        if (str_starts_with($url, '//')) {
+            return null;
+        }
+
+        if (preg_match('#^https?://#i', $url) === 1) {
+            $parts = parse_url($url);
+
+            if (! is_array($parts)) {
+                return null;
+            }
+
+            $path = $parts['path'] ?? '/';
+            $query = isset($parts['query']) ? '?'.$parts['query'] : '';
+            $fragment = isset($parts['fragment']) ? '#'.$parts['fragment'] : '';
+            $url = $path.$query.$fragment;
+        }
+
+        if (! str_starts_with($url, '/')) {
+            $url = '/'.$url;
+        }
+
+        if (str_starts_with($url, '//') || strlen($url) > 255) {
+            return null;
+        }
+
+        return $url;
+    }
+
+    private function normalizeUploadPath(mixed $value): ?string
+    {
+        if (is_array($value)) {
+            $value = collect($value)
+                ->filter(fn (mixed $item): bool => is_string($item) && trim($item) !== '')
+                ->values()
+                ->first();
+        }
+
+        if (! is_string($value)) {
+            return null;
+        }
+
+        $path = ltrim(str_replace('\\', '/', trim($value)), '/');
+
+        if (str_starts_with($path, 'storage/')) {
+            $path = substr($path, strlen('storage/'));
+        }
+
+        if ($path === '' || str_contains($path, '..')) {
+            return null;
+        }
+
+        return $path;
     }
 }

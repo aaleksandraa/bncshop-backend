@@ -116,4 +116,63 @@ class HomepageSettingsTest extends TestCase
         $this->assertTrue($stored['tiles_enabled'] ?? false);
         $this->assertFalse($stored['rows_enabled'] ?? true);
     }
+
+    public function test_save_hero_persists_welcome_toggle_and_banners(): void
+    {
+        $settings = app(HomepageSettings::class);
+
+        $settings->saveHero([
+            'welcome_enabled' => false,
+            'banners' => [
+                [
+                    'image_path' => 'homepage/banners/laptops.webp',
+                    'url' => 'https://bncshop.ba/kategorija/laptopi',
+                    'alt' => 'Laptopi',
+                ],
+                [
+                    'image_path' => ['uuid' => 'homepage/banners/monitori.jpg'],
+                    'url' => 'kategorija/monitori',
+                    'alt' => '',
+                ],
+                [
+                    'image_path' => 'homepage/banners/skip.webp',
+                    'url' => 'javascript:alert(1)',
+                    'alt' => 'Skip',
+                ],
+            ],
+        ]);
+
+        $stored = SystemSetting::query()
+            ->where('key', 'homepage_hero')
+            ->value('value');
+
+        $this->assertFalse($stored['welcome_enabled'] ?? true);
+        $this->assertSame([
+            [
+                'image_path' => 'homepage/banners/laptops.webp',
+                'url' => '/kategorija/laptopi',
+                'alt' => 'Laptopi',
+            ],
+            [
+                'image_path' => 'homepage/banners/monitori.jpg',
+                'url' => '/kategorija/monitori',
+                'alt' => null,
+            ],
+        ], $stored['banners'] ?? null);
+
+        $payload = $settings->heroPayload();
+        $this->assertFalse($payload['welcome_enabled']);
+        $this->assertCount(2, $payload['banners']);
+        $this->assertSame('/storage/homepage/banners/laptops.webp', $payload['banners'][0]['image_url']);
+        $this->assertSame('/kategorija/laptopi', $payload['banners'][0]['url']);
+    }
+
+    public function test_hero_defaults_keep_welcome_enabled(): void
+    {
+        $settings = app(HomepageSettings::class);
+        $hero = $settings->hero();
+
+        $this->assertTrue($hero['welcome_enabled']);
+        $this->assertSame([], $hero['banners']);
+    }
 }
