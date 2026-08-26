@@ -17,6 +17,7 @@ class PriceCalculator
         private readonly MarginRuleResolver $marginRuleResolver,
         private readonly FieldLockService $fieldLockService,
         private readonly ProductSetService $productSetService,
+        private readonly ProductSalePriceService $productSalePriceService,
     ) {}
 
     public function calculate(Product $product, ?Coupon $coupon = null): PriceResult
@@ -110,7 +111,10 @@ class PriceCalculator
         $oldRegularPrice = (float) ($product->regular_price ?? 0);
         $oldDisplayPrice = (float) ($product->display_price ?? 0);
 
-        $result = $this->calculate($product);
+        $this->productSalePriceService->syncDiscountValue($product);
+        $this->productSalePriceService->deactivateUntilStockSalesIfOutOfStock($product->fresh() ?? $product);
+
+        $result = $this->calculate($product->fresh() ?? $product);
 
         $updates = [
             'display_price' => $result->displayPrice,

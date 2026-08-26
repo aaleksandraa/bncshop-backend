@@ -5,6 +5,7 @@ namespace App\Services\Commerce;
 use App\Models\Product;
 use App\Models\ProductSetItem;
 use App\Services\Catalog\ProductSetService;
+use App\Services\Pricing\ProductSalePriceService;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
@@ -12,6 +13,7 @@ class StockService
 {
     public function __construct(
         private readonly ProductSetService $productSetService,
+        private readonly ProductSalePriceService $productSalePriceService,
     ) {}
 
     public function reserve(Product $product, int $quantity): void
@@ -211,5 +213,10 @@ class StockService
         $baseStock = $product->manual_stock_override ?? $product->api_stock;
         $product->available_stock = max(0, (int) $baseStock - (int) $product->reserved_stock);
         $product->syncStockStatus();
+
+        if ((int) $product->available_stock <= 0
+            && $this->productSalePriceService->deactivateUntilStockSalesIfOutOfStock($product)) {
+            app(\App\Services\Pricing\PriceCalculator::class)->recalculateAndPersist($product);
+        }
     }
 }

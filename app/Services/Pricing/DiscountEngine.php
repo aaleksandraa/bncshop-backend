@@ -152,6 +152,10 @@ class DiscountEngine
             return false;
         }
 
+        if ($this->isUntilStockDiscountUnavailable($discount, $product)) {
+            return false;
+        }
+
         return match ($discount->type) {
             'product' => $discount->product_id === $product->id,
             'category' => $this->matchesCategory($discount, $product),
@@ -160,6 +164,17 @@ class DiscountEngine
             'attribute' => $this->matchesAttribute($discount, $product),
             default => false,
         };
+    }
+
+    private function isUntilStockDiscountUnavailable(Discount $discount, Product $product): bool
+    {
+        $conditions = $discount->conditions_json ?? [];
+
+        if (($conditions['until_stock'] ?? false) !== true) {
+            return false;
+        }
+
+        return (int) $product->available_stock <= 0;
     }
 
     private function isExcluded(Discount $discount, Product $product): bool

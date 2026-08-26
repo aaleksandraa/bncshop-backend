@@ -4,7 +4,9 @@ namespace App\Filament\Resources\ProductResource\Pages;
 
 use App\Filament\Resources\ProductResource;
 use App\Filament\Resources\ProductResource\Pages\Concerns\ManagesProductSet;
+use App\Services\Pricing\PriceCalculator;
 use App\Services\Pricing\ProductPriceRecalculator;
+use App\Services\Pricing\ProductSalePriceService;
 use App\Services\Sync\FieldLockService;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
@@ -28,7 +30,16 @@ class EditProduct extends EditRecord
      */
     protected function mutateFormDataBeforeFill(array $data): array
     {
-        return $this->mutateSetFormData($data);
+        $data = $this->mutateSetFormData($data);
+
+        if ($this->record !== null && ! $this->record->isSet()) {
+            $data = array_merge(
+                $data,
+                app(ProductSalePriceService::class)->toFormData($this->record),
+            );
+        }
+
+        return $data;
     }
 
     /**
@@ -60,8 +71,24 @@ class EditProduct extends EditRecord
             }
         }
 
+        $state = $this->form->getState();
+        $salePriceService = app(ProductSalePriceService::class);
+        $salePriceRaw = $state['sale_price'] ?? null;
+        $salePrice = $salePriceRaw === null || $salePriceRaw === ''
+            ? null
+            : (float) $salePriceRaw;
+
+        $salePriceService->upsert(
+            $this->record,
+            $salePrice,
+            is_string($state['sale_validity'] ?? null) ? $state['sale_validity'] : ProductSalePriceService::VALIDITY_NO_END,
+            $state['sale_ends_at'] ?? null,
+        );
+
+        app(PriceCalculator::class)->recalculateAndPersist($this->record->fresh());
+
         if ($this->record->wasChanged(['preferred_supplier_id', 'margin_percentage', 'price_locked', 'manual_price'])) {
-            app(ProductPriceRecalculator::class)->forProduct($this->record);
+            app(ProductPriceRecalculator::class)->forProduct($this->record->fresh());
         }
     }
 }

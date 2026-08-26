@@ -2,13 +2,13 @@
 
 namespace App\Services\Seller;
 
-use App\Models\Discount;
 use App\Models\Product;
 use App\Models\ProductImage;
 use App\Models\ProductSupplierOffer;
 use App\Models\User;
 use App\Services\Media\MediaStorage;
 use App\Services\Pricing\PriceCalculator;
+use App\Services\Pricing\ProductSalePriceService;
 use App\Services\Pricing\SupplierOfferSelector;
 use App\Services\Sync\FieldLockService;
 use App\Services\Sync\ProductImageStorageService;
@@ -18,16 +18,16 @@ use Illuminate\Support\Str;
 
 class SellerElineProductService
 {
-    public const SELLER_DISCOUNT_NAME = 'Prodavač akcija';
+    /** @deprecated Use ProductSalePriceService::DISCOUNT_NAME */
+    public const SELLER_DISCOUNT_NAME = ProductSalePriceService::DISCOUNT_NAME;
 
-    /**
-     * @var array<string, bool>
-     */
+    /** @deprecated Use ProductSalePriceService conditions marker */
     public const SELLER_DISCOUNT_MARKER = ['seller_managed' => true];
 
     public function __construct(
         private readonly FieldLockService $fieldLockService,
         private readonly PriceCalculator $priceCalculator,
+        private readonly ProductSalePriceService $productSalePriceService,
         private readonly ProductImageStorageService $productImageStorage,
         private readonly MediaStorage $mediaStorage,
         private readonly SupplierOfferSelector $supplierOfferSelector,
@@ -64,8 +64,28 @@ class SellerElineProductService
             $this->fieldLockService->lockField($product, 'short_description', $user->id);
         }
 
-        if (array_key_exists('sale_price', $data)) {
-            $this->upsertSalePrice($product, $data['sale_price'] !== null ? (float) $data['sale_price'] : null);
+        $salePriceTouched = array_key_exists('sale_price', $data);
+        $validityTouched = array_key_exists('sale_validity', $data);
+
+        if ($salePriceTouched || $validityTouched) {
+            $salePrice = $salePriceTouched && $data['sale_price'] !== null
+                ? (float) $data['sale_price']
+                : ($salePriceTouched ? null : $this->productSalePriceService->resolveSalePrice($product));
+
+            $validity = $validityTouched
+                ? ($data['sale_validity'] ?? null)
+                : null;
+
+            $endsAt = array_key_exists('sale_ends_at', $data)
+                ? $data['sale_ends_at']
+                : null;
+
+            $this->productSalePriceService->upsert(
+                $product,
+                $salePrice,
+                is_string($validity) ? $validity : null,
+                $endsAt,
+            );
         }
 
         if (array_key_exists('primary_image_id', $data) && $data['primary_image_id'] !== null) {
@@ -74,7 +94,7 @@ class SellerElineProductService
 
         $product->save();
 
-        if (array_key_exists('sale_price', $data)) {
+        if ($salePriceTouched || $validityTouched) {
             $this->priceCalculator->recalculateAndPersist($product->fresh());
         }
 
@@ -83,55 +103,34 @@ class SellerElineProductService
 
     public function upsertSalePrice(Product $product, ?float $salePrice): void
     {
-        $discount = $this->findSellerDiscount($product);
-        $regularPrice = (float) $product->regular_price;
-
-        if ($salePrice === null) {
-            if ($discount !== null) {
-                $discount->update(['is_active' => false]);
-            }
-
-            return;
-        }
-
-        $discountAmount = round($regularPrice - $salePrice, 2);
-
-        if ($discountAmount <= 0) {
-            if ($discount !== null) {
-                $discount->update(['is_active' => false]);
-            }
-
-            return;
-        }
-
-        Discount::query()->updateOrCreate(
-            [
-                'product_id' => $product->id,
-                'type' => 'product',
-                'name' => self::SELLER_DISCOUNT_NAME,
-            ],
-            [
-                'discount_type' => 'fixed',
-                'value' => $discountAmount,
-                'is_active' => true,
-                'badge_text' => 'Akcija',
-                'combines_with_coupons' => false,
-                'conditions_json' => self::SELLER_DISCOUNT_MARKER,
-            ],
-        );
+        $this->productSalePriceService->upsert($product, $salePrice);
     }
 
     public function resolveSalePrice(Product $product): ?float
     {
-        $discount = $this->findSellerDiscount($product);
+        return $this->productSalePriceService->resolveSalePrice($product);
+    }
+
+    /**
+     * @return array{sale_validity: string, sale_ends_at: ?string}
+     */
+    private function resolveSaleValidityPayload(Product $product): array
+    {
+        $discount = $this->productSalePriceService->findProductSaleDiscount($product);
 
         if ($discount === null || ! $discount->is_active) {
-            return null;
+            return [
+                'sale_validity' => ProductSalePriceService::VALIDITY_NO_END,
+                'sale_ends_at' => null,
+            ];
         }
 
-        $regularPrice = (float) $product->regular_price;
+        $validity = $this->productSalePriceService->resolveValidity($discount);
 
-        return max(0, round($regularPrice - (float) $discount->value, 2));
+        return [
+            'sale_validity' => $validity['validity'],
+            'sale_ends_at' => $validity['ends_at']?->toIso8601String(),
+        ];
     }
 
     public function storeImage(Product $product, UploadedFile $file, bool $isPrimary = false): ProductImage
@@ -212,6 +211,7 @@ class SellerElineProductService
     public function formatSummary(Product $product): array
     {
         $primaryImage = $product->defaultImage ?? $product->images->first();
+        $validity = $this->resolveSaleValidityPayload($product);
 
         return [
             'id' => $product->id,
@@ -223,6 +223,8 @@ class SellerElineProductService
             'regular_price' => $product->regular_price,
             'display_price' => $product->display_price,
             'sale_price' => $this->resolveSalePrice($product),
+            'sale_validity' => $validity['sale_validity'],
+            'sale_ends_at' => $validity['sale_ends_at'],
             'on_sale' => (bool) $product->on_sale,
             'status' => $product->status,
             'is_public' => (bool) $product->is_public,
@@ -298,15 +300,6 @@ class SellerElineProductService
         };
     }
 
-    private function findSellerDiscount(Product $product): ?Discount
-    {
-        return Discount::query()
-            ->where('product_id', $product->id)
-            ->where('type', 'product')
-            ->where('name', self::SELLER_DISCOUNT_NAME)
-            ->first();
-    }
-
     public function setPrimaryImage(Product $product, int $imageId): void
     {
         $image = ProductImage::query()
@@ -321,22 +314,5 @@ class SellerElineProductService
         $image->update(['is_primary' => true]);
         $product->default_image_id = $image->id;
         $product->save();
-    }
-
-    /**
-     * @return array{0: ?int, 1: ?int}
-     */
-    private function resolveDimensions(string $contents): array
-    {
-        $info = @getimagesizefromstring($contents);
-
-        if (! is_array($info)) {
-            return [null, null];
-        }
-
-        return [
-            isset($info[0]) ? (int) $info[0] : null,
-            isset($info[1]) ? (int) $info[1] : null,
-        ];
     }
 }

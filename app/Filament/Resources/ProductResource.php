@@ -13,6 +13,7 @@ use App\Models\Supplier;
 use App\Filament\Support\OptimizedMediaUpload;
 use App\Services\Catalog\ProductSetService;
 use App\Services\Pricing\PriceCalculator;
+use App\Services\Pricing\ProductSalePriceService;
 use App\Support\PublicStorageUrl;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -347,6 +348,39 @@ class ProductResource extends Resource
                                     ->disabled(),
                                 Forms\Components\Toggle::make('price_locked')
                                     ->label('Zaključaj cijenu'),
+                                Forms\Components\Section::make('Akcijska cijena')
+                                    ->description('Lokalna akcija na shopu. Prazno polje uklanja akciju.')
+                                    ->schema([
+                                        Forms\Components\TextInput::make('sale_price')
+                                            ->label('Akcijska cijena')
+                                            ->numeric()
+                                            ->prefix('KM')
+                                            ->dehydrated(false)
+                                            ->helperText(function (Forms\Get $get): string {
+                                                if ((bool) $get('price_locked')) {
+                                                    return 'Upozorenje: zaključana ručna cijena preskače lokalne popuste na shopu.';
+                                                }
+
+                                                return 'Mora biti manja od redovne cijene. Ostavite prazno da uklonite akciju.';
+                                            }),
+                                        Forms\Components\Radio::make('sale_validity')
+                                            ->label('Važenje akcije')
+                                            ->options([
+                                                ProductSalePriceService::VALIDITY_NO_END => 'Nema kraja',
+                                                ProductSalePriceService::VALIDITY_UNTIL_DATE => 'Do datuma',
+                                                ProductSalePriceService::VALIDITY_UNTIL_STOCK => 'Do isteka zaliha',
+                                            ])
+                                            ->default(ProductSalePriceService::VALIDITY_NO_END)
+                                            ->live()
+                                            ->dehydrated(false),
+                                        Forms\Components\DateTimePicker::make('sale_ends_at')
+                                            ->label('Akcija važi do')
+                                            ->native(false)
+                                            ->visible(fn (Forms\Get $get): bool => $get('sale_validity') === ProductSalePriceService::VALIDITY_UNTIL_DATE)
+                                            ->dehydrated(false),
+                                    ])
+                                    ->columns(2)
+                                    ->columnSpanFull(),
                             ])
                             ->columns(2),
                         Forms\Components\Tabs\Tab::make('Zalihe')

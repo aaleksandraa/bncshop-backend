@@ -3,7 +3,9 @@
 namespace App\Http\Requests\Api\V1;
 
 use App\Models\Product;
+use App\Services\Pricing\ProductSalePriceService;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
 class UpdateSellerProductRequest extends FormRequest
@@ -22,6 +24,17 @@ class UpdateSellerProductRequest extends FormRequest
             'description' => ['sometimes', 'nullable', 'string', 'max:50000'],
             'short_description' => ['sometimes', 'nullable', 'string', 'max:255'],
             'sale_price' => ['sometimes', 'nullable', 'numeric', 'min:0.01'],
+            'sale_validity' => [
+                'sometimes',
+                'nullable',
+                'string',
+                Rule::in([
+                    ProductSalePriceService::VALIDITY_NO_END,
+                    ProductSalePriceService::VALIDITY_UNTIL_DATE,
+                    ProductSalePriceService::VALIDITY_UNTIL_STOCK,
+                ]),
+            ],
+            'sale_ends_at' => ['sometimes', 'nullable', 'date'],
             'primary_image_id' => ['sometimes', 'nullable', 'integer', 'exists:product_images,id'],
         ];
     }
@@ -48,6 +61,14 @@ class UpdateSellerProductRequest extends FormRequest
                 $validator->errors()->add(
                     'sale_price',
                     'Akcijska cijena mora biti manja od redovne cijene.',
+                );
+            }
+
+            if ($this->input('sale_validity') === ProductSalePriceService::VALIDITY_UNTIL_DATE
+                && ! $this->filled('sale_ends_at')) {
+                $validator->errors()->add(
+                    'sale_ends_at',
+                    'Unesite datum isteka akcije.',
                 );
             }
         });

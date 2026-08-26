@@ -72,6 +72,62 @@ class SellerProductApiTest extends TestCase
         $this->assertSame(450.0, (float) $elineProduct->display_price);
     }
 
+    public function test_seller_can_set_sale_price_with_validity(): void
+    {
+        $seller = $this->createSeller();
+        $elineProduct = $this->createElineProduct([
+            'regular_price' => 500,
+            'display_price' => 500,
+        ]);
+
+        $this->postJsonStateful('/api/v1/seller/login', [
+            'email' => $seller->email,
+            'password' => 'password123',
+        ])->assertOk();
+
+        $endsAt = now()->addDays(7)->toIso8601String();
+
+        $this->patchJsonStateful("/api/v1/seller/products/{$elineProduct->id}", [
+                'sale_price' => 450,
+                'sale_validity' => 'until_date',
+                'sale_ends_at' => $endsAt,
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.sale_price', 450)
+            ->assertJsonPath('data.sale_validity', 'until_date')
+            ->assertJsonPath('data.on_sale', true);
+    }
+
+    public function test_seller_patch_sale_price_only_preserves_existing_validity(): void
+    {
+        $seller = $this->createSeller();
+        $elineProduct = $this->createElineProduct([
+            'regular_price' => 500,
+            'display_price' => 500,
+        ]);
+
+        $this->postJsonStateful('/api/v1/seller/login', [
+            'email' => $seller->email,
+            'password' => 'password123',
+        ])->assertOk();
+
+        $endsAt = now()->addDays(10)->toIso8601String();
+
+        $this->patchJsonStateful("/api/v1/seller/products/{$elineProduct->id}", [
+                'sale_price' => 450,
+                'sale_validity' => 'until_date',
+                'sale_ends_at' => $endsAt,
+            ])
+            ->assertOk();
+
+        $this->patchJsonStateful("/api/v1/seller/products/{$elineProduct->id}", [
+                'sale_price' => 420,
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.sale_price', 420)
+            ->assertJsonPath('data.sale_validity', 'until_date');
+    }
+
     public function test_seller_can_filter_and_sort_eline_products(): void
     {
         $seller = $this->createSeller();
