@@ -36,6 +36,7 @@ class PageController extends Controller
                 'title' => $page->title,
                 'slug' => $page->slug,
                 'body' => $page->body,
+                'has_product_listing' => (bool) $page->has_product_listing,
                 'meta_title' => $page->meta_title,
                 'meta_description' => $page->meta_description,
             ];

@@ -13,8 +13,7 @@ class CmsPageObserver
 
     public function saved(CmsPage $page): void
     {
-        $this->productReadCache->forgetPage($page->slug);
-        $this->productReadCache->flushCms();
+        $this->invalidate($page);
     }
 
     public function saving(CmsPage $page): void
@@ -26,7 +25,13 @@ class CmsPageObserver
 
     public function deleted(CmsPage $page): void
     {
+        $this->invalidate($page);
+    }
+
+    private function invalidate(CmsPage $page): void
+    {
         $this->productReadCache->forgetPage($page->slug);
         $this->productReadCache->flushCms();
+        $this->productReadCache->flushProducts();
     }
 }

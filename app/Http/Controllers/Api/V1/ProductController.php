@@ -150,6 +150,7 @@ class ProductController extends Controller
             'is_refurbished',
             'has_image',
             'campaign',
+            'cms_page',
             'sort',
         ] as $key) {
             if ($request->filled($key) && ! ($key === 'sort' && $request->string('sort')->toString() === 'newest')) {

@@ -21,11 +21,16 @@ class ProductListingService
         private readonly CategoryListingOrder $categoryListingOrder,
         private readonly CatalogListingSettings $catalogListingSettings,
         private readonly CampaignResolver $campaignResolver,
+        private readonly CmsPageProductFilter $cmsPageProductFilter,
     ) {}
 
     public function shouldUseMeilisearch(Request $request): bool
     {
         if ($request->string('campaign')->toString() !== '') {
+            return false;
+        }
+
+        if ($request->string('cms_page')->toString() !== '') {
             return false;
         }
 
@@ -298,6 +303,10 @@ class ProductListingService
 
         if ($campaignSlug = $request->string('campaign')->toString()) {
             $this->campaignResolver->applyListingFilter($query, $campaignSlug);
+        }
+
+        if ($cmsPageSlug = $request->string('cms_page')->toString()) {
+            $this->cmsPageProductFilter->applyListingFilter($query, $cmsPageSlug);
         }
 
         if ($request->boolean('has_image')) {
