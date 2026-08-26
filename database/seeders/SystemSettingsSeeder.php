@@ -124,6 +124,7 @@ class SystemSettingsSeeder extends Seeder
                 'value' => [
                     'welcome_enabled_desktop' => true,
                     'welcome_enabled_mobile' => true,
+                    'banners_enabled' => true,
                     'banners' => [],
                 ],
                 'group' => 'homepage',

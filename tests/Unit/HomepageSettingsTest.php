@@ -124,6 +124,7 @@ class HomepageSettingsTest extends TestCase
         $settings->saveHero([
             'welcome_enabled_desktop' => false,
             'welcome_enabled_mobile' => true,
+            'banners_enabled' => false,
             'banners' => [
                 [
                     'image_path' => 'homepage/banners/laptops.webp',
@@ -149,6 +150,7 @@ class HomepageSettingsTest extends TestCase
 
         $this->assertFalse($stored['welcome_enabled_desktop'] ?? true);
         $this->assertTrue($stored['welcome_enabled_mobile'] ?? false);
+        $this->assertFalse($stored['banners_enabled'] ?? true);
         $this->assertSame([
             [
                 'image_path' => 'homepage/banners/laptops.webp',
@@ -165,6 +167,7 @@ class HomepageSettingsTest extends TestCase
         $payload = $settings->heroPayload();
         $this->assertFalse($payload['welcome_enabled_desktop']);
         $this->assertTrue($payload['welcome_enabled_mobile']);
+        $this->assertFalse($payload['banners_enabled']);
         $this->assertCount(2, $payload['banners']);
         $this->assertSame('/storage/homepage/banners/laptops.webp', $payload['banners'][0]['image_url']);
         $this->assertSame('/kategorija/laptopi', $payload['banners'][0]['url']);
@@ -177,6 +180,7 @@ class HomepageSettingsTest extends TestCase
 
         $this->assertTrue($hero['welcome_enabled_desktop']);
         $this->assertTrue($hero['welcome_enabled_mobile']);
+        $this->assertTrue($hero['banners_enabled']);
         $this->assertSame([], $hero['banners']);
     }
 
@@ -195,6 +199,7 @@ class HomepageSettingsTest extends TestCase
 
         $this->assertFalse($hero['welcome_enabled_desktop']);
         $this->assertFalse($hero['welcome_enabled_mobile']);
+        $this->assertTrue($hero['banners_enabled']);
         $this->assertArrayNotHasKey('welcome_enabled', $hero);
     }
 }

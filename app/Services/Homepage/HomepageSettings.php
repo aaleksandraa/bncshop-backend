@@ -350,12 +350,13 @@ class HomepageSettings
         return [
             'welcome_enabled_desktop' => true,
             'welcome_enabled_mobile' => true,
+            'banners_enabled' => true,
             'banners' => [],
         ];
     }
 
     /**
-     * @return array{welcome_enabled_desktop: bool, welcome_enabled_mobile: bool, banners: array<int, array{image_path: string, url: string, alt: string|null}>}
+     * @return array{welcome_enabled_desktop: bool, welcome_enabled_mobile: bool, banners_enabled: bool, banners: array<int, array{image_path: string, url: string, alt: string|null}>}
      */
     public function hero(): array
     {
@@ -372,6 +373,9 @@ class HomepageSettings
             $flags = $this->resolveWelcomeFlags($stored);
             $merged['welcome_enabled_desktop'] = $flags['desktop'];
             $merged['welcome_enabled_mobile'] = $flags['mobile'];
+            $merged['banners_enabled'] = array_key_exists('banners_enabled', $stored)
+                ? (bool) $stored['banners_enabled']
+                : true;
             unset($merged['welcome_enabled']);
             $merged['banners'] = $this->normalizeStoredBanners($merged['banners'] ?? []);
 
@@ -382,7 +386,7 @@ class HomepageSettings
     /**
      * Public storefront payload for the homepage hero.
      *
-     * @return array{welcome_enabled_desktop: bool, welcome_enabled_mobile: bool, banners: array<int, array{image_url: string, url: string, alt: string|null}>}
+     * @return array{welcome_enabled_desktop: bool, welcome_enabled_mobile: bool, banners_enabled: bool, banners: array<int, array{image_url: string, url: string, alt: string|null}>}
      */
     public function heroPayload(): array
     {
@@ -411,6 +415,7 @@ class HomepageSettings
         return [
             'welcome_enabled_desktop' => (bool) ($config['welcome_enabled_desktop'] ?? true),
             'welcome_enabled_mobile' => (bool) ($config['welcome_enabled_mobile'] ?? true),
+            'banners_enabled' => (bool) ($config['banners_enabled'] ?? true),
             'banners' => $banners,
         ];
     }
@@ -454,6 +459,7 @@ class HomepageSettings
                 'value' => [
                     'welcome_enabled_desktop' => (bool) ($data['welcome_enabled_desktop'] ?? $data['welcome_enabled'] ?? true),
                     'welcome_enabled_mobile' => (bool) ($data['welcome_enabled_mobile'] ?? $data['welcome_enabled'] ?? true),
+                    'banners_enabled' => (bool) ($data['banners_enabled'] ?? true),
                     'banners' => $banners,
                 ],
             ],

@@ -16,6 +16,7 @@ class HomepageHeroApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.welcome_enabled_desktop', true)
             ->assertJsonPath('data.welcome_enabled_mobile', true)
+            ->assertJsonPath('data.banners_enabled', true)
             ->assertJsonPath('data.banners', []);
     }
 
@@ -40,6 +41,7 @@ class HomepageHeroApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.welcome_enabled_desktop', false)
             ->assertJsonPath('data.welcome_enabled_mobile', false)
+            ->assertJsonPath('data.banners_enabled', true)
             ->assertJsonPath('data.banners.0.url', '/kategorija/laptopi')
             ->assertJsonPath('data.banners.0.alt', 'Laptopi na akciji');
 
@@ -47,5 +49,30 @@ class HomepageHeroApiTest extends TestCase
             'homepage/banners/promo.webp',
             (string) $response->json('data.banners.0.image_url'),
         );
+    }
+
+    public function test_hero_endpoint_returns_banners_enabled_flag(): void
+    {
+        SystemSetting::query()->create([
+            'key' => 'homepage_hero',
+            'group' => 'homepage',
+            'value' => [
+                'welcome_enabled_desktop' => true,
+                'welcome_enabled_mobile' => true,
+                'banners_enabled' => false,
+                'banners' => [
+                    [
+                        'image_path' => 'homepage/banners/promo.webp',
+                        'url' => '/kategorija/laptopi',
+                        'alt' => 'Laptopi na akciji',
+                    ],
+                ],
+            ],
+        ]);
+
+        $this->getJson('/api/v1/homepage/hero')
+            ->assertOk()
+            ->assertJsonPath('data.banners_enabled', false)
+            ->assertJsonPath('data.banners.0.url', '/kategorija/laptopi');
     }
 }

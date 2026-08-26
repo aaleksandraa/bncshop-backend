@@ -81,8 +81,8 @@ class HomepageSettingsPage extends Page implements HasForms
     {
         return $form
             ->schema([
-                Section::make('Welcome blok i mobilni baneri')
-                    ->description('Welcome blok je tekst „Dobrodošli / Tehnologija koja je jednostavna…”. Na webu stoji lijevo od ponude sedmice. Na mobitelu, kad je uključen, ostaje prvi kao do sada. Baneri se prikazuju samo kad je welcome na mobitelu isključen.')
+                Section::make('Welcome blok i baneri')
+                    ->description('Welcome blok je tekst „Dobrodošli / Tehnologija koja je jednostavna…”. Na webu stoji lijevo od ponude sedmice. Baneri su zaseban blok: na mobitelu jedan po slajdu, na webu dva u istom redu, isti slider.')
                     ->schema([
                         Toggle::make('welcome_enabled_desktop')
                             ->label('Prikaži welcome blok na webu')
@@ -91,9 +91,14 @@ class HomepageSettingsPage extends Page implements HasForms
                         Toggle::make('welcome_enabled_mobile')
                             ->label('Prikaži welcome blok na mobitelu')
                             ->default(true)
-                            ->helperText('Kad je uključeno, welcome je prva stvar ispod headera, kao i ranije. Mobilni baneri se tada ne prikazuju iznad njega.'),
+                            ->helperText('Kad je uključeno, welcome tekst se prikazuje na mobitelu (ispod banera ako su oni uključeni).'),
+                        Toggle::make('banners_enabled')
+                            ->label('Prikaži banere')
+                            ->default(true)
+                            ->helperText('Uključuje ili isključuje cijeli blok banera na početnoj. Na mobitelu jedan baner po slajdu, na webu dva u istom redu.')
+                            ->columnSpanFull(),
                         Repeater::make('banners')
-                            ->label('Mobilni baneri')
+                            ->label('Baneri')
                             ->schema([
                                 OptimizedMediaUpload::configure(
                                     FileUpload::make('image_path')
