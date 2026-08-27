@@ -11,7 +11,7 @@ final class CrawlerDetector
         }
 
         return (bool) preg_match(
-            '/bot|crawl|spider|slurp|facebookexternalhit|meta-externalagent|whatsapp|telegram|preview|python-requests|go-http-client/i',
+            '/bot|crawl|spider|slurp|facebookexternalhit|meta-externalagent|whatsapp|telegram|preview|python-requests|go-http-client|bytespider|lighthouse|gtmetrix|pingdom|uptimerobot|statuscake|site24x7|headlesschrome|wget|curl\/|libwww|scrapy|httpie|chatgpt-user|perplexity|inspectiontool|pagespeed|ptst|phantomjs|puppeteer|playwright/i',
             $userAgent,
         );
     }
