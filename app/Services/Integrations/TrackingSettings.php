@@ -55,10 +55,19 @@ class TrackingSettings
             $data['fb_pixel_id'] = trim((string) $data['fb_pixel_id']);
         }
 
+        if (array_key_exists('ga_api_secret', $data)) {
+            $secret = trim((string) $data['ga_api_secret']);
+            if ($secret === '') {
+                unset($data['ga_api_secret']);
+            } else {
+                $data['ga_api_secret'] = $secret;
+            }
+        }
+
         SystemSetting::query()->updateOrCreate(
             ['key' => 'tracking'],
             [
-                'value' => array_merge($this->defaults(), $data),
+                'value' => array_merge($this->defaults(), $this->all(), $data),
                 'group' => 'integrations',
             ],
         );
@@ -78,6 +87,7 @@ class TrackingSettings
             'consent_message' => 'Koristimo kolačiće kako bismo poboljšali vaše iskustvo, analizirali promet i prikazali relevantne ponude. Po defaultu su uključeni analitički i marketing kolačići; možete ih odbiti ili prilagoditi u postavkama kolačića.',
             'privacy_page_slug' => 'privatnost',
             'ga_measurement_id' => '',
+            'ga_api_secret' => '',
             'fb_pixel_id' => '',
             'load_scripts_only_with_consent' => true,
         ];

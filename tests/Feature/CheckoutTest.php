@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\SendGa4PurchaseJob;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\Product;
@@ -10,6 +11,7 @@ use App\Models\SystemSetting;
 use App\Models\User;
 use App\Services\Commerce\CartService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -32,6 +34,21 @@ class CheckoutTest extends TestCase
             ->assertJsonPath('data.tracking_token', fn ($value) => is_string($value) && $value !== '');
 
         $this->assertDatabaseCount('orders', 1);
+    }
+
+    public function test_checkout_dispatches_ga4_purchase_job(): void
+    {
+        Queue::fake();
+        $this->seedCheckoutSettings();
+        $sessionId = $this->seedCartWithProduct();
+
+        $this->postJson('/api/v1/checkout', $this->checkoutPayload(), [
+            'X-Cart-Session' => $sessionId,
+        ])->assertCreated();
+
+        Queue::assertPushed(SendGa4PurchaseJob::class, function (SendGa4PurchaseJob $job): bool {
+            return $job->orderId === Order::query()->value('id');
+        });
     }
 
     public function test_authenticated_customer_gets_user_id_on_order(): void

@@ -47,5 +47,6 @@ class TrackingSettingsTest extends TestCase
 
         $this->assertNull($settings->publicConfig()['ga_measurement_id']);
         $this->assertNull($settings->publicConfig()['fb_pixel_id']);
+        $this->assertArrayNotHasKey('ga_api_secret', $settings->publicConfig());
     }
 }

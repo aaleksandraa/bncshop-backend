@@ -68,12 +68,18 @@ class TrackingSettingsPage extends Page implements HasForms
                     ])
                     ->columns(1),
                 Section::make('Praćenje (javni ID-evi)')
-                    ->description('Measurement ID i Pixel ID su javni i ugrađuju se u frontend nakon saglasnosti korisnika.')
+                    ->description('Measurement ID i Pixel ID su javni. Purchase se šalje i sa servera (API secret) da narudžbe uđu u Analytics i kad kupac odbije neobavezne kolačiće.')
                     ->schema([
                         TextInput::make('ga_measurement_id')
                             ->label('Google Analytics 4 Measurement ID')
                             ->placeholder('G-XXXXXXXXXX')
                             ->maxLength(32),
+                        TextInput::make('ga_api_secret')
+                            ->label('GA4 Measurement Protocol API secret')
+                            ->password()
+                            ->revealable()
+                            ->helperText('Admin → Data streams → Measurement Protocol API secrets. Purchase ide u Analytics i kad kupac odbije neobavezne kolačiće. Ne prikazuje se na shopu.')
+                            ->maxLength(64),
                         TextInput::make('fb_pixel_id')
                             ->label('Meta (Facebook) Pixel ID')
                             ->placeholder('123456789012345')
