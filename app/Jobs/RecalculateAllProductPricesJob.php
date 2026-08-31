@@ -36,40 +36,22 @@ class RecalculateAllProductPricesJob implements ShouldBeUnique, ShouldQueue
 
     public static function start(): int
     {
-        $afterProductId = 0;
-        $dispatched = 0;
+        $remaining = self::catalogQuery()->count();
 
-        while (true) {
-            $remaining = self::catalogQuery()
-                ->where('products.id', '>', $afterProductId)
-                ->count();
-
-            if ($remaining === 0) {
-                break;
-            }
-
-            $isFinalChunk = $remaining <= self::CHUNK_SIZE;
-
-            self::dispatch($afterProductId, $isFinalChunk)->afterCommit();
-
-            $dispatched++;
-
-            if ($isFinalChunk) {
-                break;
-            }
-
-            $afterProductId = (int) self::catalogQuery()
-                ->where('products.id', '>', $afterProductId)
-                ->orderBy('products.id')
-                ->offset(self::CHUNK_SIZE - 1)
-                ->value('products.id');
+        if ($remaining === 0) {
+            return 0;
         }
 
-        Log::info('Catalog product price recalculation jobs queued.', [
-            'chunks_dispatched' => $dispatched,
+        self::dispatch(0);
+
+        $chunks = (int) ceil($remaining / self::CHUNK_SIZE);
+
+        Log::info('Catalog product price recalculation queued.', [
+            'remaining_products' => $remaining,
+            'estimated_chunks' => $chunks,
         ]);
 
-        return $dispatched;
+        return $chunks;
     }
 
     public function handle(ProductPriceRecalculator $recalculator, ProductReadCache $productReadCache): void
@@ -81,16 +63,21 @@ class RecalculateAllProductPricesJob implements ShouldBeUnique, ShouldQueue
             $lastProcessedId,
         );
 
-        if ($this->flushCacheAfter) {
-            $productReadCache->flushAll();
-        }
-
         Log::info('Catalog product price recalculation chunk completed.', [
             'chunk_processed' => $processed,
             'after_product_id' => $this->afterProductId,
             'last_processed_product_id' => $lastProcessedId,
-            'flush_cache' => $this->flushCacheAfter,
         ]);
+
+        if ($lastProcessedId > $this->afterProductId
+            && self::catalogQuery()->where('products.id', '>', $lastProcessedId)->exists()
+        ) {
+            self::dispatch($lastProcessedId);
+
+            return;
+        }
+
+        $productReadCache->flushAll();
     }
 
     public function failed(?\Throwable $exception): void

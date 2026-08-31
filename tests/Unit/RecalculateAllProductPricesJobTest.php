@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductSupplierOffer;
 use App\Models\Supplier;
+use App\Services\Pricing\ProductPriceRecalcStatus;
 use App\Services\Pricing\ProductPriceRecalculator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
@@ -61,7 +62,7 @@ class RecalculateAllProductPricesJobTest extends TestCase
         $this->assertSame(787.0, (float) $fresh->display_price);
     }
 
-    public function test_start_dispatches_independent_chunk_jobs(): void
+    public function test_start_dispatches_one_job_that_chains_remaining_chunks(): void
     {
         Queue::fake();
 
@@ -83,7 +84,39 @@ class RecalculateAllProductPricesJobTest extends TestCase
         $dispatched = RecalculateAllProductPricesJob::start();
 
         $this->assertSame(2, $dispatched);
-        Queue::assertPushed(RecalculateAllProductPricesJob::class, 2);
+        Queue::assertPushed(RecalculateAllProductPricesJob::class, 1);
+        Queue::assertPushed(RecalculateAllProductPricesJob::class, fn (RecalculateAllProductPricesJob $job): bool => $job->afterProductId === 0);
+    }
+
+    public function test_handle_queues_the_next_chunk_when_products_remain(): void
+    {
+        Queue::fake();
+
+        $category = Category::factory()->create();
+
+        for ($i = 1; $i <= RecalculateAllProductPricesJob::CHUNK_SIZE + 1; $i++) {
+            Product::query()->create([
+                'external_product_id' => "prod-catalog-next-{$i}",
+                'name' => "Proizvod next {$i}",
+                'slug' => "proizvod-catalog-next-{$i}",
+                'status' => 'active',
+                'is_public' => true,
+                'category_id' => $category->id,
+                'regular_price' => 100,
+                'display_price' => 100,
+            ]);
+        }
+
+        (new RecalculateAllProductPricesJob(0))->handle(
+            app(ProductPriceRecalculator::class),
+            app(\App\Services\Catalog\ProductReadCache::class),
+        );
+
+        Queue::assertPushed(RecalculateAllProductPricesJob::class, 1);
+        Queue::assertPushed(
+            RecalculateAllProductPricesJob::class,
+            fn (RecalculateAllProductPricesJob $job): bool => $job->afterProductId > 0,
+        );
     }
 
     public function test_start_dispatches_nothing_when_no_products(): void
@@ -180,5 +213,26 @@ class RecalculateAllProductPricesJobTest extends TestCase
             ->assertSuccessful();
 
         Queue::assertPushed(RecalculateAllProductPricesJob::class);
+    }
+
+    public function test_price_recalc_status_treats_empty_calculated_price_as_pending_not_mismatch(): void
+    {
+        Product::query()->create([
+            'external_product_id' => 'prod-status-pending',
+            'name' => 'Pending status',
+            'slug' => 'pending-status',
+            'status' => 'active',
+            'is_public' => true,
+            'regular_price' => 100,
+        ]);
+
+        $snapshot = app(ProductPriceRecalcStatus::class)->snapshot();
+
+        $this->assertSame(1, $snapshot['pending']);
+        $this->assertSame(0, $snapshot['done']);
+        $this->assertSame(0, $snapshot['mismatch']);
+        $this->assertTrue($snapshot['stalled']);
+
+        $this->artisan('bnc:price-recalc-status')->assertSuccessful();
     }
 }

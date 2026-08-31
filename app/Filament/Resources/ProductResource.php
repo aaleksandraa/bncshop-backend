@@ -799,17 +799,20 @@ class ProductResource extends Resource
                         ->where(fn (Builder $inner) => $inner
                             ->whereNull('ends_at')
                             ->orWhere('ends_at', '>=', now())))),
+                Filter::make('price_not_recalculated')
+                    ->label('Nije preračunato')
+                    ->query(fn (Builder $query): Builder => $query
+                        ->where('is_set', false)
+                        ->notFromEline()
+                        ->whereNull('calculated_price')),
                 Filter::make('price_mismatch')
                     ->label('Cijena nije usklađena')
                     ->query(fn (Builder $query): Builder => $query
                         ->where('price_locked', false)
                         ->where('is_set', false)
                         ->notFromEline()
-                        ->where(function (Builder $inner): void {
-                            $inner
-                                ->whereNull('calculated_price')
-                                ->orWhereRaw('ROUND(COALESCE(regular_price, 0), 2) <> ROUND(calculated_price, 2)');
-                        })),
+                        ->whereNotNull('calculated_price')
+                        ->whereRaw('ABS(COALESCE(regular_price, 0) - calculated_price) >= 0.005')),
                 SelectFilter::make('supplier')
                     ->label('Dobavljač')
                     ->options(fn (): array => Supplier::query()

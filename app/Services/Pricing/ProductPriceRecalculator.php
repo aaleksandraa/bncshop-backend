@@ -173,9 +173,10 @@ class ProductPriceRecalculator
             ->limit($limit)
             ->get()
             ->each(function (Product $product) use (&$count, &$lastProcessedId): void {
+                $lastProcessedId = $product->id;
+
                 try {
                     $this->priceCalculator->recalculateAndPersist($product);
-                    $lastProcessedId = $product->id;
                     $count++;
                 } catch (\Throwable $e) {
                     \Illuminate\Support\Facades\Log::warning('Product price recalculation failed.', [
