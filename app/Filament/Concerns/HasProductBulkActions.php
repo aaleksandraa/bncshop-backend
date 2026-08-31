@@ -4,6 +4,7 @@ namespace App\Filament\Concerns;
 
 use App\Filament\Forms\CategoryMappingSelect;
 use App\Services\Catalog\ProductBulkService;
+use App\Services\Pricing\ProductPriceRecalculator;
 use Filament\Forms;
 use Filament\Notifications\Notification;
 use Filament\Tables;
@@ -17,11 +18,35 @@ trait HasProductBulkActions
     protected static function productBulkActions(): array
     {
         return [
+            static::makeRecalculatePricesBulkAction(),
             static::makeReassignCategoryBulkAction(),
             static::makeUpdateStatusBulkAction(),
             static::makeUpdateVisibilityBulkAction(),
             static::makeArchiveBulkAction(),
         ];
+    }
+
+    protected static function makeRecalculatePricesBulkAction(): Tables\Actions\BulkAction
+    {
+        return Tables\Actions\BulkAction::make('recalculatePrices')
+            ->label('Preračunaj cijene')
+            ->icon('heroicon-o-calculator')
+            ->color('warning')
+            ->requiresConfirmation()
+            ->modalHeading('Preračunaj odabrane cijene')
+            ->modalDescription('Upisuje nabavna × marža × PDV u redovnu cijenu. Preskaču se zaključane cijene, setovi i eLine.')
+            ->deselectRecordsAfterCompletion()
+            ->action(function (Collection $records): void {
+                $updated = app(ProductPriceRecalculator::class)->forProductIds(
+                    $records->pluck('id')->all(),
+                );
+
+                Notification::make()
+                    ->title('Cijene preračunate')
+                    ->body("Ažurirano {$updated} proizvoda.")
+                    ->success()
+                    ->send();
+            });
     }
 
     protected static function makeReassignCategoryBulkAction(): Tables\Actions\BulkAction

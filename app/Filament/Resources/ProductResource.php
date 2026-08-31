@@ -15,6 +15,7 @@ use App\Filament\Support\OptimizedMediaUpload;
 use App\Services\Catalog\ProductGratisService;
 use App\Services\Catalog\ProductSetService;
 use App\Services\Pricing\PriceCalculator;
+use App\Services\Pricing\ProductPriceRecalculator;
 use App\Services\Pricing\ProductSalePriceService;
 use App\Support\PublicStorageUrl;
 use Filament\Forms;
@@ -406,11 +407,26 @@ class ProductResource extends Resource
                                         $formatted = number_format($calculated, 2, '.', '').' KM';
 
                                         if (round($stored, 2) !== round($calculated, 2)) {
-                                            return $formatted.' — nije upisano u redovnu cijenu ('.$stored.' KM). Pokrenite preračun.';
+                                            return new HtmlString(
+                                                '<span class="text-warning-600 dark:text-warning-400">'
+                                                .e($formatted)
+                                                .' — nije upisano u redovnu cijenu ('
+                                                .e(number_format($stored, 2, '.', ''))
+                                                .' KM). Kliknite <strong>Preračunaj cijenu</strong> gore desno.'
+                                                .'</span>'
+                                            );
                                         }
 
                                         return $formatted;
                                     }),
+                                Forms\Components\TextInput::make('calculated_price')
+                                    ->label('Izračunata cijena (spremljena)')
+                                    ->numeric()
+                                    ->prefix('KM')
+                                    ->disabled()
+                                    ->dehydrated(false)
+                                    ->helperText('Nabavna × marža × PDV, zaokruženo na cijeli KM. Preračun upisuje ovu vrijednost u redovnu cijenu ako cijena nije zaključana.')
+                                    ->visible(fn (): bool => auth()->user()?->can('view_margin') ?? false),
                                 Forms\Components\Select::make('preferred_supplier_id')
                                     ->label('Preferirani dobavljač')
                                     ->options(function (?Product $record): array {
@@ -672,6 +688,12 @@ class ProductResource extends Resource
                     ->label('Cijena')
                     ->money('BAM')
                     ->sortable(),
+                Tables\Columns\TextColumn::make('calculated_price')
+                    ->label('Izračunata')
+                    ->money('BAM')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->visible(fn (): bool => auth()->user()?->can('view_margin') ?? false),
                 Tables\Columns\TextColumn::make('display_price')
                     ->label('Finalna cijena')
                     ->money('BAM')
@@ -777,6 +799,17 @@ class ProductResource extends Resource
                         ->where(fn (Builder $inner) => $inner
                             ->whereNull('ends_at')
                             ->orWhere('ends_at', '>=', now())))),
+                Filter::make('price_mismatch')
+                    ->label('Cijena nije usklađena')
+                    ->query(fn (Builder $query): Builder => $query
+                        ->where('price_locked', false)
+                        ->where('is_set', false)
+                        ->notFromEline()
+                        ->where(function (Builder $inner): void {
+                            $inner
+                                ->whereNull('calculated_price')
+                                ->orWhereRaw('ROUND(COALESCE(regular_price, 0), 2) <> ROUND(calculated_price, 2)');
+                        })),
                 SelectFilter::make('supplier')
                     ->label('Dobavljač')
                     ->options(fn (): array => Supplier::query()
@@ -798,6 +831,24 @@ class ProductResource extends Resource
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\Action::make('recalculatePrice')
+                    ->label('Preračunaj cijenu')
+                    ->icon('heroicon-o-calculator')
+                    ->requiresConfirmation()
+                    ->modalHeading('Preračunaj cijenu')
+                    ->modalDescription('Upisuje nabavna × marža × PDV u izračunatu i redovnu cijenu. Zaključane cijene se ne prepisuju.')
+                    ->visible(fn (Product $record): bool => ! $record->isSet() && ! $record->isFromEline())
+                    ->action(function (Product $record): void {
+                        app(ProductPriceRecalculator::class)->forProduct($record);
+
+                        $fresh = $record->fresh();
+
+                        \Filament\Notifications\Notification::make()
+                            ->title('Cijena preračunata')
+                            ->body('Redovna cijena: '.number_format((float) $fresh->regular_price, 2, '.', '').' KM')
+                            ->success()
+                            ->send();
+                    }),
                 Tables\Actions\Action::make('togglePublic')
                     ->label(fn (Product $record) => $record->is_public ? 'Sakrij' : 'Prikaži')
                     ->icon('heroicon-o-eye')

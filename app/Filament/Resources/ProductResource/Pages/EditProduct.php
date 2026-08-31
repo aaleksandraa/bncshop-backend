@@ -10,6 +10,7 @@ use App\Services\Pricing\ProductPriceRecalculator;
 use App\Services\Pricing\ProductSalePriceService;
 use App\Services\Sync\FieldLockService;
 use Filament\Actions;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 
 class EditProduct extends EditRecord
@@ -23,6 +24,29 @@ class EditProduct extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            Actions\Action::make('recalculatePrice')
+                ->label('Preračunaj cijenu')
+                ->icon('heroicon-o-calculator')
+                ->color('warning')
+                ->requiresConfirmation()
+                ->modalHeading('Preračunaj cijenu')
+                ->modalDescription(fn (): string => $this->record->price_locked
+                    ? 'Cijena je zaključana. Preračun ažurira izračunatu cijenu, ali ne dira redovnu/ručnu cijenu.'
+                    : 'Upisuje nabavna × marža × PDV u izračunatu i redovnu cijenu (zaokruženo na cijeli KM).')
+                ->visible(fn (): bool => $this->record !== null
+                    && ! $this->record->isSet()
+                    && ! $this->record->isFromEline())
+                ->action(function (): void {
+                    app(ProductPriceRecalculator::class)->forProduct($this->record);
+                    $this->record->refresh();
+                    $this->fillForm();
+
+                    Notification::make()
+                        ->title('Cijena preračunata')
+                        ->body('Redovna cijena: '.number_format((float) $this->record->regular_price, 2, '.', '').' KM. Izračunata: '.number_format((float) $this->record->calculated_price, 2, '.', '').' KM.')
+                        ->success()
+                        ->send();
+                }),
             Actions\DeleteAction::make(),
         ];
     }

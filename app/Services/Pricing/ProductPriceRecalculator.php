@@ -120,6 +120,75 @@ class ProductPriceRecalculator
     }
 
     /**
+     * @param  array<int, int>  $productIds
+     */
+    public function forProductIds(array $productIds): int
+    {
+        $ids = array_values(array_unique(array_filter(array_map('intval', $productIds))));
+
+        if ($ids === []) {
+            return 0;
+        }
+
+        $count = 0;
+
+        Product::query()
+            ->whereIn('id', $ids)
+            ->where('price_locked', false)
+            ->notFromEline()
+            ->where('is_set', false)
+            ->with(['supplierOffers.supplier', 'category'])
+            ->orderBy('id')
+            ->each(function (Product $product) use (&$count): void {
+                try {
+                    $this->priceCalculator->recalculateAndPersist($product);
+                    $count++;
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning('Product price recalculation failed.', [
+                        'product_id' => $product->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            });
+
+        $this->productReadCache->flushAll();
+
+        return $count;
+    }
+
+    public function forCatalogChunk(
+        int $afterProductId,
+        int $limit,
+        ?int &$lastProcessedId = null,
+    ): int {
+        $count = 0;
+        $lastProcessedId = $afterProductId;
+
+        Product::query()
+            ->notFromEline()
+            ->where('is_set', false)
+            ->where('products.id', '>', $afterProductId)
+            ->with(['supplierOffers.supplier', 'category'])
+            ->orderBy('products.id')
+            ->limit($limit)
+            ->get()
+            ->each(function (Product $product) use (&$count, &$lastProcessedId): void {
+                try {
+                    $this->priceCalculator->recalculateAndPersist($product);
+                    $lastProcessedId = $product->id;
+                    $count++;
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning('Product price recalculation failed.', [
+                        'product_id' => $product->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            });
+
+        return $count;
+    }
+
+    /**
      * @param  callable(int $count, int $lastProductId): void|null  $onProgress
      */
     public function forAll(?int $supplierId = null, ?int $categoryId = null, ?callable $onProgress = null): int

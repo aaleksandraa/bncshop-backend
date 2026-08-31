@@ -128,11 +128,16 @@ class PriceCalculator
         $this->productSalePriceService->syncDiscountValue($product);
         $this->productSalePriceService->deactivateUntilStockSalesIfOutOfStock($product->fresh() ?? $product);
 
-        $result = $this->calculate($product->fresh() ?? $product);
+        $fresh = $product->fresh() ?? $product;
+        $fresh->loadMissing(['supplierOffers.supplier', 'category']);
+        $formulaPricing = $this->resolveRegularPrice($fresh);
+        $result = $this->calculate($fresh);
+        $formulaPrice = round((float) $formulaPricing['regular_price'], 2);
 
         $updates = [
             'display_price' => $result->displayPrice,
             'on_sale' => $result->onSale,
+            'calculated_price' => $formulaPrice > 0 ? $formulaPrice : null,
         ];
 
         if (! $product->price_locked) {

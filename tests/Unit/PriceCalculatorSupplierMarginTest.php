@@ -309,6 +309,7 @@ class PriceCalculatorSupplierMarginTest extends TestCase
 
         $this->assertSame(22.0, (float) $product->fresh()->margin_percentage);
         $this->assertSame(1284.0, (float) $product->fresh()->regular_price);
+        $this->assertSame(1284.0, (float) $product->fresh()->calculated_price);
     }
 
     public function test_recalculate_does_not_overwrite_locked_product_margin(): void
@@ -349,6 +350,50 @@ class PriceCalculatorSupplierMarginTest extends TestCase
         app(PriceCalculator::class)->recalculateAndPersist($product->fresh(['supplierOffers.supplier', 'category']));
 
         $this->assertSame(40.0, (float) $product->fresh()->margin_percentage);
+        $this->assertSame(1473.0, (float) $product->fresh()->calculated_price);
+        $this->assertSame(1473.0, (float) $product->fresh()->regular_price);
+    }
+
+    public function test_recalculate_keeps_locked_regular_price_but_stores_formula(): void
+    {
+        $category = Category::factory()->create([
+            'margin_percentage' => 22,
+        ]);
+        $supplier = Supplier::query()->create([
+            'external_supplier_id' => 'supplier-lock-price',
+            'name' => 'asbis',
+            'display_name' => 'Asbis',
+            'code' => 'asbis-lock-price',
+        ]);
+
+        $product = Product::query()->create([
+            'external_product_id' => 'prod-lock-price',
+            'name' => 'Zaključana cijena',
+            'slug' => 'zakljucana-cijena',
+            'status' => 'active',
+            'is_public' => true,
+            'category_id' => $category->id,
+            'api_price' => 1289,
+            'regular_price' => 999,
+            'price_locked' => true,
+            'manual_price' => 999,
+        ]);
+
+        ProductSupplierOffer::query()->create([
+            'product_id' => $product->id,
+            'supplier_id' => $supplier->id,
+            'supplier_sku' => 'AS-LOCK-PRICE',
+            'supplier_price' => 899,
+            'supplier_stock' => 3,
+            'is_selected_price_source' => true,
+        ]);
+
+        app(PriceCalculator::class)->recalculateAndPersist($product->fresh(['supplierOffers.supplier', 'category']));
+
+        $fresh = $product->fresh();
+
+        $this->assertSame(999.0, (float) $fresh->regular_price);
+        $this->assertSame(1284.0, (float) $fresh->calculated_price);
     }
 
     public function test_eline_products_keep_api_price_instead_of_wholesale_margin(): void

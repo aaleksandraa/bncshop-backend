@@ -16,6 +16,7 @@ class RecalculateProductPricesCommand extends Command
                             {--supplier= : Supplier ID}
                             {--category= : Category ID}
                             {--product= : Product ID or slug (single product, for a quick check)}
+                            {--queue : Dispatch background jobs instead of running now}
                             {--dry-run : Compare stored vs calculated prices without writing}';
 
     protected $description = 'Recalculate product prices using supplier wholesale prices and margin rules';
@@ -38,6 +39,10 @@ class RecalculateProductPricesCommand extends Command
             return $this->reportMismatches($calculator, $startedAt);
         }
 
+        if ($this->option('queue')) {
+            return $this->queueRecalculation();
+        }
+
         $supplierId = $this->option('supplier') !== null ? (int) $this->option('supplier') : null;
         $categoryId = $this->option('category') !== null ? (int) $this->option('category') : null;
 
@@ -53,6 +58,20 @@ class RecalculateProductPricesCommand extends Command
 
         $elapsed = number_format(microtime(true) - $startedAt, 1, '.', '');
         $this->logLine("Recalculated {$count} products in {$elapsed}s.");
+
+        return self::SUCCESS;
+    }
+
+    private function queueRecalculation(): int
+    {
+        if ($this->option('supplier') !== null || $this->option('category') !== null) {
+            $this->error('--queue currently recalculates the full catalog. Omit --supplier/--category, or run without --queue.');
+
+            return self::FAILURE;
+        }
+
+        $chunks = \App\Jobs\RecalculateAllProductPricesJob::start();
+        $this->logLine("Queued {$chunks} background chunks for catalog price recalculation.");
 
         return self::SUCCESS;
     }
