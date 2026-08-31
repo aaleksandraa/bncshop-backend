@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class ApiSource extends Model
 {
     /** @var list<string> */
-    public const NON_INTEGRATION_IMPORT_TARGET_CODES = ['eline', 'olx'];
+    public const NON_INTEGRATION_IMPORT_TARGET_CODES = ['eline', 'olx', 'ananas'];
 
     protected $fillable = [
         'name',

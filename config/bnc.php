@@ -149,6 +149,33 @@ return [
     'olx_default_location_lat' => env('OLX_DEFAULT_LOCATION_LAT', '43.85547203690044'),
     'olx_default_location_lon' => env('OLX_DEFAULT_LOCATION_LON', '18.408615515357727'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Ananas Merchant API (Phase 1A — read-only client)
+    |--------------------------------------------------------------------------
+    */
+    'ananas_env' => env('ANANAS_ENV', 'stage'),
+    'ananas_client_id' => env('ANANAS_CLIENT_ID'),
+    'ananas_client_secret' => env('ANANAS_CLIENT_SECRET'),
+    'ananas_allow_catalog_writes' => filter_var(env('ANANAS_ALLOW_CATALOG_WRITES', false), FILTER_VALIDATE_BOOL),
+    'ananas_api_timeout' => (int) env('ANANAS_API_TIMEOUT', 60),
+    'ananas_api_retries' => (int) env('ANANAS_API_RETRIES', 3),
+    'ananas_api_verify_ssl' => env('ANANAS_API_VERIFY_SSL', true),
+    'ananas_token_cache_safety_seconds' => (int) env('ANANAS_TOKEN_CACHE_SAFETY_SECONDS', 120),
+    'ananas_api_max_429_retries' => (int) env('ANANAS_API_MAX_429_RETRIES', 3),
+    'ananas_429_backoff_base_ms' => (int) env('ANANAS_429_BACKOFF_BASE_MS', 1000),
+    'ananas_429_backoff_jitter_ms' => (int) env('ANANAS_429_BACKOFF_JITTER_MS', 250),
+    'ananas_rate_limit_products_rps' => (int) env('ANANAS_RATE_LIMIT_PRODUCTS_RPS', 5),
+    'ananas_rate_limit_products_rpm' => (int) env('ANANAS_RATE_LIMIT_PRODUCTS_RPM', 60),
+    'ananas_rate_limit_warehouses_rps' => (int) env('ANANAS_RATE_LIMIT_WAREHOUSES_RPS', 5),
+    'ananas_rate_limit_warehouses_rpm' => (int) env('ANANAS_RATE_LIMIT_WAREHOUSES_RPM', 300),
+    'ananas_stage_iam_base_url' => env('ANANAS_STAGE_IAM_BASE_URL', 'https://api.qa2.ananastest.com'),
+    'ananas_stage_product_base_url' => env('ANANAS_STAGE_PRODUCT_BASE_URL', 'https://api.qa2.ananastest.com'),
+    'ananas_stage_svc_base_url' => env('ANANAS_STAGE_SVC_BASE_URL', 'https://api.svc.qa2.ananastest.com'),
+    'ananas_production_iam_base_url' => env('ANANAS_PRODUCTION_IAM_BASE_URL', 'https://api.ananas.rs'),
+    'ananas_production_product_base_url' => env('ANANAS_PRODUCTION_PRODUCT_BASE_URL', 'https://api.ananas.rs'),
+    'ananas_production_svc_base_url' => env('ANANAS_PRODUCTION_SVC_BASE_URL', 'https://api.svc.ananas.rs'),
+
     'product_image_download_timeout' => (int) env('BNC_PRODUCT_IMAGE_DOWNLOAD_TIMEOUT', 30),
     'product_image_verify_ssl' => env('BNC_PRODUCT_IMAGE_VERIFY_SSL', env('A1_API_VERIFY_SSL', true)),
     'product_image_download_on_import' => env('BNC_PRODUCT_IMAGE_DOWNLOAD_ON_IMPORT', true),
