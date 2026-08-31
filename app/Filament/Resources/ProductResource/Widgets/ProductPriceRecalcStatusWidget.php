@@ -21,21 +21,22 @@ class ProductPriceRecalcStatusWidget extends BaseWidget
             ? (int) round(($status['done'] / $status['total']) * 100)
             : 100;
 
-        $queueDescription = $status['in_progress']
-            ? 'Preračun je u toku'
-            : ($status['stalled']
-                ? 'Nije u toku — ponovo kliknite Preračunaj sve cijene'
-                : 'Red čekanja je prazan');
+        $queueDescription = match (true) {
+            $status['queue_storm'] => 'Cijeli default red, ne broj proizvoda. Raste zbog preklapanja — nemojte ponovo pokretati.',
+            $status['in_progress'] => 'Cijeli default red (cijene + ostali jobovi), ne broj proizvoda',
+            $status['stalled'] => 'Red je prazan. Ako izračunata cijena još nije upisana, pokrenite preračun jednom.',
+            default => 'Red čekanja je prazan',
+        };
 
         return [
             Stat::make('Preračunato', $status['done'].' / '.$status['total'])
-                ->description($percent.'% proizvoda ima spremljenu izračunatu cijenu')
+                ->description($percent.'% ima upisanu kolonu izračunate cijene')
                 ->color($status['pending'] === 0 ? 'success' : 'warning'),
-            Stat::make('U redu čekanja', (string) $status['queue_pending'])
+            Stat::make('Default queue', (string) $status['queue_pending'])
                 ->description($queueDescription)
-                ->color($status['in_progress'] ? 'info' : ($status['stalled'] ? 'danger' : 'success')),
+                ->color($status['queue_storm'] ? 'danger' : ($status['in_progress'] ? 'info' : ($status['stalled'] ? 'warning' : 'success'))),
             Stat::make('Stvarna razlika', (string) $status['mismatch'])
-                ->description('Redovna ≠ izračunata, nakon što je preračun već upisan')
+                ->description('Redovna ≠ izračunata, tek nakon što je kolona popunjena')
                 ->color($status['mismatch'] === 0 ? 'success' : 'danger'),
         ];
     }

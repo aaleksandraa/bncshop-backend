@@ -15,7 +15,8 @@ class ProductPriceRecalcStatus
      *     mismatch: int,
      *     queue_pending: int,
      *     in_progress: bool,
-     *     stalled: bool
+     *     stalled: bool,
+     *     queue_storm: bool
      * }
      */
     public function snapshot(): array
@@ -38,7 +39,8 @@ class ProductPriceRecalcStatus
             'pending' => $pending,
             'mismatch' => $mismatch,
             'queue_pending' => $queuePending,
-            'in_progress' => $queuePending > 0,
+            'queue_storm' => $queuePending > 500,
+            'in_progress' => $queuePending > 0 && $queuePending <= 500,
             'stalled' => $pending > 0 && $queuePending === 0,
         ];
     }

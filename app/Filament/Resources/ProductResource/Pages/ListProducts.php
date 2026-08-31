@@ -35,8 +35,21 @@ class ListProducts extends ListRecords
                 ->color('warning')
                 ->requiresConfirmation()
                 ->modalHeading('Preračun svih cijena')
-                ->modalDescription('U red čekanja se šalje preračun nabavna × marža × PDV. Nezaključane redovne cijene se prepisuju. Status iznad liste se osvježava svakih 10 sekundi. Queue worker mora biti aktivan.')
+                ->disabled(fn (): bool => app(ProductPriceRecalcStatus::class)->snapshot()['queue_storm'])
+                ->modalDescription('U red ide jedan lanac batch-eva po 100 proizvoda. Nezaključane redovne cijene se prepisuju. Status iznad liste nije broj proizvoda u queue-u. Queue worker mora biti aktivan.')
                 ->action(function (): void {
+                    $status = app(ProductPriceRecalcStatus::class)->snapshot();
+
+                    if ($status['queue_storm']) {
+                        Notification::make()
+                            ->title('Preračun nije pokrenut')
+                            ->body('Default queue je prepun. Sačekajte da se isprazni, nemojte ponovo klikati.')
+                            ->danger()
+                            ->send();
+
+                        return;
+                    }
+
                     $chunks = RecalculateAllProductPricesJob::start();
                     $status = app(ProductPriceRecalcStatus::class)->snapshot();
 

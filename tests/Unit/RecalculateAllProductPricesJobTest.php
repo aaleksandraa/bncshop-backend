@@ -85,7 +85,10 @@ class RecalculateAllProductPricesJobTest extends TestCase
 
         $this->assertSame(2, $dispatched);
         Queue::assertPushed(RecalculateAllProductPricesJob::class, 1);
-        Queue::assertPushed(RecalculateAllProductPricesJob::class, fn (RecalculateAllProductPricesJob $job): bool => $job->afterProductId === 0);
+        Queue::assertPushed(
+            RecalculateAllProductPricesJob::class,
+            fn (RecalculateAllProductPricesJob $job): bool => $job->afterProductId === 0 && $job->chainNext === true,
+        );
     }
 
     public function test_handle_queues_the_next_chunk_when_products_remain(): void
@@ -107,7 +110,7 @@ class RecalculateAllProductPricesJobTest extends TestCase
             ]);
         }
 
-        (new RecalculateAllProductPricesJob(0))->handle(
+        (new RecalculateAllProductPricesJob(0, false, true))->handle(
             app(ProductPriceRecalculator::class),
             app(\App\Services\Catalog\ProductReadCache::class),
         );
@@ -115,8 +118,35 @@ class RecalculateAllProductPricesJobTest extends TestCase
         Queue::assertPushed(RecalculateAllProductPricesJob::class, 1);
         Queue::assertPushed(
             RecalculateAllProductPricesJob::class,
-            fn (RecalculateAllProductPricesJob $job): bool => $job->afterProductId > 0,
+            fn (RecalculateAllProductPricesJob $job): bool => $job->afterProductId > 0 && $job->chainNext === true,
         );
+    }
+
+    public function test_legacy_chunk_job_does_not_chain_the_next_batch(): void
+    {
+        Queue::fake();
+
+        $category = Category::factory()->create();
+
+        for ($i = 1; $i <= RecalculateAllProductPricesJob::CHUNK_SIZE + 1; $i++) {
+            Product::query()->create([
+                'external_product_id' => "prod-catalog-legacy-{$i}",
+                'name' => "Proizvod legacy {$i}",
+                'slug' => "proizvod-catalog-legacy-{$i}",
+                'status' => 'active',
+                'is_public' => true,
+                'category_id' => $category->id,
+                'regular_price' => 100,
+                'display_price' => 100,
+            ]);
+        }
+
+        (new RecalculateAllProductPricesJob(0, false, false))->handle(
+            app(ProductPriceRecalculator::class),
+            app(\App\Services\Catalog\ProductReadCache::class),
+        );
+
+        Queue::assertNotPushed(RecalculateAllProductPricesJob::class);
     }
 
     public function test_start_dispatches_nothing_when_no_products(): void

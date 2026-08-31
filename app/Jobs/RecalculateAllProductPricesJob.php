@@ -25,13 +25,14 @@ class RecalculateAllProductPricesJob implements ShouldBeUnique, ShouldQueue
     public function __construct(
         public int $afterProductId = 0,
         public bool $flushCacheAfter = false,
+        public bool $chainNext = false,
     ) {
         $this->onQueue('default');
     }
 
     public function uniqueId(): string
     {
-        return "catalog-price-recalc:{$this->afterProductId}";
+        return "catalog-price-recalc:{$this->afterProductId}:".($this->chainNext ? 'chain' : 'once');
     }
 
     public static function start(): int
@@ -42,7 +43,7 @@ class RecalculateAllProductPricesJob implements ShouldBeUnique, ShouldQueue
             return 0;
         }
 
-        self::dispatch(0);
+        self::dispatch(0, false, true);
 
         $chunks = (int) ceil($remaining / self::CHUNK_SIZE);
 
@@ -67,23 +68,29 @@ class RecalculateAllProductPricesJob implements ShouldBeUnique, ShouldQueue
             'chunk_processed' => $processed,
             'after_product_id' => $this->afterProductId,
             'last_processed_product_id' => $lastProcessedId,
+            'chain_next' => $this->chainNext,
         ]);
 
-        if ($lastProcessedId > $this->afterProductId
+        if (
+            $this->chainNext
+            && $lastProcessedId > $this->afterProductId
             && self::catalogQuery()->where('products.id', '>', $lastProcessedId)->exists()
         ) {
-            self::dispatch($lastProcessedId);
+            self::dispatch($lastProcessedId, false, true);
 
             return;
         }
 
-        $productReadCache->flushAll();
+        if ($this->flushCacheAfter || $this->chainNext) {
+            $productReadCache->flushAll();
+        }
     }
 
     public function failed(?\Throwable $exception): void
     {
         Log::error('Catalog product price recalculation chunk failed.', [
             'after_product_id' => $this->afterProductId,
+            'chain_next' => $this->chainNext,
             'error' => $exception?->getMessage(),
         ]);
     }
