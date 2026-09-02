@@ -45,19 +45,30 @@ class AnanasApiClient
             throw new RuntimeException('Ananas credentials are not configured. Set ANANAS_CLIENT_ID and ANANAS_CLIENT_SECRET in .env.');
         }
 
-        $response = $this->baseRequest($this->settings->iamBaseUrl())
-            ->post('/iam/api/v1/auth/token', [
-                'grantType' => 'CLIENT_CREDENTIALS',
-                'clientId' => $clientId,
-                'clientSecret' => $clientSecret,
-                'scope' => self::TOKEN_SCOPE,
-            ]);
+        $tokenUrl = $this->settings->tokenEndpointUrl();
+
+        try {
+            $response = $this->authRequest()
+                ->post($tokenUrl, [
+                    'grantType' => 'CLIENT_CREDENTIALS',
+                    'clientId' => $clientId,
+                    'clientSecret' => $clientSecret,
+                    'scope' => self::TOKEN_SCOPE,
+                ]);
+        } catch (RequestException $exception) {
+            $response = $exception->response;
+
+            if ($response === null) {
+                throw $exception;
+            }
+        }
 
         if (! $response->successful()) {
-            $this->logApiError('POST', '/iam/api/v1/auth/token', $response);
+            $this->logApiError('POST', $tokenUrl, $response);
 
             throw new RuntimeException(sprintf(
-                'Ananas authentication failed: HTTP %s',
+                'Ananas authentication failed: POST %s returned HTTP %s',
+                $tokenUrl,
                 $response->status(),
             ));
         }
@@ -258,6 +269,19 @@ class AnanasApiClient
 
             throw $exception;
         }
+    }
+
+    private function authRequest(): PendingRequest
+    {
+        $timeout = (int) config('bnc.ananas_api_timeout', 60);
+
+        return Http::timeout($timeout)
+            ->acceptJson()
+            ->asJson()
+            ->withOptions([
+                'http_errors' => false,
+                'verify' => (bool) config('bnc.ananas_api_verify_ssl', true),
+            ]);
     }
 
     private function baseRequest(string $baseUrl): PendingRequest

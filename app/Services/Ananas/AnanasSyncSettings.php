@@ -110,6 +110,15 @@ class AnanasSyncSettings
         return rtrim((string) config($key), '/');
     }
 
+    public function tokenEndpointUrl(): string
+    {
+        $key = $this->isStage()
+            ? 'bnc.ananas_stage_token_url'
+            : 'bnc.ananas_production_token_url';
+
+        return rtrim((string) config($key), '/');
+    }
+
     public function productBaseUrl(): string
     {
         $key = $this->isStage()
@@ -187,6 +196,7 @@ class AnanasSyncSettings
             'has_credentials' => $this->hasCredentials(),
             'credentials_source' => $this->apiSource()?->username ? 'admin' : (config('bnc.ananas_client_id') ? 'env' : 'none'),
             'iam_base_url' => $this->iamBaseUrl(),
+            'token_endpoint_url' => $this->tokenEndpointUrl(),
             'product_base_url' => $this->productBaseUrl(),
             'svc_base_url' => $this->svcBaseUrl(),
         ];

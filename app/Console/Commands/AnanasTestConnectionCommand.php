@@ -26,7 +26,7 @@ class AnanasTestConnectionCommand extends Command
                 'Testing Ananas connection (%s environment).',
                 $settings->environment(),
             ));
-            $this->line('IAM: '.$settings->iamBaseUrl());
+            $this->line('Token endpoint (POST): '.$settings->tokenEndpointUrl());
             $this->line('Product API: '.$settings->productBaseUrl());
             $this->line('Svc API: '.$settings->svcBaseUrl());
             $this->line('Catalog writes: '.($settings->allowCatalogWrites() ? 'enabled' : 'disabled'));

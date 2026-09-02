@@ -236,6 +236,7 @@ class AnanasApiClientTest extends TestCase
 
         $this->assertTrue($settings->isStage());
         $this->assertSame('https://api.qa2.ananastest.com', $settings->iamBaseUrl());
+        $this->assertSame('https://api.qa2.ananastest.com/iam/api/v1/auth/token', $settings->tokenEndpointUrl());
         $this->assertSame('https://api.svc.qa2.ananastest.com', $settings->svcBaseUrl());
         $this->assertFalse($settings->allowCatalogWrites());
     }

@@ -170,9 +170,11 @@ return [
     'ananas_rate_limit_warehouses_rps' => (int) env('ANANAS_RATE_LIMIT_WAREHOUSES_RPS', 5),
     'ananas_rate_limit_warehouses_rpm' => (int) env('ANANAS_RATE_LIMIT_WAREHOUSES_RPM', 300),
     'ananas_stage_iam_base_url' => env('ANANAS_STAGE_IAM_BASE_URL', 'https://api.qa2.ananastest.com'),
+    'ananas_stage_token_url' => env('ANANAS_STAGE_TOKEN_URL', 'https://api.qa2.ananastest.com/iam/api/v1/auth/token'),
     'ananas_stage_product_base_url' => env('ANANAS_STAGE_PRODUCT_BASE_URL', 'https://api.qa2.ananastest.com'),
     'ananas_stage_svc_base_url' => env('ANANAS_STAGE_SVC_BASE_URL', 'https://api.svc.qa2.ananastest.com'),
     'ananas_production_iam_base_url' => env('ANANAS_PRODUCTION_IAM_BASE_URL', 'https://api.ananas.rs'),
+    'ananas_production_token_url' => env('ANANAS_PRODUCTION_TOKEN_URL', 'https://api.ananas.rs/iam/api/v1/auth/token'),
     'ananas_production_product_base_url' => env('ANANAS_PRODUCTION_PRODUCT_BASE_URL', 'https://api.ananas.rs'),
     'ananas_production_svc_base_url' => env('ANANAS_PRODUCTION_SVC_BASE_URL', 'https://api.svc.ananas.rs'),
 
