@@ -102,7 +102,7 @@ trait BuildsB2bProductAttributeFields
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
-    protected static function stripAttributeFields(array $data): array
+    public static function stripAttributeFields(array $data): array
     {
         return collect($data)
             ->reject(fn ($value, string $key): bool => str_starts_with($key, 'attr_'))
@@ -113,7 +113,7 @@ trait BuildsB2bProductAttributeFields
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
-    protected static function extractAttributeFields(array $data): array
+    public static function extractAttributeFields(array $data): array
     {
         return collect($data)
             ->filter(fn ($value, string $key): bool => str_starts_with($key, 'attr_'))
