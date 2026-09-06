@@ -118,14 +118,26 @@ class TrackingSettingsPage extends Page implements HasForms
                     ])
                     ->columns(2),
                 Section::make('Meta Product Catalog (Facebook Shop)')
-                    ->description('Za Commerce Manager koristite CSV feed (preporučeno) + Pixel microdata na stranicama proizvoda. Feed učitajte u Catalog → Data sources → Add products → Data feed.')
+                    ->description('CSV feed za Commerce Manager. Uključene su samo glavne kategorije (računari, laptopi, monitori, miševi, tastature, klime…). Periferija tipa zaštitna stakla se filtrira po ključnim riječima u nazivu.')
                     ->schema([
                         Placeholder::make('meta_catalog_feed_url')
                             ->label('CSV feed URL')
                             ->content(fn (): string => $this->metaCatalogFeedUrl),
+                        Textarea::make('fb_catalog_include_category_slugs')
+                            ->label('Uključi kategorije (full_slug, jedan po liniji)')
+                            ->rows(8)
+                            ->helperText('Prazno = default iz config/bnc.php (računari, laptopi, monitori, miševi, tastature, klime, printeri). Primjer: it-oprema/laptopi'),
+                        Textarea::make('fb_catalog_exclude_category_slugs')
+                            ->label('Isključi kategorije (full_slug, jedan po liniji)')
+                            ->rows(4)
+                            ->helperText('Opcionalno. Npr. telefonija, it-oprema/periferija/mobiteli-dodaci'),
+                        Textarea::make('fb_catalog_exclude_name_keywords')
+                            ->label('Isključi proizvode po riječima u nazivu')
+                            ->rows(4)
+                            ->helperText('Dodatno na default: zaštitno staklo, folija, maskica… (neovisno o kategoriji).'),
                         Placeholder::make('meta_catalog_setup')
                             ->label('Koraci u Commerce Manager')
-                            ->content("1. Catalog → Data sources → + Add → Data feed (CSV)\n2. Scheduled feed → URL iznad\n3. Currency: BAM, trusted domain: bnc.ba\n4. Dodajte Pixel kao secondary source (Dataset 786294308773690)\n5. Pokrenite: php artisan meta:diagnose na serveru"),
+                            ->content("1. Catalog → Data sources → + Add → Data feed (CSV)\n2. Scheduled feed → URL iznad\n3. Currency: BAM, trusted domain: bnc.ba\n4. Dodajte Pixel kao secondary source (Dataset 786294308773690)\n5. php artisan meta:catalog-stats — broj proizvoda u feedu\n6. php artisan meta:diagnose — CAPI test"),
                     ])
                     ->columns(1),
             ])

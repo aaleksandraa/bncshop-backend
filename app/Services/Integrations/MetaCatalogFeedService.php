@@ -3,6 +3,7 @@
 namespace App\Services\Integrations;
 
 use App\Models\Product;
+use App\Support\PublicStorageUrl;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\LazyCollection;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -11,6 +12,7 @@ class MetaCatalogFeedService
 {
     public function __construct(
         private readonly TrackingSettings $trackingSettings,
+        private readonly MetaCatalogFeedPolicy $feedPolicy,
     ) {}
 
     public function isAuthorized(?string $token): bool
@@ -72,6 +74,20 @@ class MetaCatalogFeedService
         ]);
     }
 
+    public function resolvePublicImageUrl(Product $product): ?string
+    {
+        $image = $product->defaultImage;
+        if ($image !== null) {
+            $url = $image->resolvedUrl();
+
+            return $this->absoluteHttpsImageUrl($url);
+        }
+
+        $apiUrl = trim((string) ($product->api_default_image_url ?? ''));
+
+        return $this->absoluteHttpsImageUrl($apiUrl !== '' ? $apiUrl : null);
+    }
+
     /**
      * @return LazyCollection<int, list<string|null>>
      */
@@ -79,19 +95,28 @@ class MetaCatalogFeedService
     {
         $frontendUrl = $this->frontendUrl();
 
-        return Product::query()
+        $query = Product::query()
             ->public()
             ->active()
             ->where('display_price', '>', 0)
-            ->where(function (Builder $query): void {
-                $query
+            ->where(function (Builder $builder): void {
+                $builder
                     ->whereNotNull('default_image_id')
                     ->orWhereNotNull('api_default_image_url');
             })
             ->with(['defaultImage', 'manufacturer', 'category'])
-            ->orderBy('id')
+            ->orderBy('id');
+
+        $this->feedPolicy->applyToQuery($query);
+
+        return $query
             ->cursor()
-            ->map(function (Product $product) use ($frontendUrl): array {
+            ->map(function (Product $product) use ($frontendUrl): ?array {
+                $imageUrl = $this->resolvePublicImageUrl($product);
+                if ($imageUrl === null) {
+                    return null;
+                }
+
                 $description = trim(strip_tags((string) ($product->short_description ?: $product->description ?: $product->name)));
                 $description = preg_replace('/\s+/', ' ', $description) ?? $description;
                 $description = mb_substr($description, 0, 4999);
@@ -101,28 +126,30 @@ class MetaCatalogFeedService
                     mb_substr((string) $product->name, 0, 200),
                     $description,
                     $product->available_stock > 0 ? 'in stock' : 'out of stock',
-                    'new',
+                    $this->feedPolicy->resolveCondition($product),
                     number_format((float) $product->display_price, 2, '.', '').' BAM',
                     $frontendUrl.'/proizvod/'.$product->slug,
-                    $this->resolveImageUrl($product),
+                    $imageUrl,
                     $product->manufacturer?->name,
                     $product->category?->name,
                 ];
-            });
+            })
+            ->filter(static fn (?array $row): bool => $row !== null);
     }
 
-    private function resolveImageUrl(Product $product): ?string
+    private function absoluteHttpsImageUrl(?string $url): ?string
     {
-        $image = $product->defaultImage;
-        if ($image !== null) {
-            $url = $image->resolvedUrl();
+        $absolute = PublicStorageUrl::absoluteFromResolved($url);
 
-            return filled($url) ? (string) $url : null;
+        if (! is_string($absolute) || $absolute === '') {
+            return null;
         }
 
-        $apiUrl = trim((string) ($product->api_default_image_url ?? ''));
+        if (! str_starts_with($absolute, 'https://')) {
+            return null;
+        }
 
-        return $apiUrl !== '' ? $apiUrl : null;
+        return $absolute;
     }
 
     private function frontendUrl(): string

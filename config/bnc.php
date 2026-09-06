@@ -59,6 +59,32 @@ return [
     'meta_internal_key' => env('META_INTERNAL_KEY'),
 
     /*
+    | Meta Product Catalog CSV feed — category whitelist and name exclusions.
+    | Override per environment in admin (Tracking → Meta catalog) or via env lists.
+    */
+    'meta_catalog' => [
+        'default_include_category_slugs' => env('META_CATALOG_INCLUDE_CATEGORY_SLUGS', implode("\n", [
+            'it-oprema/racunari',
+            'it-oprema/laptopi',
+            'it-oprema/periferija/monitori',
+            'it-oprema/periferija/misevi',
+            'it-oprema/periferija/tastature',
+            'klima-grijanje',
+            'print-kancelarija/printeri',
+        ])),
+        'default_exclude_name_keywords' => env('META_CATALOG_EXCLUDE_NAME_KEYWORDS', implode("\n", [
+            'zaštitno staklo',
+            'zastitno staklo',
+            'zaštitna folija',
+            'zastitna folija',
+            'screen protector',
+            'tempered glass',
+            'maskica za',
+            'kaljeno staklo',
+        ])),
+    ],
+
+    /*
     | Legacy synced /storage/ files may live on a different host than APP_URL
     | (e.g. api.bncshop.ba while admin runs on api.bnc.ba). Used only by
     | PublicStorageUrl — never set Laravel's global asset_url to this value.

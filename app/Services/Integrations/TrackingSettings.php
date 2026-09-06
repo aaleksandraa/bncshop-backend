@@ -78,6 +78,14 @@ class TrackingSettings
             $data[$key] = $value;
         }
 
+        foreach (['fb_catalog_include_category_slugs', 'fb_catalog_exclude_category_slugs', 'fb_catalog_exclude_name_keywords'] as $key) {
+            if (! array_key_exists($key, $data)) {
+                continue;
+            }
+
+            $data[$key] = trim((string) $data[$key]);
+        }
+
         $merged = array_merge($this->all(), $data);
         if (trim((string) ($merged['fb_pixel_id'] ?? '')) === ''
             && trim((string) ($merged['fb_dataset_id'] ?? '')) !== '') {
@@ -114,6 +122,9 @@ class TrackingSettings
             'fb_test_event_code' => '',
             'fb_crm_name' => 'BNC Shop',
             'fb_catalog_feed_token' => '',
+            'fb_catalog_include_category_slugs' => '',
+            'fb_catalog_exclude_category_slugs' => '',
+            'fb_catalog_exclude_name_keywords' => '',
             'load_scripts_only_with_consent' => true,
         ];
     }
