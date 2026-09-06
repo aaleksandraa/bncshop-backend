@@ -125,7 +125,7 @@ class TrackingSettingsPage extends Page implements HasForms
                             ->content(fn (): string => $this->metaCatalogFeedUrl),
                         Placeholder::make('meta_catalog_setup')
                             ->label('Koraci u Commerce Manager')
-                            ->content("1. Catalog → Data sources → + Add → Data feed (CSV)\n2. Scheduled feed → URL iznad\n3. Currency: BAM, trusted domain: bncshop.ba\n4. Dodajte Pixel kao secondary source (Dataset 786294308773690)\n5. Pokrenite: php artisan meta:diagnose na serveru"),
+                            ->content("1. Catalog → Data sources → + Add → Data feed (CSV)\n2. Scheduled feed → URL iznad\n3. Currency: BAM, trusted domain: bnc.ba\n4. Dodajte Pixel kao secondary source (Dataset 786294308773690)\n5. Pokrenite: php artisan meta:diagnose na serveru"),
                     ])
                     ->columns(1),
             ])

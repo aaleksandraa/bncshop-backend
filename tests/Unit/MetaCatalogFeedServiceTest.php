@@ -24,7 +24,7 @@ class MetaCatalogFeedServiceTest extends TestCase
 
     public function test_feed_url_points_to_csv_endpoint(): void
     {
-        config(['bnc.frontend_url' => 'https://bncshop.ba']);
+        config(['bnc.frontend_url' => 'https://bnc.ba']);
 
         $service = app(MetaCatalogFeedService::class);
         $url = $service->feedUrl();

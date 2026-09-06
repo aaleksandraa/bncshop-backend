@@ -37,9 +37,7 @@ class MetaCatalogFeedService
 
     public function feedUrl(): string
     {
-        $frontendUrl = rtrim((string) config('bnc.frontend_url', 'https://bncshop.ba'), '/');
-
-        return $frontendUrl.'/backend-api/v1/feeds/meta-catalog.csv?token='.$this->feedToken();
+        return $this->frontendUrl().'/backend-api/v1/feeds/meta-catalog.csv?token='.$this->feedToken();
     }
 
     public function toStreamedResponse(): StreamedResponse
@@ -79,7 +77,7 @@ class MetaCatalogFeedService
      */
     private function productRows(): LazyCollection
     {
-        $frontendUrl = rtrim((string) config('bnc.frontend_url', 'https://bncshop.ba'), '/');
+        $frontendUrl = $this->frontendUrl();
 
         return Product::query()
             ->public()
@@ -125,5 +123,10 @@ class MetaCatalogFeedService
         $apiUrl = trim((string) ($product->api_default_image_url ?? ''));
 
         return $apiUrl !== '' ? $apiUrl : null;
+    }
+
+    private function frontendUrl(): string
+    {
+        return rtrim((string) config('bnc.frontend_url', 'https://bnc.ba'), '/');
     }
 }

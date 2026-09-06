@@ -51,7 +51,7 @@ class MetaDiagnoseCommand extends Command
                             'event_time' => time(),
                             'event_id' => 'diagnose-'.time(),
                             'action_source' => 'website',
-                            'event_source_url' => rtrim((string) config('bnc.frontend_url', 'https://bncshop.ba'), '/'),
+                            'event_source_url' => rtrim((string) config('bnc.frontend_url', 'https://bnc.ba'), '/'),
                         ]],
                     ],
                 )

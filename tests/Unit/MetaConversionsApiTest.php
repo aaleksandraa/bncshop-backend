@@ -123,7 +123,7 @@ class MetaConversionsApiTest extends TestCase
         $product = Product::factory()->create(['display_price' => 129.00]);
         app(MetaConversionsApi::class)->sendProductView(
             $product,
-            'https://bncshop.ba/proizvod/test',
+            'https://bnc.ba/proizvod/test',
             '127.0.0.1',
             'PHPUnit',
         );
