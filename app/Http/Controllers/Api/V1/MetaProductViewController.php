@@ -24,17 +24,27 @@ class MetaProductViewController extends Controller
         $validated = Validator::make($request->all(), [
             'product_id' => ['required', 'integer', 'exists:products,id'],
             'path' => ['nullable', 'string', 'max:500'],
+            'client_ip' => ['nullable', 'string', 'max:45'],
+            'client_user_agent' => ['nullable', 'string', 'max:1000'],
         ])->validate();
 
         $product = Product::query()->findOrFail((int) $validated['product_id']);
         $path = trim((string) ($validated['path'] ?? ''));
         $eventSourceUrl = $this->resolveEventSourceUrl($request, $path);
+        $internal = $this->isInternalRequest($request);
+
+        $clientIp = $internal && filled($validated['client_ip'] ?? null)
+            ? (string) $validated['client_ip']
+            : $request->ip();
+        $clientUserAgent = $internal && filled($validated['client_user_agent'] ?? null)
+            ? (string) $validated['client_user_agent']
+            : $request->userAgent();
 
         $api->sendProductView(
             $product,
             $eventSourceUrl,
-            $request->ip(),
-            $request->userAgent(),
+            $clientIp,
+            $clientUserAgent,
         );
 
         return $this->success(['sent' => true], status: 202);

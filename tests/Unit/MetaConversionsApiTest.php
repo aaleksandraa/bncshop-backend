@@ -138,6 +138,26 @@ class MetaConversionsApiTest extends TestCase
         });
     }
 
+    public function test_skips_product_view_without_user_agent(): void
+    {
+        Http::fake();
+
+        app(TrackingSettings::class)->save([
+            'fb_dataset_id' => '786294308773690',
+            'fb_access_token' => 'meta-token',
+        ]);
+
+        $product = Product::factory()->create();
+        app(MetaConversionsApi::class)->sendProductView(
+            $product,
+            'https://bnc.ba/proizvod/test',
+            '127.0.0.1',
+            null,
+        );
+
+        Http::assertNothingSent();
+    }
+
     public function test_meta_secrets_are_not_exposed_in_public_config(): void
     {
         app(TrackingSettings::class)->save([

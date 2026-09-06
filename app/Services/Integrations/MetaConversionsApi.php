@@ -99,6 +99,12 @@ class MetaConversionsApi
             return;
         }
 
+        if (! filled($userAgent)) {
+            Log::warning('Meta CAPI product view skipped: client_user_agent is required for website events.');
+
+            return;
+        }
+
         $contentId = $this->resolveProductContentId($product, $product->id);
         $eventId = 'view-'.$contentId.'-'.uniqid('', true);
 

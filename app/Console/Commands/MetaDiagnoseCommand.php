@@ -40,7 +40,7 @@ class MetaDiagnoseCommand extends Command
         }
 
         try {
-            Http::timeout(8)
+            $response = Http::timeout(8)
                 ->acceptJson()
                 ->asJson()
                 ->post(
@@ -52,16 +52,39 @@ class MetaDiagnoseCommand extends Command
                             'event_id' => 'diagnose-'.time(),
                             'action_source' => 'website',
                             'event_source_url' => rtrim((string) config('bnc.frontend_url', 'https://bnc.ba'), '/'),
+                            'user_data' => [
+                                'client_ip_address' => '127.0.0.1',
+                                'client_user_agent' => 'BNC-Meta-Diagnose/1.0 (server-side connectivity test)',
+                            ],
                         ]],
                     ],
-                )
-                ->throw();
+                );
+
+            if (! $response->successful()) {
+                $body = $response->json();
+                $metaMessage = is_array($body)
+                    ? ($body['error']['error_user_msg'] ?? $body['error']['message'] ?? null)
+                    : null;
+
+                $this->error('CAPI test failed: HTTP '.$response->status());
+                if (is_string($metaMessage) && $metaMessage !== '') {
+                    $this->line($metaMessage);
+                } else {
+                    $this->line($response->body());
+                }
+
+                return self::FAILURE;
+            }
 
             $this->info('CAPI test PageView sent successfully.');
         } catch (\Throwable $exception) {
             $this->error('CAPI test failed: '.$exception->getMessage());
 
             return self::FAILURE;
+        }
+
+        if ($pixelId === '' && $datasetId !== '') {
+            $this->warn('Tip: save tracking settings in admin once — Pixel ID will copy from Dataset ID for clarity.');
         }
 
         return self::SUCCESS;
