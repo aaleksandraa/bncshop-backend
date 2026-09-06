@@ -10,10 +10,13 @@ use Illuminate\Console\Command;
 class ReplayMetaPurchaseEventsCommand extends Command
 {
     protected $signature = 'meta:replay-purchases
-        {--hours=24 : Replay orders created in the last N hours}
-        {--order= : Replay a single order by order_number}';
+        {--order= : Replay a single order by order_number}
+        {--days=30 : Replay orders created in the last N days}
+        {--hours= : Replay orders created in the last N hours (overrides --days)}
+        {--all : Replay all orders regardless of age}
+        {--force : Skip confirmation when using --all}';
 
-    protected $description = 'Replay Meta CAPI Purchase events for recent orders';
+    protected $description = 'Replay Meta CAPI Purchase events for past orders';
 
     public function handle(MetaConversionsApi $api, TrackingSettings $trackingSettings): int
     {
@@ -24,14 +27,22 @@ class ReplayMetaPurchaseEventsCommand extends Command
         }
 
         $orderNumber = trim((string) $this->option('order'));
-
         $query = Order::query()->with('items')->latest('id');
 
         if ($orderNumber !== '') {
             $query->where('order_number', $orderNumber);
-        } else {
+        } elseif ($this->option('all')) {
+            if (! $this->option('force') && ! $this->confirm('Poslati Meta Purchase za SVE narudžbe u bazi?', false)) {
+                $this->warn('Prekinuto.');
+
+                return self::SUCCESS;
+            }
+        } elseif ($this->option('hours') !== null) {
             $hours = max(1, (int) $this->option('hours'));
             $query->where('created_at', '>=', now()->subHours($hours));
+        } else {
+            $days = max(1, (int) $this->option('days'));
+            $query->where('created_at', '>=', now()->subDays($days));
         }
 
         $orders = $query->get();
@@ -42,12 +53,14 @@ class ReplayMetaPurchaseEventsCommand extends Command
             return self::SUCCESS;
         }
 
+        $this->info("Šaljem {$orders->count()} Meta Purchase događaj(a)...");
+
         $sent = 0;
 
         foreach ($orders as $order) {
             $api->sendPurchase($order);
             $sent++;
-            $this->line("Sent Purchase for {$order->order_number}");
+            $this->line("Sent Purchase for {$order->order_number} ({$order->created_at})");
         }
 
         $this->info("Replayed {$sent} Meta Purchase event(s).");
