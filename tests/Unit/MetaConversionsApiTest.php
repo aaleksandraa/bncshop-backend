@@ -96,7 +96,7 @@ class MetaConversionsApiTest extends TestCase
 
         app(MetaConversionsApi::class)->sendLead($inquiry);
 
-        Http::assertSent(function ($request) use ($inquiry): bool {
+        Http::assertSent(function ($request) use ($inquiry, $product): bool {
             $body = $request->data();
             $event = $body['data'][0] ?? [];
 
@@ -105,7 +105,7 @@ class MetaConversionsApiTest extends TestCase
                 && ($event['custom_data']['event_source'] ?? null) === 'crm'
                 && ($event['custom_data']['lead_event_source'] ?? null) === 'BNC Shop'
                 && ($event['event_id'] ?? null) === 'lead-'.$inquiry->id
-                && ($event['custom_data']['content_ids'][0] ?? null) === 'SKU-LEAD-1';
+                && ($event['custom_data']['content_ids'][0] ?? null) === (string) $product->id;
         });
     }
 

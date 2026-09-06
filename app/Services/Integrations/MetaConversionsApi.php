@@ -28,7 +28,7 @@ class MetaConversionsApi
 
         $contents = $order->items
             ->map(fn (OrderItem $item): array => [
-                'id' => (string) ($item->sku ?: $item->product_id ?: $item->id),
+                'id' => (string) ($item->product_id ?: $item->sku ?: $item->id),
                 'quantity' => (int) $item->quantity,
             ])
             ->values()
@@ -195,9 +195,7 @@ class MetaConversionsApi
     private function resolveProductContentId(?Product $product, ?int $productId): ?string
     {
         if ($product !== null) {
-            $sku = trim((string) ($product->sku ?? ''));
-
-            return $sku !== '' ? $sku : (string) $product->id;
+            return (string) $product->id;
         }
 
         return $productId !== null ? (string) $productId : null;
