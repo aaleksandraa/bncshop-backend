@@ -3,6 +3,7 @@
 namespace App\Services\Commerce;
 
 use App\Jobs\SendGa4PurchaseJob;
+use App\Jobs\SendMetaPurchaseJob;
 use App\Jobs\TrackAnalyticsEventJob;
 use App\Mail\OrderConfirmationCustomer;
 use App\Mail\TemplatedOrderMail;
@@ -401,6 +402,7 @@ class CheckoutService
             );
 
             SendGa4PurchaseJob::dispatch($order->id);
+            SendMetaPurchaseJob::dispatch($order->id);
 
             $this->sendOrderEmails($order);
             $this->syncMarketingContact($order);

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Jobs\SendGa4PurchaseJob;
+use App\Jobs\SendMetaPurchaseJob;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\Product;
@@ -47,6 +48,10 @@ class CheckoutTest extends TestCase
         ])->assertCreated();
 
         Queue::assertPushed(SendGa4PurchaseJob::class, function (SendGa4PurchaseJob $job): bool {
+            return $job->orderId === Order::query()->value('id');
+        });
+
+        Queue::assertPushed(SendMetaPurchaseJob::class, function (SendMetaPurchaseJob $job): bool {
             return $job->orderId === Order::query()->value('id');
         });
     }

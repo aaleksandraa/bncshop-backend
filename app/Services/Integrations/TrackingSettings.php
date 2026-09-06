@@ -64,6 +64,22 @@ class TrackingSettings
             }
         }
 
+        foreach (['fb_access_token', 'fb_dataset_id', 'fb_test_event_code', 'fb_crm_name'] as $key) {
+            if (! array_key_exists($key, $data)) {
+                continue;
+            }
+
+            $value = trim((string) $data[$key]);
+
+            if ($key === 'fb_access_token' && $value === '') {
+                unset($data['fb_access_token']);
+
+                continue;
+            }
+
+            $data[$key] = $value;
+        }
+
         SystemSetting::query()->updateOrCreate(
             ['key' => 'tracking'],
             [
@@ -89,6 +105,10 @@ class TrackingSettings
             'ga_measurement_id' => '',
             'ga_api_secret' => '',
             'fb_pixel_id' => '',
+            'fb_dataset_id' => '',
+            'fb_access_token' => '',
+            'fb_test_event_code' => '',
+            'fb_crm_name' => 'BNC Shop',
             'load_scripts_only_with_consent' => true,
         ];
     }

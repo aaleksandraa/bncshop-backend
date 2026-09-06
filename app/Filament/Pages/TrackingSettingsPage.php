@@ -86,6 +86,31 @@ class TrackingSettingsPage extends Page implements HasForms
                             ->maxLength(32),
                     ])
                     ->columns(2),
+                Section::make('Meta Conversions API (server)')
+                    ->description('Dataset ID i access token za server-side događaje (Purchase, Lead). Purchase se šalje pri narudžbi; Lead pri upitu za rate. Koristi isti dataset kao Pixel u Events Manageru.')
+                    ->schema([
+                        TextInput::make('fb_dataset_id')
+                            ->label('Meta Dataset ID')
+                            ->placeholder('786294308773690')
+                            ->helperText('Ako ostane prazno, koristi se Pixel ID.')
+                            ->maxLength(32),
+                        TextInput::make('fb_access_token')
+                            ->label('Meta Conversions API access token')
+                            ->password()
+                            ->revealable()
+                            ->helperText('Events Manager → Dataset → Settings → Generate access token. Ne prikazuje se na shopu.')
+                            ->maxLength(512),
+                        TextInput::make('fb_test_event_code')
+                            ->label('Test event code (opcionalno)')
+                            ->helperText('Za test događaje u Events Manager → Test Events tab.')
+                            ->maxLength(64),
+                        TextInput::make('fb_crm_name')
+                            ->label('CRM naziv (lead_event_source)')
+                            ->default('BNC Shop')
+                            ->helperText('Prikazuje se u Meta CRM integraciji za Lead događaje.')
+                            ->maxLength(120),
+                    ])
+                    ->columns(2),
             ])
             ->statePath('data');
     }

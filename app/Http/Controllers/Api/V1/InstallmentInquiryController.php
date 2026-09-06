@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\InstallmentInquiryRequest;
+use App\Jobs\SendMetaLeadJob;
 use App\Mail\InstallmentInquiryNotification;
 use App\Models\InstallmentInquiry;
 use App\Models\Product;
@@ -109,6 +110,8 @@ class InstallmentInquiryController extends Controller
         foreach (OrderNotificationMail::recipients() as $recipient) {
             Mail::to($recipient)->queue(new InstallmentInquiryNotification($inquiry));
         }
+
+        SendMetaLeadJob::dispatch($inquiry->id);
 
         return response()->json([
             'data' => [
