@@ -118,7 +118,7 @@ class TrackingSettingsPage extends Page implements HasForms
                     ])
                     ->columns(2),
                 Section::make('Meta Product Catalog (Facebook Shop)')
-                    ->description('CSV feed za Commerce Manager. Uključene su samo glavne kategorije (računari, laptopi, monitori, miševi, tastature, klime…). Periferija tipa zaštitna stakla se filtrira po ključnim riječima u nazivu.')
+                    ->description('CSV feed za Commerce Manager. Samo proizvodi na stanju. Slike idu preko CDN-a (images.bnc.ba). Periferija tipa zaštitna stakla se filtrira po ključnim riječima u nazivu.')
                     ->schema([
                         Placeholder::make('meta_catalog_feed_url')
                             ->label('CSV feed URL')
@@ -137,7 +137,7 @@ class TrackingSettingsPage extends Page implements HasForms
                             ->helperText('Dodatno na default: zaštitno staklo, folija, maskica… (neovisno o kategoriji).'),
                         Placeholder::make('meta_catalog_setup')
                             ->label('Koraci u Commerce Manager')
-                            ->content("1. Catalog → Data sources → + Add → Data feed (CSV)\n2. Scheduled feed → URL iznad\n3. Currency: BAM, trusted domain: bnc.ba\n4. Dodajte Pixel kao secondary source (Dataset 786294308773690)\n5. php artisan meta:catalog-stats — broj proizvoda u feedu\n6. php artisan meta:diagnose — CAPI test"),
+                            ->content("1. Catalog → Data sources → + Add → Data feed (CSV)\n2. Scheduled feed → URL iznad\n3. Currency: BAM, trusted domain: bnc.ba\n4. Server env: BNC_MEDIA_ORIGIN=https://images.bnc.ba\n5. php artisan meta:catalog-stats --check-images\n6. php artisan meta:diagnose — CAPI test"),
                     ])
                     ->columns(1),
             ])

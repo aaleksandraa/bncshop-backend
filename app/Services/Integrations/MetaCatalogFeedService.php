@@ -3,7 +3,6 @@
 namespace App\Services\Integrations;
 
 use App\Models\Product;
-use App\Support\PublicStorageUrl;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\LazyCollection;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -13,6 +12,7 @@ class MetaCatalogFeedService
     public function __construct(
         private readonly TrackingSettings $trackingSettings,
         private readonly MetaCatalogFeedPolicy $feedPolicy,
+        private readonly MetaCatalogImageUrlResolver $imageUrlResolver,
     ) {}
 
     public function isAuthorized(?string $token): bool
@@ -40,6 +40,32 @@ class MetaCatalogFeedService
     public function feedUrl(): string
     {
         return $this->frontendUrl().'/backend-api/v1/feeds/meta-catalog.csv?token='.$this->feedToken();
+    }
+
+    public function imageOrigin(): string
+    {
+        return $this->imageUrlResolver->catalogOrigin();
+    }
+
+    public function feedProductQuery(): Builder
+    {
+        $query = Product::query()
+            ->public()
+            ->active()
+            ->where('display_price', '>', 0)
+            ->where('available_stock', '>', 0)
+            ->where(function (Builder $builder): void {
+                $builder
+                    ->whereNotNull('default_image_id')
+                    ->orWhereNotNull('api_default_image_url');
+            });
+
+        return $this->feedPolicy->applyToQuery($query);
+    }
+
+    public function resolvePublicImageUrl(Product $product): ?string
+    {
+        return $this->imageUrlResolver->resolve($product);
     }
 
     public function toStreamedResponse(): StreamedResponse
@@ -74,20 +100,6 @@ class MetaCatalogFeedService
         ]);
     }
 
-    public function resolvePublicImageUrl(Product $product): ?string
-    {
-        $image = $product->defaultImage;
-        if ($image !== null) {
-            $url = $image->resolvedUrl();
-
-            return $this->absoluteHttpsImageUrl($url);
-        }
-
-        $apiUrl = trim((string) ($product->api_default_image_url ?? ''));
-
-        return $this->absoluteHttpsImageUrl($apiUrl !== '' ? $apiUrl : null);
-    }
-
     /**
      * @return LazyCollection<int, list<string|null>>
      */
@@ -95,21 +107,9 @@ class MetaCatalogFeedService
     {
         $frontendUrl = $this->frontendUrl();
 
-        $query = Product::query()
-            ->public()
-            ->active()
-            ->where('display_price', '>', 0)
-            ->where(function (Builder $builder): void {
-                $builder
-                    ->whereNotNull('default_image_id')
-                    ->orWhereNotNull('api_default_image_url');
-            })
+        return $this->feedProductQuery()
             ->with(['defaultImage', 'manufacturer', 'category'])
-            ->orderBy('id');
-
-        $this->feedPolicy->applyToQuery($query);
-
-        return $query
+            ->orderBy('id')
             ->cursor()
             ->map(function (Product $product) use ($frontendUrl): ?array {
                 $imageUrl = $this->resolvePublicImageUrl($product);
@@ -125,7 +125,7 @@ class MetaCatalogFeedService
                     (string) $product->id,
                     mb_substr((string) $product->name, 0, 200),
                     $description,
-                    $product->available_stock > 0 ? 'in stock' : 'out of stock',
+                    'in stock',
                     $this->feedPolicy->resolveCondition($product),
                     number_format((float) $product->display_price, 2, '.', '').' BAM',
                     $frontendUrl.'/proizvod/'.$product->slug,
@@ -135,21 +135,6 @@ class MetaCatalogFeedService
                 ];
             })
             ->filter(static fn (?array $row): bool => $row !== null);
-    }
-
-    private function absoluteHttpsImageUrl(?string $url): ?string
-    {
-        $absolute = PublicStorageUrl::absoluteFromResolved($url);
-
-        if (! is_string($absolute) || $absolute === '') {
-            return null;
-        }
-
-        if (! str_starts_with($absolute, 'https://')) {
-            return null;
-        }
-
-        return $absolute;
     }
 
     private function frontendUrl(): string

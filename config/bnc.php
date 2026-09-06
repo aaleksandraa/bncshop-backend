@@ -82,6 +82,7 @@ return [
             'maskica za',
             'kaljeno staklo',
         ])),
+        'image_origin' => env('META_CATALOG_IMAGE_ORIGIN', env('BNC_MEDIA_ORIGIN', 'https://images.bnc.ba')),
     ],
 
     /*
