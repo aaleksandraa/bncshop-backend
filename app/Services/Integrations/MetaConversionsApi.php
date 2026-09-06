@@ -90,6 +90,43 @@ class MetaConversionsApi
         ]]);
     }
 
+    public function sendProductView(Product $product, string $eventSourceUrl, ?string $clientIp, ?string $userAgent): void
+    {
+        if (! $this->isConfigured()) {
+            return;
+        }
+
+        $contentId = $this->resolveProductContentId($product, $product->id);
+        $eventId = 'view-'.$contentId.'-'.now()->format('YmdHi');
+
+        $this->sendEvents([
+            [
+                'event_name' => 'PageView',
+                'event_time' => time(),
+                'event_id' => 'pv-'.$eventId,
+                'action_source' => 'website',
+                'event_source_url' => $eventSourceUrl,
+                'user_data' => $this->buildUserDataFromRequest($clientIp, $userAgent),
+            ],
+            [
+                'event_name' => 'ViewContent',
+                'event_time' => time(),
+                'event_id' => $eventId,
+                'action_source' => 'website',
+                'event_source_url' => $eventSourceUrl,
+                'user_data' => $this->buildUserDataFromRequest($clientIp, $userAgent),
+                'custom_data' => [
+                    'currency' => 'BAM',
+                    'value' => (float) $product->display_price,
+                    'content_type' => 'product',
+                    'content_ids' => [$contentId],
+                    'contents' => [['id' => $contentId, 'quantity' => 1]],
+                    'content_name' => (string) $product->name,
+                ],
+            ],
+        ]);
+    }
+
     /**
      * @param  array<int, array<string, mixed>>  $events
      */
@@ -152,6 +189,17 @@ class MetaConversionsApi
         $name = trim((string) ($this->trackingSettings->all()['fb_crm_name'] ?? ''));
 
         return $name !== '' ? $name : 'BNC Shop';
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function buildUserDataFromRequest(?string $clientIp, ?string $userAgent): array
+    {
+        return array_filter([
+            'client_ip_address' => filled($clientIp) ? $clientIp : null,
+            'client_user_agent' => filled($userAgent) ? $userAgent : null,
+        ], static fn ($value): bool => $value !== null);
     }
 
     /**

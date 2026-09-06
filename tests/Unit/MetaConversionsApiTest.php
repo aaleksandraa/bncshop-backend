@@ -109,6 +109,35 @@ class MetaConversionsApiTest extends TestCase
         });
     }
 
+    public function test_posts_page_view_and_view_content_for_product(): void
+    {
+        Http::fake([
+            'graph.facebook.com/*' => Http::response(['events_received' => 2], 200),
+        ]);
+
+        app(TrackingSettings::class)->save([
+            'fb_dataset_id' => '786294308773690',
+            'fb_access_token' => 'meta-token',
+        ]);
+
+        $product = Product::factory()->create(['display_price' => 129.00]);
+        app(MetaConversionsApi::class)->sendProductView(
+            $product,
+            'https://bncshop.ba/proizvod/test',
+            '127.0.0.1',
+            'PHPUnit',
+        );
+
+        Http::assertSent(function ($request) use ($product): bool {
+            $events = $request->data()['data'] ?? [];
+            $names = array_column($events, 'event_name');
+
+            return in_array('PageView', $names, true)
+                && in_array('ViewContent', $names, true)
+                && ($events[1]['custom_data']['content_ids'][0] ?? null) === (string) $product->id;
+        });
+    }
+
     public function test_meta_secrets_are_not_exposed_in_public_config(): void
     {
         app(TrackingSettings::class)->save([

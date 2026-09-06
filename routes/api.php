@@ -21,7 +21,7 @@ use App\Http\Controllers\Api\V1\InstallmentSettingsController;
 use App\Http\Controllers\Api\V1\LayoutController;
 use App\Http\Controllers\Api\V1\LoyaltyController;
 use App\Http\Controllers\Api\V1\ManufacturerController;
-use App\Http\Controllers\Api\V1\MenuController;
+use App\Http\Controllers\Api\V1\MetaProductViewController;
 use App\Http\Controllers\Api\V1\OrderController;
 use App\Http\Controllers\Api\V1\PageController;
 use App\Http\Controllers\Api\V1\PartnerProductExportController;
@@ -80,6 +80,8 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/loyalty/settings', [LoyaltyController::class, 'settings']);
 
         Route::post('/analytics/events', [AnalyticsEventController::class, 'store'])
+            ->middleware('throttle:api-analytics');
+        Route::post('/analytics/meta/product-view', [MetaProductViewController::class, 'store'])
             ->middleware('throttle:api-analytics');
         Route::post('/installment-inquiries', [InstallmentInquiryController::class, 'store'])
             ->middleware('throttle:api-forms');
