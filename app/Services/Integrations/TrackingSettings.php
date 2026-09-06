@@ -62,7 +62,7 @@ class TrackingSettings
             }
         }
 
-        foreach (['fb_access_token', 'fb_dataset_id', 'fb_test_event_code', 'fb_crm_name'] as $key) {
+        foreach (['fb_access_token', 'fb_dataset_id', 'fb_test_event_code', 'fb_crm_name', 'fb_catalog_feed_token'] as $key) {
             if (! array_key_exists($key, $data)) {
                 continue;
             }
@@ -113,6 +113,7 @@ class TrackingSettings
             'fb_access_token' => '',
             'fb_test_event_code' => '',
             'fb_crm_name' => 'BNC Shop',
+            'fb_catalog_feed_token' => '',
             'load_scripts_only_with_consent' => true,
         ];
     }

@@ -100,7 +100,7 @@ class MetaConversionsApi
         }
 
         $contentId = $this->resolveProductContentId($product, $product->id);
-        $eventId = 'view-'.$contentId.'-'.now()->format('YmdHi');
+        $eventId = 'view-'.$contentId.'-'.uniqid('', true);
 
         $this->sendEvents([
             [

@@ -21,6 +21,7 @@ use App\Http\Controllers\Api\V1\InstallmentSettingsController;
 use App\Http\Controllers\Api\V1\LayoutController;
 use App\Http\Controllers\Api\V1\LoyaltyController;
 use App\Http\Controllers\Api\V1\ManufacturerController;
+use App\Http\Controllers\Api\V1\MetaCatalogFeedController;
 use App\Http\Controllers\Api\V1\MetaProductViewController;
 use App\Http\Controllers\Api\V1\OrderController;
 use App\Http\Controllers\Api\V1\PageController;
@@ -46,6 +47,8 @@ Route::middleware(['partner.export.secure', 'partner.export', 'partner.export.he
 Route::prefix('v1')->group(function (): void {
     Route::middleware('throttle:api-public')->group(function (): void {
         Route::get('/health', HealthController::class);
+
+        Route::get('/feeds/meta-catalog.csv', MetaCatalogFeedController::class);
 
         Route::get('/categories', [CategoryController::class, 'index']);
         Route::get('/categories/nav', [CategoryController::class, 'nav']);

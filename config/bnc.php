@@ -56,6 +56,8 @@ return [
 
     'frontend_url' => env('FRONTEND_URL', 'http://localhost:3000'),
 
+    'meta_internal_key' => env('META_INTERNAL_KEY'),
+
     /*
     | Legacy synced /storage/ files may live on a different host than APP_URL
     | (e.g. api.bncshop.ba while admin runs on api.bnc.ba). Used only by

@@ -2,7 +2,9 @@
 
 namespace App\Filament\Pages;
 
+use App\Services\Integrations\MetaCatalogFeedService;
 use App\Services\Integrations\TrackingSettings;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -31,6 +33,8 @@ class TrackingSettingsPage extends Page implements HasForms
 
     public ?array $data = [];
 
+    public string $metaCatalogFeedUrl = '';
+
     public static function canAccess(): bool
     {
         $user = auth()->user();
@@ -38,9 +42,10 @@ class TrackingSettingsPage extends Page implements HasForms
         return $user !== null && ($user->hasRole(['Super Admin', 'Admin']) || $user->can('customers.update'));
     }
 
-    public function mount(TrackingSettings $settings): void
+    public function mount(TrackingSettings $settings, MetaCatalogFeedService $catalogFeed): void
     {
         $this->form->fill($settings->all());
+        $this->metaCatalogFeedUrl = $catalogFeed->feedUrl();
     }
 
     public function form(Form $form): Form
@@ -112,13 +117,25 @@ class TrackingSettingsPage extends Page implements HasForms
                             ->maxLength(120),
                     ])
                     ->columns(2),
+                Section::make('Meta Product Catalog (Facebook Shop)')
+                    ->description('Za Commerce Manager koristite CSV feed (preporučeno) + Pixel microdata na stranicama proizvoda. Feed učitajte u Catalog → Data sources → Add products → Data feed.')
+                    ->schema([
+                        Placeholder::make('meta_catalog_feed_url')
+                            ->label('CSV feed URL')
+                            ->content(fn (): string => $this->metaCatalogFeedUrl),
+                        Placeholder::make('meta_catalog_setup')
+                            ->label('Koraci u Commerce Manager')
+                            ->content("1. Catalog → Data sources → + Add → Data feed (CSV)\n2. Scheduled feed → URL iznad\n3. Currency: BAM, trusted domain: bncshop.ba\n4. Dodajte Pixel kao secondary source (Dataset 786294308773690)\n5. Pokrenite: php artisan meta:diagnose na serveru"),
+                    ])
+                    ->columns(1),
             ])
             ->statePath('data');
     }
 
-    public function save(TrackingSettings $settings): void
+    public function save(TrackingSettings $settings, MetaCatalogFeedService $catalogFeed): void
     {
         $settings->save($this->form->getState());
+        $this->metaCatalogFeedUrl = $catalogFeed->feedUrl();
 
         Notification::make()
             ->title('Postavke analitike sačuvane')

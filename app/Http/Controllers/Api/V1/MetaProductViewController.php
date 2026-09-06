@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Api\V1\Concerns\RespondsWithJson;
-use App\Jobs\SendMetaProductViewJob;
 use App\Models\Product;
+use App\Services\Integrations\MetaConversionsApi;
 use App\Support\CrawlerDetector;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -15,9 +15,9 @@ class MetaProductViewController extends Controller
 {
     use RespondsWithJson;
 
-    public function store(Request $request): JsonResponse
+    public function store(Request $request, MetaConversionsApi $api): JsonResponse
     {
-        if (CrawlerDetector::isCrawler($request->userAgent())) {
+        if (! $this->isInternalRequest($request) && CrawlerDetector::isCrawler($request->userAgent())) {
             return $this->success(['queued' => false, 'ignored' => true], status: 202);
         }
 
@@ -30,14 +30,22 @@ class MetaProductViewController extends Controller
         $path = trim((string) ($validated['path'] ?? ''));
         $eventSourceUrl = $this->resolveEventSourceUrl($request, $path);
 
-        SendMetaProductViewJob::dispatch(
-            $product->id,
+        $api->sendProductView(
+            $product,
             $eventSourceUrl,
             $request->ip(),
             $request->userAgent(),
         );
 
-        return $this->success(['queued' => true], status: 202);
+        return $this->success(['sent' => true], status: 202);
+    }
+
+    private function isInternalRequest(Request $request): bool
+    {
+        $expected = trim((string) config('bnc.meta_internal_key', ''));
+        $provided = trim((string) $request->header('X-Meta-Internal-Key', ''));
+
+        return $expected !== '' && $provided !== '' && hash_equals($expected, $provided);
     }
 
     private function resolveEventSourceUrl(Request $request, string $path): string
