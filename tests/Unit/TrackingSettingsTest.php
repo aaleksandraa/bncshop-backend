@@ -49,4 +49,25 @@ class TrackingSettingsTest extends TestCase
         $this->assertNull($settings->publicConfig()['fb_pixel_id']);
         $this->assertArrayNotHasKey('ga_api_secret', $settings->publicConfig());
     }
+
+    public function test_public_config_falls_back_to_dataset_id_for_pixel(): void
+    {
+        $settings = app(TrackingSettings::class);
+        $settings->save([
+            'fb_dataset_id' => '786294308773690',
+            'fb_access_token' => 'secret-token',
+        ]);
+
+        $this->assertSame('786294308773690', $settings->publicConfig()['fb_pixel_id']);
+    }
+
+    public function test_save_auto_fills_pixel_id_from_dataset_id(): void
+    {
+        $settings = app(TrackingSettings::class);
+        $settings->save([
+            'fb_dataset_id' => '786294308773690',
+        ]);
+
+        $this->assertSame('786294308773690', $settings->all()['fb_pixel_id']);
+    }
 }

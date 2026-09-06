@@ -35,9 +35,7 @@ class TrackingSettings
             'ga_measurement_id' => filled($settings['ga_measurement_id'] ?? null)
                 ? (string) $settings['ga_measurement_id']
                 : null,
-            'fb_pixel_id' => filled($settings['fb_pixel_id'] ?? null)
-                ? (string) $settings['fb_pixel_id']
-                : null,
+            'fb_pixel_id' => $this->resolvePublicPixelId($settings),
             'load_scripts_only_with_consent' => (bool) ($settings['load_scripts_only_with_consent'] ?? true),
         ];
     }
@@ -80,6 +78,12 @@ class TrackingSettings
             $data[$key] = $value;
         }
 
+        $merged = array_merge($this->all(), $data);
+        if (trim((string) ($merged['fb_pixel_id'] ?? '')) === ''
+            && trim((string) ($merged['fb_dataset_id'] ?? '')) !== '') {
+            $data['fb_pixel_id'] = trim((string) $merged['fb_dataset_id']);
+        }
+
         SystemSetting::query()->updateOrCreate(
             ['key' => 'tracking'],
             [
@@ -111,5 +115,23 @@ class TrackingSettings
             'fb_crm_name' => 'BNC Shop',
             'load_scripts_only_with_consent' => true,
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $settings
+     */
+    private function resolvePublicPixelId(array $settings): ?string
+    {
+        $pixelId = trim((string) ($settings['fb_pixel_id'] ?? ''));
+        if ($pixelId !== '') {
+            return $pixelId;
+        }
+
+        $datasetId = trim((string) ($settings['fb_dataset_id'] ?? ''));
+        if ($datasetId !== '') {
+            return $datasetId;
+        }
+
+        return null;
     }
 }

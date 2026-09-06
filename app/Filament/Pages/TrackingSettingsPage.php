@@ -82,7 +82,8 @@ class TrackingSettingsPage extends Page implements HasForms
                             ->maxLength(64),
                         TextInput::make('fb_pixel_id')
                             ->label('Meta (Facebook) Pixel ID')
-                            ->placeholder('123456789012345')
+                            ->placeholder('786294308773690')
+                            ->helperText('Obavezno za PageView i ViewContent u browseru. Ako ostane prazno, koristi se Dataset ID iz CAPI sekcije.')
                             ->maxLength(32),
                     ])
                     ->columns(2),
