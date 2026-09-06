@@ -8,6 +8,7 @@ use App\Models\OrderItem;
 use App\Models\Product;
 use App\Support\MetaUserDataHasher;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 class MetaConversionsApi
@@ -21,6 +22,8 @@ class MetaConversionsApi
     public function sendPurchase(Order $order): void
     {
         if (! $this->isConfigured()) {
+            Log::warning('Meta CAPI purchase skipped: dataset ID or access token missing.');
+
             return;
         }
 
@@ -140,12 +143,26 @@ class MetaConversionsApi
         }
 
         try {
-            Http::timeout(8)
+            $response = Http::timeout(8)
                 ->acceptJson()
                 ->asJson()
-                ->post($this->eventsUrl(), $payload)
-                ->throw();
+                ->post($this->eventsUrl(), $payload);
+
+            $response->throw();
+
+            $body = $response->json();
+            if (is_array($body) && ! empty($body['messages'])) {
+                Log::warning('Meta CAPI returned diagnostic messages.', [
+                    'events' => array_column($events, 'event_name'),
+                    'messages' => $body['messages'],
+                    'fbtrace_id' => $body['fbtrace_id'] ?? null,
+                ]);
+            }
         } catch (Throwable $exception) {
+            Log::warning('Meta CAPI request failed.', [
+                'events' => array_column($events, 'event_name'),
+                'message' => $exception->getMessage(),
+            ]);
             report($exception);
         }
     }

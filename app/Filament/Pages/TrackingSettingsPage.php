@@ -103,7 +103,7 @@ class TrackingSettingsPage extends Page implements HasForms
                             ->maxLength(512),
                         TextInput::make('fb_test_event_code')
                             ->label('Test event code (opcionalno)')
-                            ->helperText('Za test događaje u Events Manager → Test Events tab.')
+                            ->helperText('Dok je popunjeno, SVI CAPI događaji (uključujući Purchase) idu samo u Test Events tab — ne u glavni Overview. Obriši nakon testiranja.')
                             ->maxLength(64),
                         TextInput::make('fb_crm_name')
                             ->label('CRM naziv (lead_event_source)')

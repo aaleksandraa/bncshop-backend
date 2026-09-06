@@ -402,7 +402,7 @@ class CheckoutService
             );
 
             SendGa4PurchaseJob::dispatch($order->id);
-            SendMetaPurchaseJob::dispatch($order->id);
+            SendMetaPurchaseJob::dispatchSync($order->id);
 
             $this->sendOrderEmails($order);
             $this->syncMarketingContact($order);

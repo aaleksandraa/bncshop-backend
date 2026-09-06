@@ -3,7 +3,7 @@
 namespace Tests\Feature;
 
 use App\Jobs\SendGa4PurchaseJob;
-use App\Jobs\SendMetaPurchaseJob;
+use App\Jobs\TrackAnalyticsEventJob;
 use App\Models\Customer;
 use App\Models\Order;
 use App\Models\Product;
@@ -11,7 +11,9 @@ use App\Models\ShippingRule;
 use App\Models\SystemSetting;
 use App\Models\User;
 use App\Services\Commerce\CartService;
+use App\Services\Integrations\TrackingSettings;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
@@ -39,7 +41,16 @@ class CheckoutTest extends TestCase
 
     public function test_checkout_dispatches_ga4_purchase_job(): void
     {
-        Queue::fake();
+        Queue::fake([SendGa4PurchaseJob::class, TrackAnalyticsEventJob::class]);
+        Http::fake([
+            'graph.facebook.com/*' => Http::response(['events_received' => 1], 200),
+        ]);
+
+        app(TrackingSettings::class)->save([
+            'fb_dataset_id' => '786294308773690',
+            'fb_access_token' => 'meta-token',
+        ]);
+
         $this->seedCheckoutSettings();
         $sessionId = $this->seedCartWithProduct();
 
@@ -51,8 +62,11 @@ class CheckoutTest extends TestCase
             return $job->orderId === Order::query()->value('id');
         });
 
-        Queue::assertPushed(SendMetaPurchaseJob::class, function (SendMetaPurchaseJob $job): bool {
-            return $job->orderId === Order::query()->value('id');
+        Http::assertSent(function ($request): bool {
+            $event = $request->data()['data'][0] ?? [];
+
+            return str_contains($request->url(), '786294308773690/events')
+                && ($event['event_name'] ?? null) === 'Purchase';
         });
     }
 
