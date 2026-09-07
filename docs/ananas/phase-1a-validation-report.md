@@ -39,7 +39,9 @@ Command (credentials supplied via environment only, not committed):
 ANANAS_ENV=stage ANANAS_CLIENT_ID=... ANANAS_CLIENT_SECRET=... php artisan bnc:ananas-test-connection --force-auth
 ```
 
-**Result: authentication failed HTTP 401**
+**Result: authentication failed HTTP 401** (last retest 2026-09-07)
+
+`bnc:ananas-test-connection` now prefers `ANANAS_*` env vars without querying PostgreSQL, so local Stage checks no longer fail on missing DB role.
 
 Direct `curl` POST to `https://api.qa2.ananastest.com/iam/api/v1/auth/token` with the same QA2 `clientId` / `clientSecret` and body:
 
