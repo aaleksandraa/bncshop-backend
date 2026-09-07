@@ -35,24 +35,33 @@ class AnanasTestConnectionCommand extends Command
             $token = $client->authenticate((bool) $this->option('force-auth'));
             $this->info('Authentication successful (token length: '.strlen($token).', value redacted).');
 
-            $productTypes = $client->getProductTypes();
-            $this->info('Product types: '.count($productTypes).' returned.');
-            $this->line('Sample types: '.json_encode(array_slice($productTypes, 0, 5), JSON_UNESCAPED_UNICODE));
+            $this->runStep('Product types', function () use ($client): void {
+                $productTypes = $client->getProductTypes();
+                $this->info('Product types: '.count($productTypes).' returned.');
+                $this->line('Sample types: '.json_encode(array_slice($productTypes, 0, 5), JSON_UNESCAPED_UNICODE));
+            });
 
-            $warehouses = $client->getWarehouses();
-            $warehouseItems = is_array($warehouses['content'] ?? null) ? $warehouses['content'] : [];
-            $this->info('Warehouses: '.count($warehouseItems).' returned.');
-            $this->line('Warehouse sample: '.$this->redactPayload(array_slice($warehouseItems, 0, 2)));
+            $this->runStep('Warehouses', function () use ($client): void {
+                $warehouses = $client->getWarehouses();
+                $warehouseItems = is_array($warehouses['content'] ?? null) ? $warehouses['content'] : [];
+                $this->info('Warehouses: '.count($warehouseItems).' returned.');
+                $this->line('Warehouse sample: '.$this->redactPayload(array_slice($warehouseItems, 0, 2)));
+            });
 
-            $products = $client->getProducts(['page' => 0, 'size' => 1]);
-            $productItems = $this->normalizeListPayload($products);
-            $this->info('GET products: '.count($productItems).' item(s) on page 0 (size=1).');
-            $this->line('Product sample: '.$this->redactPayload(array_slice($productItems, 0, 1)));
+            $productItems = [];
+            $this->runStep('GET products', function () use ($client, &$productItems): void {
+                $products = $client->getProducts(['page' => 0, 'size' => 1]);
+                $productItems = $this->normalizeListPayload($products);
+                $this->info('GET products: '.count($productItems).' item(s) on page 0 (size=1).');
+                $this->line('Product sample: '.$this->redactPayload(array_slice($productItems, 0, 1)));
+            });
 
-            $basicProducts = $client->getBasicProducts(['page' => 0, 'size' => 1]);
-            $basicItems = $this->normalizeListPayload($basicProducts);
-            $this->info('GET basic-products: '.count($basicItems).' item(s) on page 0 (size=1).');
-            $this->line('Basic product sample: '.$this->redactPayload(array_slice($basicItems, 0, 1)));
+            $this->runStep('GET basic-products', function () use ($client): void {
+                $basicProducts = $client->getBasicProducts(['page' => 0, 'size' => 1]);
+                $basicItems = $this->normalizeListPayload($basicProducts);
+                $this->info('GET basic-products: '.count($basicItems).' item(s) on page 0 (size=1).');
+                $this->line('Basic product sample: '.$this->redactPayload(array_slice($basicItems, 0, 1)));
+            });
 
             if ($productItems !== []) {
                 $first = $productItems[0];
@@ -74,9 +83,23 @@ class AnanasTestConnectionCommand extends Command
 
             return self::SUCCESS;
         } catch (\Throwable $e) {
-            $this->error($e->getMessage());
+            $message = $e->getMessage();
+            if (str_contains($message, 'HTTP 401') && $settings->isStage()) {
+                $this->warn('Stage (QA2) returned 401. If Ananas confirmed credentials, they may be Production-only — retry with ANANAS_ENV=production.');
+            }
+
+            $this->error($message);
 
             return self::FAILURE;
+        }
+    }
+
+    private function runStep(string $label, callable $callback): void
+    {
+        try {
+            $callback();
+        } catch (\Throwable $e) {
+            $this->warn("{$label}: skipped — ".$e->getMessage());
         }
     }
 

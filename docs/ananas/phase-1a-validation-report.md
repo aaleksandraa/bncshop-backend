@@ -39,39 +39,52 @@ Command (credentials supplied via environment only, not committed):
 ANANAS_ENV=stage ANANAS_CLIENT_ID=... ANANAS_CLIENT_SECRET=... php artisan bnc:ananas-test-connection --force-auth
 ```
 
-**Result: authentication failed HTTP 401** (last retest 2026-09-07)
+**Result: authentication failed HTTP 401** (retest 2026-09-07, after Ananas confirmation)
 
-`bnc:ananas-test-connection` now prefers `ANANAS_*` env vars without querying PostgreSQL, so local Stage checks no longer fail on missing DB role.
+`bnc:ananas-test-connection` prefers `ANANAS_*` env vars without querying PostgreSQL.
 
-Direct `curl` POST to `https://api.qa2.ananastest.com/iam/api/v1/auth/token` with the same QA2 `clientId` / `clientSecret` and body:
+Direct POST to `https://api.qa2.ananastest.com/iam/api/v1/auth/token` with the merchant `clientId` / `clientSecret` returns **401** `{"statusCode":401,"messageKey":"unauthorized",...}`.
 
-```json
-{
-  "grantType": "CLIENT_CREDENTIALS",
-  "clientId": "...",
-  "clientSecret": "...",
-  "scope": "public_api/full_access"
-}
-```
-
-also returned **401** `{"statusCode":401,"messageKey":"unauthorized",...}`.
-
-This indicates the Phase 1A client wiring is not the blocker; the QA2 credential pair is rejected at IAM (likely Public API not enabled on the merchant account, wrong/expired secret, or credentials not yet provisioned for QA2).
-
-**No GET product-types / warehouses / products samples** could be collected until IAM returns a token.
+**Conclusion:** the supplied credential pair is **not provisioned for QA2 Stage**. It is valid on Production (see below). For Stage sandbox testing, Ananas must issue QA2-specific credentials or enable the existing client on `api.qa2.ananastest.com`.
 
 ### Hosts used (Stage)
 
 - IAM + Product: `https://api.qa2.ananastest.com`
 - Warehouses (svc): `https://api.svc.qa2.ananastest.com`
 
+## Production live test
+
+Command:
+
+```bash
+ANANAS_ENV=production ANANAS_CLIENT_ID=... ANANAS_CLIENT_SECRET=... php artisan bnc:ananas-test-connection --force-auth
+```
+
+**Result: authentication successful** (retest 2026-09-07)
+
+| Step | Result |
+|------|--------|
+| POST token (`api.ananas.rs`) | HTTP 200, Bearer token received |
+| GET product-type | **10 types** — e.g. Automotive, Super Market, BabyKidsToys, KnjižaraOfficeSchool, Moda |
+| GET products (page=0, size=1) | HTTP 200, **0 items** (empty merchant catalog) |
+| GET basic-products (page=0, size=1) | HTTP 200, **0 items** |
+| GET merchant-warehouses (`api.svc.ananas.rs`) | **Connection timeout** from dev network (443 connect timeout ~10–30s); not an auth failure |
+
+### Hosts used (Production)
+
+- IAM + Product: `https://api.ananas.rs`
+- Warehouses (svc): `https://api.svc.ananas.rs`
+
+**Important:** do not use Production credentials against QA2 URLs, and do not use QA2 credentials against Production in automated jobs without explicit `ANANAS_ENV` control.
+
 ## Identifier semantics
 
-**Not observed live** (auth blocked). From docs only:
+**Partially observed live (Production, empty catalog).** From docs + successful product-type GET:
 
-- GET products returns `id`, `externalId`, `ean`, `ananasCode`, `groupId`, `sku`, `status`, etc.
-- Publish/discount docs reference merchant inventory id — **confirm from live GET after auth works**.
-- Do not freeze mapping-table schema until Stage payloads are captured.
+- Product types are string labels returned as a JSON array from GET product-type.
+- GET products returned HTTP 200 with an empty list — no live product payload yet to confirm `id` vs merchantInventoryId.
+- Publish/discount docs reference merchant inventory id — **confirm from first imported product GET**.
+- Do not freeze mapping-table schema until at least one live product payload is captured.
 
 ## Doc discrepancies noted
 
@@ -81,11 +94,11 @@ This indicates the Phase 1A client wiring is not the blocker; the QA2 credential
 
 ## Remaining blockers (catalog writes — not 1A)
 
-1. **QA2 IAM 401** — ask Ananas to enable `public_api/full_access` for the QA2 client or re-issue credentials.
+1. **QA2 Stage credentials** — current merchant pair works on Production only; request QA2-specific credentials if sandbox testing is required.
 2. **BiH VAT** — which `vat` value (0/10/20) for 17%-inclusive BAM `basePrice`?
 3. **Package weight** — map from A1 attributes via future `AnanasPackageWeightResolver`; sample ≥30 production `raw_value` strings before unit-less rules.
-4. **Stage import semantics** — POST import/onboarding behavior after auth.
-5. **Production credentials** — separate pair; never use QA2 against `api.ananas.rs`.
+4. **Live product payload** — merchant catalog empty; identifier fields unconfirmed until first product exists on Ananas.
+5. **Warehouses svc host** — `api.svc.ananas.rs` timed out from dev network; verify from production server/VPN.
 
 ## Proposed Phase 1B (requires explicit approval)
 
@@ -111,7 +124,8 @@ This indicates the Phase 1A client wiring is not the blocker; the QA2 credential
 | AnanasEligibilityPolicy + tests | Done |
 | Http::fake tests pass | Done |
 | Zero write endpoints in code | Done |
-| Stage auth + GET samples | **Blocked — IAM 401** |
+| Stage auth + GET samples | **Stage 401 — credentials are Production-only** |
+| Production auth + GET samples | **Auth OK; product-types OK; catalog empty; svc warehouses timeout from dev network** |
 | Stop before 1B | Done |
 
-**Phase 1A implementation complete. Waiting on Ananas IAM access before live GET validation and any 1B approval.**
+**Phase 1A implementation complete. Production IAM verified. Use `ANANAS_ENV=production` with the merchant credentials. Request separate QA2 credentials only if sandbox testing is needed.**
