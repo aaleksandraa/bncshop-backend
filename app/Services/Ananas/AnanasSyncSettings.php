@@ -30,9 +30,7 @@ class AnanasSyncSettings
      */
     public function all(): array
     {
-        $stored = SystemSetting::query()->where('key', 'ananas_export')->value('value');
-
-        return array_merge($this->defaults(), is_array($stored) ? $stored : []);
+        return array_merge($this->defaults(), $this->storedSettings());
     }
 
     /**
@@ -64,9 +62,29 @@ class AnanasSyncSettings
 
     public function environment(): string
     {
-        $env = strtolower(trim((string) ($this->all()['environment'] ?? config('bnc.ananas_env', self::ENV_STAGE))));
+        $fromConfig = strtolower(trim((string) config('bnc.ananas_env', '')));
+
+        if ($fromConfig !== '') {
+            return $fromConfig === self::ENV_PRODUCTION ? self::ENV_PRODUCTION : self::ENV_STAGE;
+        }
+
+        $env = strtolower(trim((string) ($this->storedSettings()['environment'] ?? self::ENV_STAGE)));
 
         return $env === self::ENV_PRODUCTION ? self::ENV_PRODUCTION : self::ENV_STAGE;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function storedSettings(): array
+    {
+        try {
+            $stored = SystemSetting::query()->where('key', 'ananas_export')->value('value');
+        } catch (\Throwable) {
+            return [];
+        }
+
+        return is_array($stored) ? $stored : [];
     }
 
     public function isStage(): bool
@@ -86,11 +104,25 @@ class AnanasSyncSettings
      */
     public function credentials(): array
     {
-        $source = $this->apiSource();
+        $envClientId = (string) config('bnc.ananas_client_id', '');
+        $envClientSecret = (string) config('bnc.ananas_client_secret', '');
+
+        if ($envClientId !== '' && $envClientSecret !== '') {
+            return [
+                'client_id' => $envClientId,
+                'client_secret' => $envClientSecret,
+            ];
+        }
+
+        try {
+            $source = $this->apiSource();
+        } catch (\Throwable) {
+            $source = null;
+        }
 
         return [
-            'client_id' => (string) ($source?->username ?: config('bnc.ananas_client_id', '')),
-            'client_secret' => (string) ($source?->password ?: config('bnc.ananas_client_secret', '')),
+            'client_id' => (string) ($source?->username ?: $envClientId),
+            'client_secret' => (string) ($source?->password ?: $envClientSecret),
         ];
     }
 
@@ -194,11 +226,24 @@ class AnanasSyncSettings
             'environment' => $this->environment(),
             'allow_catalog_writes' => $this->allowCatalogWrites(),
             'has_credentials' => $this->hasCredentials(),
-            'credentials_source' => $this->apiSource()?->username ? 'admin' : (config('bnc.ananas_client_id') ? 'env' : 'none'),
+            'credentials_source' => $this->credentialsSourceLabel(),
             'iam_base_url' => $this->iamBaseUrl(),
             'token_endpoint_url' => $this->tokenEndpointUrl(),
             'product_base_url' => $this->productBaseUrl(),
             'svc_base_url' => $this->svcBaseUrl(),
         ];
+    }
+
+    private function credentialsSourceLabel(): string
+    {
+        if ((string) config('bnc.ananas_client_id', '') !== '' && (string) config('bnc.ananas_client_secret', '') !== '') {
+            return 'env';
+        }
+
+        try {
+            return $this->apiSource()?->username ? 'admin' : 'none';
+        } catch (\Throwable) {
+            return 'none';
+        }
     }
 }

@@ -27,7 +27,8 @@ class AnanasTestConnectionCommand extends Command
                 $settings->environment(),
             ));
             $this->line('Token endpoint (POST): '.$settings->tokenEndpointUrl());
-            $this->line('Product API: '.$settings->productBaseUrl());
+            $this->line('Products endpoint (GET): '.$settings->productBaseUrl().'/product/api/v1/merchant-integration/products');
+            $this->line('Product API host: '.$settings->productBaseUrl());
             $this->line('Svc API: '.$settings->svcBaseUrl());
             $this->line('Catalog writes: '.($settings->allowCatalogWrites() ? 'enabled' : 'disabled'));
 
