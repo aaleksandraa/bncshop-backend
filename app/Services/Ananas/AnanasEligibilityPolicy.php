@@ -65,6 +65,17 @@ class AnanasEligibilityPolicy
             return AnanasEligibilityResult::notEligible(self::CATEGORY_UNMAPPED);
         }
 
+        return $this->evaluateProductData($product);
+    }
+
+    public function evaluateProductData(Product $product): AnanasEligibilityResult
+    {
+        $hard = $this->evaluateHardExclusions($product);
+
+        if (! $hard->eligible) {
+            return $hard;
+        }
+
         $ean = $this->normalizeEan($product->barcode);
 
         if ($ean === null) {

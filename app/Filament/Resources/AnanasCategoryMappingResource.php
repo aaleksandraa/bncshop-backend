@@ -49,7 +49,19 @@ class AnanasCategoryMappingResource extends Resource
                 ->helperText('Prvo osvježite listu u Ananas postavkama (Osvježi product types).'),
             Forms\Components\TextInput::make('ananas_category')
                 ->label('Ananas category (free text)')
-                ->maxLength(255),
+                ->maxLength(255)
+                ->helperText('Tačan string za POST import polje "category". Validirajte empirski komandom bnc:ananas-probe-category.'),
+            Forms\Components\Select::make('category_validation_status')
+                ->label('Validacija kategorije')
+                ->options([
+                    AnanasCategoryMapping::VALIDATION_UNKNOWN => 'Nepoznato',
+                    AnanasCategoryMapping::VALIDATION_PENDING => 'Na čekanju',
+                    AnanasCategoryMapping::VALIDATION_VALIDATED => 'Potvrđeno',
+                    AnanasCategoryMapping::VALIDATION_FAILED => 'Neuspjelo',
+                    AnanasCategoryMapping::VALIDATION_SKIPPED => 'Preskočeno',
+                ])
+                ->disabled()
+                ->dehydrated(false),
             Forms\Components\Toggle::make('is_enabled')
                 ->label('Uključeno za export')
                 ->default(false),
@@ -73,6 +85,19 @@ class AnanasCategoryMappingResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('ananas_product_type')->label('Product type')->wrap(),
                 Tables\Columns\TextColumn::make('ananas_category')->label('Ananas category')->wrap(),
+                Tables\Columns\TextColumn::make('category_validation_status')
+                    ->label('Validacija')
+                    ->badge()
+                    ->color(fn (?string $state): string => match ($state) {
+                        AnanasCategoryMapping::VALIDATION_VALIDATED => 'success',
+                        AnanasCategoryMapping::VALIDATION_FAILED => 'danger',
+                        AnanasCategoryMapping::VALIDATION_PENDING => 'warning',
+                        default => 'gray',
+                    }),
+                Tables\Columns\TextColumn::make('observed_categories')
+                    ->label('Observed categories')
+                    ->formatStateUsing(fn ($state): string => is_array($state) && $state !== [] ? implode(', ', $state) : '—')
+                    ->wrap(),
                 Tables\Columns\IconColumn::make('is_enabled')->label('Uključeno')->boolean(),
                 Tables\Columns\IconColumn::make('include_descendants')->label('Podkategorije')->boolean(),
             ])

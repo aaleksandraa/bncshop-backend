@@ -25,6 +25,29 @@ class AnanasProductMapper
     {
         $this->eligibilityPolicy->assertCanExport($product);
 
+        return $this->buildPayload($product, $categoryMapping);
+    }
+
+    public function mapForProbe(Product $product, AnanasCategoryMapping $categoryMapping): array
+    {
+        $result = $this->eligibilityPolicy->evaluateProductData($product);
+
+        if (! $result->eligible) {
+            throw new RuntimeException(sprintf(
+                'Product %d is not ready for Ananas probe: %s',
+                $product->id,
+                $result->reasonCode ?? 'NOT_ELIGIBLE',
+            ));
+        }
+
+        return $this->buildPayload($product, $categoryMapping);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function buildPayload(Product $product, AnanasCategoryMapping $categoryMapping): array
+    {
         $product->loadMissing(['manufacturer', 'images']);
 
         $weight = $this->packageWeightResolver->resolve($product);

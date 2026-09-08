@@ -20,6 +20,7 @@ class AnanasApiClient
     public function __construct(
         private readonly AnanasSyncSettings $settings,
         private readonly AnanasRateLimiter $rateLimiter,
+        private readonly AnanasCatalogWriteGuard $writeGuard,
     ) {}
 
     public function tokenCacheKey(): string
@@ -160,12 +161,111 @@ class AnanasApiClient
     }
 
     /**
+     * POST bulk import. Body is a JSON array of product payloads.
+     *
+     * @param  list<array<string, mixed>>  $items
+     * @return array{progress_id: string|null, raw: array<string, mixed>}
+     */
+    public function importProducts(array $items, bool $allowProduction = false): array
+    {
+        $this->writeGuard->assertAllowed($allowProduction);
+
+        if ($items === []) {
+            throw new RuntimeException('Ananas import requires at least one product payload.');
+        }
+
+        $payload = $this->postJson(
+            $this->settings->productBaseUrl(),
+            '/product/api/v1/merchant-integration/import',
+            $items,
+            AnanasRateLimiter::CATEGORY_PRODUCTS,
+        );
+
+        $progressId = is_array($payload) ? (string) ($payload['id'] ?? '') : '';
+
+        return [
+            'progress_id' => $progressId !== '' ? $progressId : null,
+            'raw' => is_array($payload) ? $payload : [],
+        ];
+    }
+
+    /**
+     * @param  list<string>  $eans
+     * @return array<string, bool>
+     */
+    public function checkEansExist(array $eans, bool $allowProduction = false): array
+    {
+        $this->writeGuard->assertAllowed($allowProduction);
+
+        $normalized = array_values(array_filter(array_map(
+            static fn (mixed $ean): ?string => is_string($ean) && trim($ean) !== '' ? trim($ean) : null,
+            $eans,
+        )));
+
+        if ($normalized === []) {
+            return [];
+        }
+
+        $payload = $this->postJson(
+            $this->settings->productBaseUrl(),
+            '/product/api/v1/merchant-integration/ean/exists',
+            $normalized,
+            AnanasRateLimiter::CATEGORY_PRODUCTS,
+        );
+
+        return $this->normalizeEanExistsPayload($payload);
+    }
+
+    /**
+     * @return array<string, mixed>|array<int, mixed>|null
+     */
+    public function findProductByEan(string $ean): ?array
+    {
+        $payload = $this->getProducts(['ean' => trim($ean), 'page' => 0, 'size' => 1]);
+        $items = $this->normalizeListPayload($payload);
+
+        return $items[0] ?? null;
+    }
+
+    /**
+     * @param  array<string, mixed>|array<int, mixed>  $payload
+     * @return list<array<string, mixed>>
+     */
+    public function normalizeListPayload(array $payload): array
+    {
+        if ($payload === []) {
+            return [];
+        }
+
+        if (array_is_list($payload)) {
+            return array_values(array_filter($payload, is_array(...)));
+        }
+
+        foreach (['content', 'data', 'items'] as $key) {
+            if (isset($payload[$key]) && is_array($payload[$key])) {
+                return array_values(array_filter($payload[$key], is_array(...)));
+            }
+        }
+
+        return [];
+    }
+
+    /**
      * @param  array<string, mixed>  $query
      * @return array<string, mixed>|array<int, mixed>|null
      */
     private function getJson(string $baseUrl, string $path, array $query, string $rateCategory): mixed
     {
         return $this->requestJson('GET', $baseUrl, $path, $query, $rateCategory);
+    }
+
+    /**
+     * @param  array<string, mixed>|list<mixed>  $body
+     * @return array<string, mixed>|array<int, mixed>|null
+     */
+    private function postJson(string $baseUrl, string $path, array $body, string $rateCategory): mixed
+    {
+        return $this->requestJson('POST', $baseUrl, $path, $body, $rateCategory);
     }
 
     /**
@@ -260,7 +360,8 @@ class AnanasApiClient
         try {
             return match (strtoupper($method)) {
                 'GET' => $request->get($path, $data),
-                default => throw new RuntimeException("Ananas Phase 1A client supports GET only; attempted {$method}"),
+                'POST' => $request->asJson()->post($path, $data),
+                default => throw new RuntimeException("Ananas API client supports GET and POST only; attempted {$method}"),
             };
         } catch (RequestException $exception) {
             if ($exception->response !== null) {
@@ -333,6 +434,39 @@ class AnanasApiClient
             'status' => $response->status(),
             'body' => self::redactSensitiveText($response->body()),
         ]);
+    }
+
+    /**
+     * @param  mixed  $payload
+     * @return array<string, bool>
+     */
+    private function normalizeEanExistsPayload(mixed $payload): array
+    {
+        if (! is_array($payload)) {
+            return [];
+        }
+
+        $result = [];
+
+        if (array_is_list($payload)) {
+            foreach ($payload as $item) {
+                if (! is_array($item)) {
+                    continue;
+                }
+
+                foreach ($item as $ean => $exists) {
+                    $result[(string) $ean] = (bool) $exists;
+                }
+            }
+
+            return $result;
+        }
+
+        foreach ($payload as $ean => $exists) {
+            $result[(string) $ean] = (bool) $exists;
+        }
+
+        return $result;
     }
 
     public static function redactSensitiveText(string $text): string

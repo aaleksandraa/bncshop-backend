@@ -213,6 +213,10 @@ return [
     */
     'ananas_vat_rate' => ($rate = env('ANANAS_VAT_RATE')) !== null && $rate !== '' ? (int) $rate : 0,
 
+    'ananas_import_batch_max_size' => (int) env('ANANAS_IMPORT_BATCH_MAX_SIZE', 25),
+    'ananas_import_poll_interval_seconds' => (int) env('ANANAS_IMPORT_POLL_INTERVAL_SECONDS', 5),
+    'ananas_import_poll_max_attempts' => (int) env('ANANAS_IMPORT_POLL_MAX_ATTEMPTS', 12),
+
     /*
     | Approved package-weight attribute name chain (first non-empty raw_value wins).
     */

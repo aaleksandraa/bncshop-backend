@@ -93,6 +93,11 @@ class AnanasSyncSettings
         return $this->environment() === self::ENV_STAGE;
     }
 
+    public function isProduction(): bool
+    {
+        return $this->environment() === self::ENV_PRODUCTION;
+    }
+
     public function apiSource(): ?ApiSource
     {
         return ApiSource::query()
