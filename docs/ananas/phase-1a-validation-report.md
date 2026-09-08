@@ -39,13 +39,17 @@ Command (credentials supplied via environment only, not committed):
 ANANAS_ENV=stage ANANAS_CLIENT_ID=... ANANAS_CLIENT_SECRET=... php artisan bnc:ananas-test-connection --force-auth
 ```
 
-**Result: authentication failed HTTP 401** (retest 2026-09-07, after Ananas confirmation)
+**Result: authentication successful** (retest 2026-09-08, new QA2 credential pair from Ananas)
 
-`bnc:ananas-test-connection` prefers `ANANAS_*` env vars without querying PostgreSQL.
+| Step | Result |
+|------|--------|
+| POST token (`api.qa2.ananastest.com`) | HTTP 200, Bearer token received |
+| GET product-type | **10 types** — Moda, BabyKidsToys, ITShop, Automotive, Super Market, KnjižaraOfficeSchool, BeautyHealth, Kuća i vrt, Sport, Aparati |
+| GET products (page=0, size=1) | HTTP 200, **0 items** (empty merchant catalog) |
+| GET basic-products (page=0, size=1) | HTTP 200, **0 items** |
+| GET merchant-warehouses (`api.svc.qa2.ananastest.com`) | **Connection timeout** from dev network (~10–20s); not an auth failure |
 
-Direct POST to `https://api.qa2.ananastest.com/iam/api/v1/auth/token` with the merchant `clientId` / `clientSecret` returns **401** `{"statusCode":401,"messageKey":"unauthorized",...}`.
-
-**Conclusion:** the supplied credential pair is **not provisioned for QA2 Stage**. It is valid on Production (see below). For Stage sandbox testing, Ananas must issue QA2-specific credentials or enable the existing client on `api.qa2.ananastest.com`.
+Earlier retest (2026-09-07/08) with a different credential pair returned **401** on QA2 but **200** on Production — that pair was Production-only. The replacement QA2 credentials issued by Ananas authenticate correctly on Stage.
 
 ### Hosts used (Stage)
 
@@ -79,9 +83,9 @@ ANANAS_ENV=production ANANAS_CLIENT_ID=... ANANAS_CLIENT_SECRET=... php artisan 
 
 ## Identifier semantics
 
-**Partially observed live (Production, empty catalog).** From docs + successful product-type GET:
+**Partially observed live (Stage QA2 + Production, empty catalog).** From docs + successful product-type GET on both environments:
 
-- Product types are string labels returned as a JSON array from GET product-type.
+- Product types are string labels returned as a JSON array from GET product-type (10 types on QA2 and Production).
 - GET products returned HTTP 200 with an empty list — no live product payload yet to confirm `id` vs merchantInventoryId.
 - Publish/discount docs reference merchant inventory id — **confirm from first imported product GET**.
 - Do not freeze mapping-table schema until at least one live product payload is captured.
@@ -94,11 +98,10 @@ ANANAS_ENV=production ANANAS_CLIENT_ID=... ANANAS_CLIENT_SECRET=... php artisan 
 
 ## Remaining blockers (catalog writes — not 1A)
 
-1. **QA2 Stage credentials** — current merchant pair works on Production only; request QA2-specific credentials if sandbox testing is required.
-2. **BiH VAT** — which `vat` value (0/10/20) for 17%-inclusive BAM `basePrice`?
-3. **Package weight** — map from A1 attributes via future `AnanasPackageWeightResolver`; sample ≥30 production `raw_value` strings before unit-less rules.
-4. **Live product payload** — merchant catalog empty; identifier fields unconfirmed until first product exists on Ananas.
-5. **Warehouses svc host** — `api.svc.ananas.rs` timed out from dev network; verify from production server/VPN.
+1. **BiH VAT** — which `vat` value (0/10/20) for 17%-inclusive BAM `basePrice`?
+2. **Package weight** — map from A1 attributes via future `AnanasPackageWeightResolver`; sample ≥30 production `raw_value` strings before unit-less rules.
+3. **Live product payload** — merchant catalog empty on QA2 and Production; identifier fields unconfirmed until first product exists on Ananas.
+4. **Warehouses svc host** — `api.svc.qa2.ananastest.com` / `api.svc.ananas.rs` timed out from dev network; verify from production server/VPN.
 
 ## Proposed Phase 1B (requires explicit approval)
 
@@ -124,8 +127,8 @@ ANANAS_ENV=production ANANAS_CLIENT_ID=... ANANAS_CLIENT_SECRET=... php artisan 
 | AnanasEligibilityPolicy + tests | Done |
 | Http::fake tests pass | Done |
 | Zero write endpoints in code | Done |
-| Stage auth + GET samples | **Stage 401 — credentials are Production-only** |
+| Stage auth + GET samples | **Done — QA2 auth OK; product-types OK; catalog empty; svc warehouses timeout from dev network** |
 | Production auth + GET samples | **Auth OK; product-types OK; catalog empty; svc warehouses timeout from dev network** |
 | Stop before 1B | Done |
 
-**Phase 1A implementation complete. Production IAM verified. Use `ANANAS_ENV=production` with the merchant credentials. Request separate QA2 credentials only if sandbox testing is needed.**
+**Phase 1A implementation complete. QA2 Stage IAM verified (2026-09-08). Use `ANANAS_ENV=stage` with QA2 credentials for sandbox; keep Production credentials separate for live.**
