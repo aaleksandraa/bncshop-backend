@@ -48,12 +48,22 @@ class AnanasProbeCategoryCommand extends Command
             return $this->recheckProbe($probeService, (int) $recheckId, (int) $this->option('wait'));
         }
 
+        $mappingId = (int) $this->argument('mapping');
+
+        if ($mappingId <= 0) {
+            $this->error('Invalid mapping ID. Use a numeric ID from bnc:ananas-list-category-mappings (not the literal text {mapping_id}).');
+            $this->listAvailableMappings();
+
+            return self::FAILURE;
+        }
+
         $mapping = AnanasCategoryMapping::query()
             ->with('category')
-            ->find((int) $this->argument('mapping'));
+            ->find($mappingId);
 
         if ($mapping === null) {
-            $this->error('Category mapping not found.');
+            $this->error("Category mapping #{$mappingId} not found.");
+            $this->listAvailableMappings();
 
             return self::FAILURE;
         }
@@ -109,6 +119,44 @@ class AnanasProbeCategoryCommand extends Command
         }
 
         return $result->isValidated() ? self::SUCCESS : ($result->isPending() ? self::SUCCESS : self::FAILURE);
+    }
+
+    private function listAvailableMappings(): void
+    {
+        $mappings = AnanasCategoryMapping::query()
+            ->with('category')
+            ->orderBy('id')
+            ->limit(20)
+            ->get();
+
+        if ($mappings->isEmpty()) {
+            $this->newLine();
+            $this->warn('No mappings in database yet.');
+            $this->line('Create one in Admin → Ananas → Mapiranje kategorija, then run:');
+            $this->line('  php artisan bnc:ananas-list-category-mappings');
+
+            return;
+        }
+
+        $this->newLine();
+        $this->line('Available mappings:');
+
+        foreach ($mappings as $mapping) {
+            if (! $mapping instanceof AnanasCategoryMapping) {
+                continue;
+            }
+
+            $this->line(sprintf(
+                '  #%d  %s  →  productType=%s, category=%s',
+                $mapping->id,
+                $mapping->category?->name ?? 'category '.$mapping->category_id,
+                $mapping->ananas_product_type,
+                $mapping->ananas_category ?: '(empty)',
+            ));
+        }
+
+        $this->newLine();
+        $this->line('Or run: php artisan bnc:ananas-list-category-mappings');
     }
 
     private function recheckProbe(AnanasCategoryProbeService $probeService, int $probeId, int $waitSeconds): int
