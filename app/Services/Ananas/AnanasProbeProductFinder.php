@@ -77,16 +77,73 @@ class AnanasProbeProductFinder
 
     public function findFirstEligible(AnanasCategoryMapping $mapping, int $scanLimit = 500): ?Product
     {
-        $categoryIds = $this->scopedCategoryIds($mapping);
+        return $this->findFirstEligibleInCategoryIds($this->scopedCategoryIds($mapping), $scanLimit);
+    }
 
-        $candidate = null;
+    public function findFirstEligibleGlobally(int $scanLimit = 5000): ?Product
+    {
+        return $this->findFirstEligibleInCategoryIds(null, $scanLimit);
+    }
+
+    /**
+     * @return list<array{product_id: int, category_id: int|null, name: string, ean: string|null}>
+     */
+    public function listEligibleGlobally(int $limit = 10, int $scanLimit = 5000): array
+    {
+        $results = [];
 
         Product::query()
             ->where('is_public', true)
             ->where('status', 'active')
-            ->whereIn('category_id', $categoryIds === [] ? [-1] : $categoryIds)
             ->with(['images', 'manufacturer', 'attributeValues.attributeDefinition'])
             ->orderBy('id')
+            ->limit($scanLimit)
+            ->chunkById(100, function ($products) use (&$results, $limit): bool {
+                foreach ($products as $product) {
+                    if (! $product instanceof Product) {
+                        continue;
+                    }
+
+                    if (! $this->eligibilityPolicy->evaluateProductData($product)->eligible) {
+                        continue;
+                    }
+
+                    $results[] = [
+                        'product_id' => (int) $product->id,
+                        'category_id' => $product->category_id !== null ? (int) $product->category_id : null,
+                        'name' => (string) $product->name,
+                        'ean' => $product->barcode,
+                    ];
+
+                    if (count($results) >= $limit) {
+                        return false;
+                    }
+                }
+
+                return true;
+            });
+
+        return $results;
+    }
+
+    /**
+     * @param  list<int>|null  $categoryIds
+     */
+    private function findFirstEligibleInCategoryIds(?array $categoryIds, int $scanLimit): ?Product
+    {
+        $candidate = null;
+
+        $query = Product::query()
+            ->where('is_public', true)
+            ->where('status', 'active')
+            ->with(['images', 'manufacturer', 'attributeValues.attributeDefinition'])
+            ->orderBy('id');
+
+        if ($categoryIds !== null) {
+            $query->whereIn('category_id', $categoryIds === [] ? [-1] : $categoryIds);
+        }
+
+        $query
             ->limit($scanLimit)
             ->chunkById(100, function ($products) use (&$candidate): bool {
                 foreach ($products as $product) {

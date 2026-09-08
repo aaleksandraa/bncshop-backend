@@ -29,6 +29,7 @@ class AnanasCategoryProbeService
         bool $allowProduction = false,
         bool $dryRun = false,
         ?int $waitSeconds = null,
+        bool $useAnyEligibleProduct = false,
     ): AnanasCategoryProbeResult {
         $mapping->loadMissing('category');
 
@@ -43,10 +44,16 @@ class AnanasCategoryProbeService
             throw new RuntimeException('Category mapping requires ananas_category candidate string to probe.');
         }
 
-        $product ??= $this->resolveProbeProduct($mapping);
+        if ($product === null) {
+            $product = $useAnyEligibleProduct
+                ? $this->probeProductFinder->findFirstEligibleGlobally()
+                : $this->resolveProbeProduct($mapping);
+        }
 
         if ($product === null) {
-            throw new RuntimeException('No eligible product found in mapped BNC category scope for probe.');
+            throw new RuntimeException($useAnyEligibleProduct
+                ? 'No eligible product found anywhere in catalog for probe.'
+                : 'No eligible product found in mapped BNC category scope for probe.');
         }
 
         $eligibility = $this->eligibilityPolicy->evaluateProductData($product);

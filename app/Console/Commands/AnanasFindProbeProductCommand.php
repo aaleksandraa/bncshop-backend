@@ -59,7 +59,10 @@ class AnanasFindProbeProductCommand extends Command
 
         $this->newLine();
         $this->warn('No eligible product found in scanned sample.');
-        $this->line('Common fixes: add EAN (barcode), active image URL, package weight attribute, positive price.');
+        $this->line('Category probe can use ANY eligible catalog product to validate Ananas category strings:');
+        $this->line('  php artisan bnc:ananas-find-eligible-products');
+        $this->line('  php artisan bnc:ananas-probe-category '.$mappingId.' --any-eligible --dry-run');
+        $this->line('For real laptop export, fix blockers above (EAN 8/13 digits, weight attribute, image URL).');
 
         return self::FAILURE;
     }

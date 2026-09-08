@@ -18,6 +18,7 @@ class AnanasProbeCategoryCommand extends Command
                             {--wait=60 : Max seconds to poll GET /products after import}
                             {--recheck= : Re-evaluate an existing probe ID without re-importing}
                             {--dry-run : Build payload only, do not POST import}
+                            {--any-eligible : Use first eligible product from entire catalog (for category string validation only)}
                             {--allow-production : Allow writes when ANANAS_ENV=production}';
 
     protected $description = 'Empirically validate Ananas category string via controlled Stage import + GET reconciliation';
@@ -69,10 +70,20 @@ class AnanasProbeCategoryCommand extends Command
         }
 
         $product = null;
-        $productId = $this->option('product');
+        $productIdOption = $this->option('product');
+        $explicitProductRequested = is_string($productIdOption) && $productIdOption !== '';
 
-        if ($productId !== null && $productId !== '') {
-            $product = Product::query()->find((int) $productId);
+        if ($explicitProductRequested) {
+            $product = Product::query()
+                ->with(['images', 'manufacturer', 'attributeValues.attributeDefinition'])
+                ->find((int) $productIdOption);
+
+            if ($product === null) {
+                $this->error('Product #'.(int) $productIdOption.' not found.');
+                $this->line('Find eligible products: php artisan bnc:ananas-find-eligible-products');
+
+                return self::FAILURE;
+            }
         }
 
         $this->info(sprintf(
@@ -91,10 +102,15 @@ class AnanasProbeCategoryCommand extends Command
                 allowProduction: $allowProduction,
                 dryRun: $dryRun,
                 waitSeconds: (int) $this->option('wait'),
+                useAnyEligibleProduct: (bool) $this->option('any-eligible'),
             );
         } catch (\Throwable $e) {
             if (str_contains($e->getMessage(), 'No eligible product found')) {
                 $this->printProbeDiagnostics($probeService, $mapping);
+            }
+
+            if (str_contains($e->getMessage(), 'is not eligible:')) {
+                $this->line('Find eligible products: php artisan bnc:ananas-find-eligible-products');
             }
 
             $this->error($e->getMessage());
@@ -183,7 +199,9 @@ class AnanasProbeCategoryCommand extends Command
             $productId = $diagnosis['first_eligible_product_id'];
             $this->line("  Try: php artisan bnc:ananas-probe-category {$mapping->id} --product={$productId} --dry-run");
         } else {
-            $this->line('  Run: php artisan bnc:ananas-find-probe-product '.$mapping->id);
+            $this->line('  No eligible products in this BNC category.');
+            $this->line('  Try catalog-wide probe: php artisan bnc:ananas-probe-category '.$mapping->id.' --any-eligible --dry-run');
+            $this->line('  Or list eligible products: php artisan bnc:ananas-find-eligible-products');
         }
     }
 
