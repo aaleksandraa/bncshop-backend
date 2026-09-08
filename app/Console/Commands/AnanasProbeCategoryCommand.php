@@ -93,6 +93,10 @@ class AnanasProbeCategoryCommand extends Command
                 waitSeconds: (int) $this->option('wait'),
             );
         } catch (\Throwable $e) {
+            if (str_contains($e->getMessage(), 'No eligible product found')) {
+                $this->printProbeDiagnostics($probeService, $mapping);
+            }
+
             $this->error($e->getMessage());
 
             return self::FAILURE;
@@ -157,6 +161,30 @@ class AnanasProbeCategoryCommand extends Command
 
         $this->newLine();
         $this->line('Or run: php artisan bnc:ananas-list-category-mappings');
+    }
+
+    private function printProbeDiagnostics(AnanasCategoryProbeService $probeService, AnanasCategoryMapping $mapping): void
+    {
+        $diagnosis = $probeService->diagnoseProbeCandidates($mapping);
+
+        $this->newLine();
+        $this->warn('Probe diagnostics:');
+        $this->line('  Total in scope: '.$diagnosis['total_in_scope']);
+        $this->line('  Active + public: '.$diagnosis['active_public']);
+        $this->line('  Eligible: '.$diagnosis['eligible']);
+
+        if ($diagnosis['reasons'] !== []) {
+            $this->line('  Blockers: '.collect($diagnosis['reasons'])
+                ->map(fn (int $count, string $code): string => "{$code}={$count}")
+                ->implode(', '));
+        }
+
+        if ($diagnosis['first_eligible_product_id'] !== null) {
+            $productId = $diagnosis['first_eligible_product_id'];
+            $this->line("  Try: php artisan bnc:ananas-probe-category {$mapping->id} --product={$productId} --dry-run");
+        } else {
+            $this->line('  Run: php artisan bnc:ananas-find-probe-product '.$mapping->id);
+        }
     }
 
     private function recheckProbe(AnanasCategoryProbeService $probeService, int $probeId, int $waitSeconds): int

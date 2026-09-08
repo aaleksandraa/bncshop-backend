@@ -16,6 +16,7 @@ class AnanasCategoryProbeService
         private readonly AnanasEligibilityPolicy $eligibilityPolicy,
         private readonly AnanasProductMapper $productMapper,
         private readonly AnanasProductMappingService $mappingService,
+        private readonly AnanasProbeProductFinder $probeProductFinder,
     ) {}
 
     /**
@@ -159,61 +160,27 @@ class AnanasCategoryProbeService
         );
     }
 
-    private function resolveProbeProduct(AnanasCategoryMapping $mapping): ?Product
-    {
-        $categoryIds = [(int) $mapping->category_id];
-
-        if ($mapping->include_descendants) {
-            $categoryIds = array_merge(
-                $categoryIds,
-                $this->descendantCategoryIdsForProbe((int) $mapping->category_id),
-            );
-        }
-
-        $categoryIds = array_values(array_unique(array_filter($categoryIds)));
-
-        $query = Product::query()
-            ->where('is_public', true)
-            ->where('status', 'active')
-            ->whereIn('category_id', $categoryIds === [] ? [-1] : $categoryIds)
-            ->with(['images', 'manufacturer', 'attributeValues.attributeDefinition']);
-
-        foreach ($query->limit(50)->get() as $product) {
-            if ($product instanceof Product && $this->eligibilityPolicy->evaluateProductData($product)->eligible) {
-                return $product;
-            }
-        }
-
-        return null;
+        return $result;
     }
 
     /**
-     * @return array<int, int>
+     * @return array{
+     *   category_ids: list<int>,
+     *   total_in_scope: int,
+     *   active_public: int,
+     *   eligible: int,
+     *   reasons: array<string, int>,
+     *   first_eligible_product_id: int|null
+     * }
      */
-    private function descendantCategoryIdsForProbe(int $categoryId): array
+    public function diagnoseProbeCandidates(AnanasCategoryMapping $mapping, int $scanLimit = 500): array
     {
-        $parentMap = \App\Models\Category::query()->pluck('parent_id', 'id')->all();
-        $childrenByParent = [];
+        return $this->probeProductFinder->diagnose($mapping, $scanLimit);
+    }
 
-        foreach ($parentMap as $id => $parentId) {
-            if ($parentId !== null) {
-                $childrenByParent[(int) $parentId][] = (int) $id;
-            }
-        }
-
-        $ids = [];
-        $queue = [$categoryId];
-
-        while ($queue !== []) {
-            $current = array_shift($queue);
-
-            foreach ($childrenByParent[$current] ?? [] as $childId) {
-                $ids[] = $childId;
-                $queue[] = $childId;
-            }
-        }
-
-        return $ids;
+    private function resolveProbeProduct(AnanasCategoryMapping $mapping): ?Product
+    {
+        return $this->probeProductFinder->findFirstEligible($mapping);
     }
 
     /**
