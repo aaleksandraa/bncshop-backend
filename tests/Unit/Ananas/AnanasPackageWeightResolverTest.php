@@ -133,6 +133,67 @@ class AnanasPackageWeightResolverTest extends TestCase
         $this->assertSame(2.5, $result->resolvedWeightKg);
     }
 
+    public function test_parses_numeric_raw_with_display_unit_grams(): void
+    {
+        $product = Product::factory()->create();
+        $definition = AttributeDefinition::query()->create([
+            'external_attribute_id' => (string) \Illuminate\Support\Str::uuid(),
+            'name' => 'Težina',
+            'display_name' => 'Težina',
+            'display_unit' => 'g',
+            'internal_type' => 'number',
+            'is_public' => true,
+        ]);
+
+        ProductAttributeValue::query()->create([
+            'product_id' => $product->id,
+            'attribute_definition_id' => $definition->id,
+            'attribute_name_snapshot' => 'Težina',
+            'raw_value' => '184',
+            'normalized_value' => '184',
+            'normalized_type' => 'number',
+        ]);
+
+        $result = $this->resolver->resolve($product->fresh(['attributeValues.attributeDefinition']));
+
+        $this->assertTrue($result->isOk());
+        $this->assertSame(0.184, $result->resolvedWeightKg);
+    }
+
+    public function test_parses_embedded_weight_from_long_raw_value(): void
+    {
+        $result = $this->resolveWithRawValue('Težina', 'Težina proizvoda: 2,5 kg');
+
+        $this->assertTrue($result->isOk());
+        $this->assertSame(2.5, $result->resolvedWeightKg);
+    }
+
+    public function test_fuzzy_weight_definition_name_is_discovered(): void
+    {
+        $product = Product::factory()->create();
+        $definition = AttributeDefinition::query()->create([
+            'external_attribute_id' => (string) \Illuminate\Support\Str::uuid(),
+            'name' => 'Neto težina proizvoda',
+            'display_name' => 'Neto težina proizvoda',
+            'internal_type' => 'text',
+            'is_public' => true,
+        ]);
+
+        ProductAttributeValue::query()->create([
+            'product_id' => $product->id,
+            'attribute_definition_id' => $definition->id,
+            'attribute_name_snapshot' => 'Neto težina proizvoda',
+            'raw_value' => '750 g',
+            'normalized_value' => '750 g',
+            'normalized_type' => 'text',
+        ]);
+
+        $result = $this->resolver->resolve($product->fresh(['attributeValues.attributeDefinition']));
+
+        $this->assertTrue($result->isOk());
+        $this->assertSame(0.75, $result->resolvedWeightKg);
+    }
+
     private function resolveWithRawValue(string $attributeName, string $rawValue): AnanasPackageWeightResult
     {
         $product = Product::factory()->create();
