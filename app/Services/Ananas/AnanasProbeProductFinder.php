@@ -80,7 +80,7 @@ class AnanasProbeProductFinder
         return $this->findFirstEligibleInCategoryIds($this->scopedCategoryIds($mapping), $scanLimit);
     }
 
-    public function findFirstEligibleGlobally(int $scanLimit = 5000): ?Product
+    public function findFirstEligibleGlobally(?int $scanLimit = null): ?Product
     {
         return $this->findFirstEligibleInCategoryIds(null, $scanLimit);
     }
@@ -88,17 +88,21 @@ class AnanasProbeProductFinder
     /**
      * @return list<array{product_id: int, category_id: int|null, name: string, ean: string|null}>
      */
-    public function listEligibleGlobally(int $limit = 10, int $scanLimit = 5000): array
+    public function listEligibleGlobally(int $limit = 10, ?int $scanLimit = null): array
     {
         $results = [];
 
-        Product::query()
+        $query = Product::query()
             ->where('is_public', true)
             ->where('status', 'active')
             ->with(['images', 'manufacturer', 'attributeValues.attributeDefinition'])
-            ->orderBy('id')
-            ->limit($scanLimit)
-            ->chunkById(100, function ($products) use (&$results, $limit): bool {
+            ->orderBy('id');
+
+        if ($scanLimit !== null) {
+            $query->limit($scanLimit);
+        }
+
+        $query->chunkById(200, function ($products) use (&$results, $limit): bool {
                 foreach ($products as $product) {
                     if (! $product instanceof Product) {
                         continue;
@@ -129,7 +133,7 @@ class AnanasProbeProductFinder
     /**
      * @param  list<int>|null  $categoryIds
      */
-    private function findFirstEligibleInCategoryIds(?array $categoryIds, int $scanLimit): ?Product
+    private function findFirstEligibleInCategoryIds(?array $categoryIds, ?int $scanLimit): ?Product
     {
         $candidate = null;
 
@@ -143,9 +147,11 @@ class AnanasProbeProductFinder
             $query->whereIn('category_id', $categoryIds === [] ? [-1] : $categoryIds);
         }
 
-        $query
-            ->limit($scanLimit)
-            ->chunkById(100, function ($products) use (&$candidate): bool {
+        if ($scanLimit !== null) {
+            $query->limit($scanLimit);
+        }
+
+        $query->chunkById(200, function ($products) use (&$candidate): bool {
                 foreach ($products as $product) {
                     if (! $product instanceof Product) {
                         continue;

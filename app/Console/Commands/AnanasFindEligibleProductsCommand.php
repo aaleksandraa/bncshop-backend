@@ -9,20 +9,25 @@ class AnanasFindEligibleProductsCommand extends Command
 {
     protected $signature = 'bnc:ananas-find-eligible-products
                             {--limit=10 : Number of eligible products to list}
-                            {--scan=5000 : Max products to scan in catalog}';
+                            {--scan= : Max products to scan (default: entire catalog)}';
 
     protected $description = 'List eligible Ananas export products anywhere in catalog (for category probe fallback)';
 
     public function handle(AnanasProbeProductFinder $finder): int
     {
+        $scanOption = $this->option('scan');
+        $scanLimit = is_string($scanOption) && $scanOption !== '' ? (int) $scanOption : null;
+
         $items = $finder->listEligibleGlobally(
             limit: (int) $this->option('limit'),
-            scanLimit: (int) $this->option('scan'),
+            scanLimit: $scanLimit,
         );
 
         if ($items === []) {
-            $this->warn('No eligible products found in scanned catalog sample.');
-            $this->line('Products need valid 8/13-digit EAN, image URL, package weight attribute, and positive price.');
+            $this->warn('No eligible products found in entire catalog.');
+            $this->line('This is a local data check — Stage API availability (e.g. after 17h) does NOT affect this command.');
+            $this->line('Run full blocker report: php artisan bnc:ananas-catalog-eligibility-report');
+            $this->line('Verify Stage API separately: php artisan bnc:ananas-test-connection');
 
             return self::FAILURE;
         }
