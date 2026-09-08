@@ -160,9 +160,6 @@ class AnanasCategoryProbeService
         );
     }
 
-        return $result;
-    }
-
     /**
      * @return array{
      *   category_ids: list<int>,
