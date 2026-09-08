@@ -227,8 +227,18 @@ return [
         'Težina pakovanja',
         'Bruto težina',
         'Težina',
+        'Neto težina pakovanja',
         'Neto težina',
     ],
+
+    /*
+    | eLine/BNC feed stores package weights as bare decimals without display_unit (values are kg).
+    | When raw_value has no unit suffix, apply this default for approved package-weight attributes.
+    */
+    'ananas_weight_unitless_default_unit' => env('ANANAS_WEIGHT_UNITLESS_DEFAULT_UNIT', 'kg'),
+
+    // Reject or re-interpret unitless values above this threshold (as grams when default is kg).
+    'ananas_weight_max_kg' => (float) env('ANANAS_WEIGHT_MAX_KG', 150),
 
     'product_image_download_timeout' => (int) env('BNC_PRODUCT_IMAGE_DOWNLOAD_TIMEOUT', 30),
     'product_image_verify_ssl' => env('BNC_PRODUCT_IMAGE_VERIFY_SSL', env('A1_API_VERIFY_SSL', true)),

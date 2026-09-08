@@ -57,8 +57,9 @@ class AnanasWeightAuditCommand extends Command
         }
 
         $this->newLine();
-        $this->line('Common pattern: raw_value is numeric (e.g. "184") + display_unit on definition ("g").');
-        $this->line('Resolver now combines normalized/raw value with display_unit before parsing.');
+        $defaultUnit = (string) config('bnc.ananas_weight_unitless_default_unit', 'kg');
+        $this->line("eLine pattern: bare decimals on Bruto/Neto težina (no display_unit) — resolver assumes {$defaultUnit}.");
+        $this->line('When display_unit is set (e.g. "g"), raw_value is combined with it before parsing.');
 
         return self::SUCCESS;
     }

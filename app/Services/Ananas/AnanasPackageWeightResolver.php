@@ -217,8 +217,10 @@ class AnanasPackageWeightResolver
 
         $lastResult = AnanasPackageWeightResult::missing();
 
+        $defaultUnit = $this->defaultUnitForUnitlessValue($sourceAttributeName, $displayUnit);
+
         foreach ($candidates as $candidate) {
-            $result = $this->parseRawValue($candidate, $sourceAttributeName);
+            $result = $this->parseRawValue($candidate, $sourceAttributeName, $defaultUnit);
 
             if ($result->isOk()) {
                 return $result;
@@ -232,7 +234,7 @@ class AnanasPackageWeightResolver
         return $lastResult;
     }
 
-    private function parseRawValue(string $raw, string $sourceAttributeName): AnanasPackageWeightResult
+    private function parseRawValue(string $raw, string $sourceAttributeName, ?string $defaultUnit = null): AnanasPackageWeightResult
     {
         if ($this->looksLikeCapacity($raw)) {
             return AnanasPackageWeightResult::unparseable($sourceAttributeName, $raw, 'Value resembles capacity, not package weight.');
@@ -262,11 +264,82 @@ class AnanasPackageWeightResolver
             }
         }
 
-        if (preg_match('/^\s*(-?\d+(?:[.,]\d+)?)\s*$/u', $raw)) {
-            return AnanasPackageWeightResult::unitlessAmbiguous($sourceAttributeName, $raw);
+        if (preg_match('/^\s*(-?\d+(?:[.,]\d+)?)\s*$/u', $raw, $matches)) {
+            if ($defaultUnit === null) {
+                return AnanasPackageWeightResult::unitlessAmbiguous($sourceAttributeName, $raw);
+            }
+
+            $numeric = $this->parseDecimal($matches[1]);
+
+            if ($numeric === null) {
+                return AnanasPackageWeightResult::unparseable($sourceAttributeName, $raw, 'Malformed numeric portion.');
+            }
+
+            return $this->finalizeUnitlessNumeric($numeric, $defaultUnit, $sourceAttributeName, $raw);
         }
 
         return AnanasPackageWeightResult::unparseable($sourceAttributeName, $raw, 'Unrecognized weight format.');
+    }
+
+    private function finalizeUnitlessNumeric(float $numeric, string $defaultUnit, string $sourceAttributeName, string $raw): AnanasPackageWeightResult
+    {
+        $unit = strtolower(trim($defaultUnit));
+        $kg = str_starts_with($unit, 'g') ? $numeric / 1000 : $numeric;
+        $maxKg = (float) config('bnc.ananas_weight_max_kg', 150);
+
+        if ($kg > $maxKg && ! str_starts_with($unit, 'g')) {
+            $kgAsGrams = $numeric / 1000;
+
+            if ($kgAsGrams > 0 && $kgAsGrams <= $maxKg) {
+                $kg = $kgAsGrams;
+            }
+        }
+
+        if ($kg > $maxKg) {
+            return AnanasPackageWeightResult::unparseable(
+                $sourceAttributeName,
+                $raw,
+                sprintf('Resolved weight %.3f kg exceeds maximum %.0f kg.', $kg, $maxKg),
+            );
+        }
+
+        return $this->finalizeKg($kg, $sourceAttributeName, $raw);
+    }
+
+    private function defaultUnitForUnitlessValue(string $sourceAttributeName, ?string $displayUnit): ?string
+    {
+        if (filled($displayUnit)) {
+            return trim((string) $displayUnit);
+        }
+
+        if (! $this->isTrustedPackageWeightSource($sourceAttributeName)) {
+            return null;
+        }
+
+        $configured = strtolower(trim((string) config('bnc.ananas_weight_unitless_default_unit', 'kg')));
+
+        return in_array($configured, ['kg', 'g', 'gram', 'grams'], true) ? $configured : 'kg';
+    }
+
+    private function isTrustedPackageWeightSource(string $sourceAttributeName): bool
+    {
+        foreach ($this->approvedAttributeNames() as $chainName) {
+            if (strcasecmp($sourceAttributeName, $chainName) === 0) {
+                return true;
+            }
+        }
+
+        $label = mb_strtolower(trim($sourceAttributeName));
+
+        if ($label === '') {
+            return false;
+        }
+
+        if (preg_match('/maksimalna\s+težina|težina\s+kartona|težina\s+plastike|ambalaž|nosivost|kapacitet|u\s+paketu|sadržaj\s+paketa|adapter\s+u\s+paketu/i', $label)) {
+            return false;
+        }
+
+        return (bool) preg_match('/bruto\s+težin|neto\s+težin|težina\s+paket|^težina$/iu', $label);
     }
 
     private function finalizeKg(float $kg, string $sourceAttributeName, string $raw): AnanasPackageWeightResult
