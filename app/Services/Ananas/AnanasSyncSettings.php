@@ -22,6 +22,7 @@ class AnanasSyncSettings
             'enabled' => false,
             'allow_catalog_writes' => false,
             'environment' => config('bnc.ananas_env', self::ENV_STAGE),
+            'vat_rate' => null,
         ];
     }
 
@@ -62,10 +63,10 @@ class AnanasSyncSettings
 
     public function environment(): string
     {
-        $fromConfig = strtolower(trim((string) config('bnc.ananas_env', '')));
+        $fromEnv = env('ANANAS_ENV');
 
-        if ($fromConfig !== '') {
-            return $fromConfig === self::ENV_PRODUCTION ? self::ENV_PRODUCTION : self::ENV_STAGE;
+        if (is_string($fromEnv) && trim($fromEnv) !== '') {
+            return strtolower(trim($fromEnv)) === self::ENV_PRODUCTION ? self::ENV_PRODUCTION : self::ENV_STAGE;
         }
 
         $env = strtolower(trim((string) ($this->storedSettings()['environment'] ?? self::ENV_STAGE)));

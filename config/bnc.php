@@ -207,6 +207,25 @@ return [
     'ananas_production_product_base_url' => env('ANANAS_PRODUCTION_PRODUCT_BASE_URL', 'https://api.ananas.rs'),
     'ananas_production_svc_base_url' => env('ANANAS_PRODUCTION_SVC_BASE_URL', 'https://api.svc.ananas.rs'),
 
+    /*
+    | BiH VAT for Ananas payload: must be 0, 10, or 20 once confirmed by Ananas.
+    | Leave null until Ananas answers — eligibility returns VAT_UNRESOLVED.
+    */
+    'ananas_vat_rate' => ($rate = env('ANANAS_VAT_RATE')) !== null && $rate !== '' ? (int) $rate : null,
+
+    /*
+    | Approved package-weight attribute name chain (first non-empty raw_value wins).
+    */
+    'ananas_weight_attribute_names' => [
+        'Bruto težina pakovanja',
+        'Bruto težina kutije',
+        'Težina Paketa',
+        'Težina pakovanja',
+        'Bruto težina',
+        'Težina',
+        'Neto težina',
+    ],
+
     'product_image_download_timeout' => (int) env('BNC_PRODUCT_IMAGE_DOWNLOAD_TIMEOUT', 30),
     'product_image_verify_ssl' => env('BNC_PRODUCT_IMAGE_VERIFY_SSL', env('A1_API_VERIFY_SSL', true)),
     'product_image_download_on_import' => env('BNC_PRODUCT_IMAGE_DOWNLOAD_ON_IMPORT', true),
