@@ -21,7 +21,9 @@ class AnanasListCategoryMappingsCommand extends Command
 
         if ($mappings->isEmpty()) {
             $this->warn('No category mappings found.');
-            $this->line('Create one in Admin → Ananas → Mapiranje kategorija (set productType + category string).');
+            $this->line('Create one via admin (Ananas → Mapiranje kategorija) or CLI:');
+            $this->line('  php artisan bnc:ananas-list-bnc-categories --search=laptop');
+            $this->line('  php artisan bnc:ananas-create-category-mapping --category-id=ID --product-type=ITShop --ananas-category=Laptopi');
 
             return self::FAILURE;
         }
