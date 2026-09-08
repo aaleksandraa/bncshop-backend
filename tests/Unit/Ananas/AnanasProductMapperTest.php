@@ -23,7 +23,7 @@ class AnanasProductMapperTest extends TestCase
     {
         parent::setUp();
 
-        config(['bnc.ananas_vat_rate' => 20]);
+        config(['bnc.ananas_vat_rate' => 0]);
     }
 
     public function test_mapper_uses_price_calculator_regular_price(): void
@@ -46,7 +46,7 @@ class AnanasProductMapperTest extends TestCase
         $payload = $mapper->map($product, $mapping);
 
         $this->assertSame(199.99, $payload['basePrice']);
-        $this->assertSame(20, $payload['vat']);
+        $this->assertSame(0, $payload['vat']);
         $this->assertSame('KG', $payload['packageWeightUnit']);
         $this->assertSame('ITShop', $payload['productType']);
     }

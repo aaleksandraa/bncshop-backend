@@ -98,10 +98,11 @@ ANANAS_ENV=production ANANAS_CLIENT_ID=... ANANAS_CLIENT_SECRET=... php artisan 
 
 ## Remaining blockers (catalog writes — not 1A)
 
-1. **BiH VAT** — which `vat` value (0/10/20) for 17%-inclusive BAM `basePrice`?
-2. **Package weight** — map from A1 attributes via future `AnanasPackageWeightResolver`; sample ≥30 production `raw_value` strings before unit-less rules.
-3. **Live product payload** — merchant catalog empty on QA2 and Production; identifier fields unconfirmed until first product exists on Ananas.
-4. **Warehouses svc host** — `api.svc.qa2.ananastest.com` / `api.svc.ananas.rs` timed out from dev network; verify from production server/VPN.
+1. **Package weight** — map from A1 attributes via future `AnanasPackageWeightResolver`; sample ≥30 production `raw_value` strings before unit-less rules.
+2. **Live product payload** — merchant catalog empty on QA2 and Production; identifier fields unconfirmed until first product exists on Ananas.
+3. **Warehouses svc host** — `api.svc.qa2.ananastest.com` / `api.svc.ananas.rs` timed out from dev network; verify from production server/VPN.
+
+**Resolved:** Ananas `vat=0` with `basePrice` = final BAM retail from PriceCalculator (17% BiH VAT already in price).
 
 ## Proposed Phase 1B (requires explicit approval)
 
@@ -109,7 +110,7 @@ ANANAS_ENV=production ANANAS_CLIENT_ID=... ANANAS_CLIENT_SECRET=... php artisan 
 - `AnanasPackageWeightResolver` + tests (mapper must not parse weight).
 - Migrations + category/product-type mapping UI.
 - Mapper with `PriceCalculator::regularPrice` only.
-- Still **no auto-publish** until mapping + VAT resolved.
+- Still **no auto-publish** until mapping is complete.
 
 ## Security
 

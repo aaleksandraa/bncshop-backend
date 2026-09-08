@@ -23,7 +23,7 @@ class AnanasEligibilityPolicyTest extends TestCase
     {
         parent::setUp();
 
-        config(['bnc.ananas_vat_rate' => 20]);
+        config(['bnc.ananas_vat_rate' => 0]);
 
         $this->policy = app(AnanasEligibilityPolicy::class);
     }
@@ -116,9 +116,9 @@ class AnanasEligibilityPolicyTest extends TestCase
         );
     }
 
-    public function test_vat_unresolved_when_not_configured(): void
+    public function test_vat_unresolved_when_rate_is_invalid(): void
     {
-        config(['bnc.ananas_vat_rate' => null]);
+        config(['bnc.ananas_vat_rate' => 99]);
 
         $product = $this->createExportReadyProduct();
 

@@ -22,7 +22,7 @@ class AnanasSyncSettings
             'enabled' => false,
             'allow_catalog_writes' => false,
             'environment' => config('bnc.ananas_env', self::ENV_STAGE),
-            'vat_rate' => null,
+            'vat_rate' => 0,
         ];
     }
 

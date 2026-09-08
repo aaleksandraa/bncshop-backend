@@ -208,10 +208,10 @@ return [
     'ananas_production_svc_base_url' => env('ANANAS_PRODUCTION_SVC_BASE_URL', 'https://api.svc.ananas.rs'),
 
     /*
-    | BiH VAT for Ananas payload: must be 0, 10, or 20 once confirmed by Ananas.
-    | Leave null until Ananas answers — eligibility returns VAT_UNRESOLVED.
+    | Ananas payload VAT field (0, 10, or 20). BNC basePrice is the final BAM retail
+    | price from PriceCalculator (margin + 17% BiH VAT already included) — send vat=0.
     */
-    'ananas_vat_rate' => ($rate = env('ANANAS_VAT_RATE')) !== null && $rate !== '' ? (int) $rate : null,
+    'ananas_vat_rate' => ($rate = env('ANANAS_VAT_RATE')) !== null && $rate !== '' ? (int) $rate : 0,
 
     /*
     | Approved package-weight attribute name chain (first non-empty raw_value wins).
