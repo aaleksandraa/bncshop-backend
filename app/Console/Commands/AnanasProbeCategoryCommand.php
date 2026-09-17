@@ -138,6 +138,10 @@ class AnanasProbeCategoryCommand extends Command
             $this->warn('Probe pending — re-run with --recheck=<probe_id> or bnc:ananas-reconcile-products after async import completes.');
         }
 
+        if ($dryRun) {
+            return self::SUCCESS;
+        }
+
         return $result->isValidated() ? self::SUCCESS : ($result->isPending() ? self::SUCCESS : self::FAILURE);
     }
 
