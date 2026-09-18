@@ -46,7 +46,15 @@ class AnanasCategoryProbeServiceTest extends TestCase
 
     public function test_probe_dry_run_does_not_call_import(): void
     {
-        Http::fake();
+        Http::fake([
+            'api.qa2.ananastest.com/iam/api/v1/auth/token' => Http::response([
+                'access_token' => 'token-abc',
+                'expires_in' => 900,
+            ], 200),
+            'api.qa2.ananastest.com/product/api/v1/merchant-integration/ean/exists' => Http::response([
+                '1234567890123' => false,
+            ], 200),
+        ]);
 
         [$product, $mapping] = $this->createProbeFixtures('Laptopi');
 
@@ -58,7 +66,7 @@ class AnanasCategoryProbeServiceTest extends TestCase
 
         $this->assertSame(0, $result->probeId);
         $this->assertSame(AnanasCategoryProbe::STATUS_SUBMITTED, $result->status);
-        Http::assertNothingSent();
+        Http::assertNotSent(fn ($request): bool => str_contains($request->url(), 'merchant-integration/import'));
     }
 
     public function test_probe_validates_category_from_get_products_response(): void
@@ -67,6 +75,9 @@ class AnanasCategoryProbeServiceTest extends TestCase
             'api.qa2.ananastest.com/iam/api/v1/auth/token' => Http::response([
                 'access_token' => 'token-abc',
                 'expires_in' => 900,
+            ], 200),
+            'api.qa2.ananastest.com/product/api/v1/merchant-integration/ean/exists' => Http::response([
+                '1234567890123' => true,
             ], 200),
             'api.qa2.ananastest.com/product/api/v1/merchant-integration/import' => Http::response([
                 'id' => '11111111-1111-1111-1111-111111111111',
@@ -112,6 +123,9 @@ class AnanasCategoryProbeServiceTest extends TestCase
                 'access_token' => 'token-abc',
                 'expires_in' => 900,
             ], 200),
+            'api.qa2.ananastest.com/product/api/v1/merchant-integration/ean/exists' => Http::response([
+                '1234567890123' => true,
+            ], 200),
             'api.qa2.ananastest.com/product/api/v1/merchant-integration/import' => Http::response([
                 'id' => '22222222-2222-2222-2222-222222222222',
             ], 200),
@@ -137,6 +151,36 @@ class AnanasCategoryProbeServiceTest extends TestCase
         $this->assertSame(AnanasCategoryProbe::STATUS_FAILED, $result->status);
         $mapping->refresh();
         $this->assertSame(AnanasCategoryMapping::VALIDATION_FAILED, $mapping->category_validation_status);
+    }
+
+    public function test_probe_awaiting_onboarding_when_ean_not_in_master_and_get_empty(): void
+    {
+        Http::fake([
+            'api.qa2.ananastest.com/iam/api/v1/auth/token' => Http::response([
+                'access_token' => 'token-abc',
+                'expires_in' => 900,
+            ], 200),
+            'api.qa2.ananastest.com/product/api/v1/merchant-integration/ean/exists' => Http::response([
+                '1234567890123' => false,
+            ], 200),
+            'api.qa2.ananastest.com/product/api/v1/merchant-integration/import' => Http::response([
+                'id' => '33333333-3333-3333-3333-333333333333',
+            ], 200),
+            'api.qa2.ananastest.com/product/api/v1/merchant-integration/products*' => Http::response([], 200),
+        ]);
+
+        [$product, $mapping] = $this->createProbeFixtures('Laptopi');
+
+        $result = app(AnanasCategoryProbeService::class)->probe(
+            mapping: $mapping,
+            product: $product,
+            waitSeconds: 0,
+        );
+
+        $this->assertTrue($result->isAwaitingOnboarding());
+        $this->assertDatabaseHas('ananas_category_probes', [
+            'status' => AnanasCategoryProbe::STATUS_AWAITING_ONBOARDING,
+        ]);
     }
 
     /**

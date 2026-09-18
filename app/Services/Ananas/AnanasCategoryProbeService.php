@@ -17,6 +17,7 @@ class AnanasCategoryProbeService
         private readonly AnanasProductMapper $productMapper,
         private readonly AnanasProductMappingService $mappingService,
         private readonly AnanasProbeProductFinder $probeProductFinder,
+        private readonly AnanasMasterEanCatalogService $masterEanCatalog,
     ) {}
 
     /**
@@ -30,6 +31,7 @@ class AnanasCategoryProbeService
         bool $dryRun = false,
         ?int $waitSeconds = null,
         bool $useAnyEligibleProduct = false,
+        bool $requireMasterEan = false,
     ): AnanasCategoryProbeResult {
         $mapping->loadMissing('category');
 
@@ -45,9 +47,13 @@ class AnanasCategoryProbeService
         }
 
         if ($product === null) {
-            $product = $useAnyEligibleProduct
-                ? $this->probeProductFinder->findFirstEligibleGlobally()
-                : $this->resolveProbeProduct($mapping);
+            if ($requireMasterEan) {
+                $product = $this->masterEanCatalog->findFirstEligibleProductWithMasterEan();
+            } elseif ($useAnyEligibleProduct) {
+                $product = $this->probeProductFinder->findFirstEligibleGlobally();
+            } else {
+                $product = $this->resolveProbeProduct($mapping);
+            }
         }
 
         if ($product === null) {
@@ -67,8 +73,28 @@ class AnanasCategoryProbeService
         }
 
         $payload = $this->productMapper->mapForProbe($product, $mapping);
+        $ean = trim((string) ($payload['ean'] ?? $product->barcode));
+
+        if ($requireMasterEan && $ean !== '' && ! $this->masterEanCatalog->isInMasterCatalog($ean)) {
+            throw new RuntimeException(sprintf(
+                'Probe product %d EAN %s is not in Ananas master catalog. Use bnc:ananas-find-master-ean-product or omit --master-ean-only.',
+                $product->id,
+                $ean,
+            ));
+        }
 
         if ($dryRun) {
+            $eanInMaster = $ean !== '' ? $this->masterEanCatalog->isInMasterCatalog($ean) : null;
+            $message = 'Dry run — payload prepared but not submitted.';
+
+            if ($eanInMaster === true) {
+                $message .= ' EAN is in Ananas master catalog; after import, GET /products should show the item for category validation.';
+            } elseif ($eanInMaster === false) {
+                $message .= ' EAN is not in master catalog — Ananas loads new items manually; email '
+                    .config('bnc.ananas_onboarding_email', 'onboarding@ananas.rs')
+                    .' with the import Progress UUID.';
+            }
+
             return new AnanasCategoryProbeResult(
                 probeId: 0,
                 mappingId: (int) $mapping->id,
@@ -78,7 +104,7 @@ class AnanasCategoryProbeService
                 observedCategories: [],
                 observedProductType: $productType,
                 remoteProductId: null,
-                message: 'Dry run — payload prepared but not submitted.',
+                message: $message,
             );
         }
 
@@ -103,10 +129,19 @@ class AnanasCategoryProbeService
             'category_validation_notes' => 'Probe submitted; awaiting GET reconciliation.',
         ]);
 
-        $this->mappingService->recordSubmission($product, $payload, $progressId);
+        $eanInMaster = $ean !== '' ? $this->masterEanCatalog->isInMasterCatalog($ean) : null;
 
-        $remote = $this->pollRemoteProduct((string) $payload['ean'], $waitSeconds);
-        $result = $this->finalizeProbe($probe, $mapping, $remote, $productType, $categoryCandidate);
+        $this->mappingService->recordSubmission($product, $payload, $progressId, $eanInMaster);
+
+        $remote = $this->pollRemoteProduct($ean, $waitSeconds);
+        $result = $this->finalizeProbe(
+            $probe,
+            $mapping,
+            $remote,
+            $productType,
+            $categoryCandidate,
+            $eanInMaster,
+        );
 
         return new AnanasCategoryProbeResult(
             probeId: (int) $probe->id,
@@ -146,12 +181,14 @@ class AnanasCategoryProbeService
         }
 
         $remote = $this->pollRemoteProduct($ean, $waitSeconds ?? 0, attemptsOverride: 1);
+        $eanInMaster = $this->masterEanCatalog->isInMasterCatalog($ean);
         $result = $this->finalizeProbe(
             $probe,
             $mapping,
             $remote,
             (string) $probe->product_type,
             (string) $probe->category_candidate,
+            $eanInMaster,
         );
 
         return new AnanasCategoryProbeResult(
@@ -230,11 +267,24 @@ class AnanasCategoryProbeService
         ?array $remote,
         string $expectedProductType,
         string $categoryCandidate,
+        ?bool $eanInMasterCatalog = null,
     ): array {
         if ($remote === null) {
-            $message = 'Import submitted but product not yet visible via GET /products. Re-run reconcile or recheck later.';
+            if ($eanInMasterCatalog === false) {
+                $onboardingEmail = (string) config('bnc.ananas_onboarding_email', 'onboarding@ananas.rs');
+                $message = sprintf(
+                    'Import accepted but EAN is not in Ananas master catalog. Ananas onboarding loads new items manually — email %s with Progress UUID %s, then recheck this probe.',
+                    $onboardingEmail,
+                    $probe->progress_id ?? '(unknown)',
+                );
+                $status = AnanasCategoryProbe::STATUS_AWAITING_ONBOARDING;
+            } else {
+                $message = 'Import submitted but product not yet visible via GET /products. Re-run reconcile or recheck later.';
+                $status = AnanasCategoryProbe::STATUS_PENDING;
+            }
+
             $probe->update([
-                'status' => AnanasCategoryProbe::STATUS_PENDING,
+                'status' => $status,
                 'error' => $message,
             ]);
             $mapping->update([
@@ -243,7 +293,7 @@ class AnanasCategoryProbeService
             ]);
 
             return [
-                'status' => AnanasCategoryProbe::STATUS_PENDING,
+                'status' => $status,
                 'observed_categories' => [],
                 'observed_product_type' => null,
                 'remote_product_id' => null,

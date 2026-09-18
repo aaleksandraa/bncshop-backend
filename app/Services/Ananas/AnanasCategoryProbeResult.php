@@ -30,4 +30,9 @@ class AnanasCategoryProbeResult
     {
         return $this->status === AnanasCategoryProbe::STATUS_PENDING;
     }
+
+    public function isAwaitingOnboarding(): bool
+    {
+        return $this->status === AnanasCategoryProbe::STATUS_AWAITING_ONBOARDING;
+    }
 }

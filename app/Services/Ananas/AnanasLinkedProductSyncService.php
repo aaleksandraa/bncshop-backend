@@ -1,0 +1,231 @@
+<?php
+
+namespace App\Services\Ananas;
+
+use App\Models\AnanasProductMapping;
+use App\Models\Product;
+use App\Services\Pricing\PriceCalculator;
+
+class AnanasLinkedProductSyncService
+{
+    public function __construct(
+        private readonly AnanasApiClient $apiClient,
+        private readonly AnanasPackageWeightResolver $packageWeightResolver,
+        private readonly AnanasEligibilityPolicy $eligibilityPolicy,
+        private readonly PriceCalculator $priceCalculator,
+    ) {}
+
+    /**
+     * @return array{updated: int, skipped: int, errors: list<string>}
+     */
+    public function syncLinkedStockAndPrice(int $limit = 25, bool $dryRun = false, bool $allowProduction = false): array
+    {
+        $limit = max(1, min($limit, 100));
+        $updated = 0;
+        $skipped = 0;
+        $errors = [];
+        $payloads = [];
+
+        $mappings = AnanasProductMapping::query()
+            ->where('local_status', AnanasProductMapping::LOCAL_LINKED)
+            ->whereNotNull('ananas_product_id')
+            ->orderByDesc('last_success_at')
+            ->limit($limit)
+            ->with(['product.attributeValues.attributeDefinition'])
+            ->get();
+
+        foreach ($mappings as $mapping) {
+            if (! $mapping instanceof AnanasProductMapping) {
+                continue;
+            }
+
+            $product = $mapping->product;
+
+            if ($product === null) {
+                $skipped++;
+
+                continue;
+            }
+
+            $item = $this->buildBulkUpdateItem($mapping, $product);
+
+            if ($item === null) {
+                $skipped++;
+
+                continue;
+            }
+
+            $payloads[] = ['mapping' => $mapping, 'item' => $item];
+        }
+
+        if ($payloads === []) {
+            return compact('updated', 'skipped', 'errors');
+        }
+
+        if ($dryRun) {
+            return [
+                'updated' => count($payloads),
+                'skipped' => $skipped,
+                'errors' => [],
+            ];
+        }
+
+        $items = array_map(static fn (array $row): array => $row['item'], $payloads);
+
+        try {
+            $responses = $this->apiClient->updateProductsBulk($items, $allowProduction);
+        } catch (\Throwable $e) {
+            return [
+                'updated' => 0,
+                'skipped' => $skipped,
+                'errors' => [$e->getMessage()],
+            ];
+        }
+
+        foreach ($payloads as $index => $row) {
+            /** @var AnanasProductMapping $mapping */
+            $mapping = $row['mapping'];
+            $response = $responses[$index] ?? null;
+            $status = is_array($response) ? (string) ($response['status'] ?? '') : '';
+
+            if (strtoupper($status) === 'SUCCESS') {
+                $updated++;
+                $item = $row['item'];
+                $mapping->update([
+                    'stock_hash' => hash('sha256', (string) ($item['stockLevel'] ?? 0)),
+                    'price_hash' => hash('sha256', (string) ($item['basePrice'] ?? 0)),
+                    'last_success_at' => now(),
+                ]);
+
+                continue;
+            }
+
+            $errors[] = sprintf(
+                'Mapping %d product %s: %s',
+                $mapping->id,
+                $mapping->ananas_product_id,
+                is_array($response) ? implode('; ', $response['errors'] ?? ['FAIL']) : 'unknown',
+            );
+        }
+
+        return compact('updated', 'skipped', 'errors');
+    }
+
+    /**
+     * @return array{published: int, progress_id: string|null, errors: list<string>}
+     */
+    public function publishReadyLinked(int $limit = 25, bool $dryRun = false, bool $allowProduction = false): array
+    {
+        return $this->runInventoryJob(
+            limit: $limit,
+            dryRun: $dryRun,
+            allowProduction: $allowProduction,
+            remoteStatus: 'READY_FOR_PUBLISH',
+            action: 'publish',
+        );
+    }
+
+    /**
+     * @return array{published: int, progress_id: string|null, errors: list<string>}
+     */
+    public function unpublishPublished(int $limit = 25, bool $dryRun = false, bool $allowProduction = false): array
+    {
+        return $this->runInventoryJob(
+            limit: $limit,
+            dryRun: $dryRun,
+            allowProduction: $allowProduction,
+            remoteStatus: 'PUBLISHED',
+            action: 'unpublish',
+        );
+    }
+
+    /**
+     * @return array{published: int, progress_id: string|null, errors: list<string>}
+     */
+    private function runInventoryJob(
+        int $limit,
+        bool $dryRun,
+        bool $allowProduction,
+        string $remoteStatus,
+        string $action,
+    ): array {
+        $ids = AnanasProductMapping::query()
+            ->where('local_status', AnanasProductMapping::LOCAL_LINKED)
+            ->where('remote_status', $remoteStatus)
+            ->whereNotNull('merchant_inventory_id')
+            ->orderByDesc('last_success_at')
+            ->limit(max(1, $limit))
+            ->pluck('merchant_inventory_id')
+            ->map(fn ($id): int => (int) $id)
+            ->filter(fn (int $id): bool => $id > 0)
+            ->values()
+            ->all();
+
+        if ($ids === []) {
+            return ['published' => 0, 'progress_id' => null, 'errors' => []];
+        }
+
+        if ($dryRun) {
+            return ['published' => count($ids), 'progress_id' => null, 'errors' => []];
+        }
+
+        try {
+            $result = $action === 'publish'
+                ? $this->apiClient->publishProducts($ids, $allowProduction)
+                : $this->apiClient->unpublishProducts($ids, $allowProduction);
+        } catch (\Throwable $e) {
+            return ['published' => 0, 'progress_id' => null, 'errors' => [$e->getMessage()]];
+        }
+
+        return [
+            'published' => count($ids),
+            'progress_id' => $result['progress_id'],
+            'errors' => [],
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function buildBulkUpdateItem(AnanasProductMapping $mapping, Product $product): ?array
+    {
+        $remoteId = (int) $mapping->ananas_product_id;
+
+        if ($remoteId <= 0) {
+            return null;
+        }
+
+        $weight = $this->packageWeightResolver->resolve($product);
+
+        if (! $weight->isOk()) {
+            return null;
+        }
+
+        $pricing = $this->priceCalculator->calculate($product);
+        $vat = $this->eligibilityPolicy->resolvedVatRate();
+
+        if ($vat === null || $pricing->regularPrice <= 0) {
+            return null;
+        }
+
+        $stockLevel = max(0, (int) $product->available_stock);
+        $basePrice = round($pricing->regularPrice, 2);
+        $stockHash = hash('sha256', (string) $stockLevel);
+        $priceHash = hash('sha256', (string) $basePrice);
+
+        if ($mapping->stock_hash === $stockHash && $mapping->price_hash === $priceHash) {
+            return null;
+        }
+
+        return [
+            'id' => $remoteId,
+            'stockLevel' => $stockLevel,
+            'basePrice' => $basePrice,
+            'vat' => $vat,
+            'packageWeightValue' => $weight->resolvedWeightKg,
+            'packageWeightUnit' => 'KG',
+            'sku' => filled($product->sku) ? (string) $product->sku : ('BNC-'.$product->id),
+            'serviceable' => true,
+        ];
+    }
+}

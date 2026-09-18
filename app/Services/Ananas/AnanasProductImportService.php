@@ -15,6 +15,7 @@ class AnanasProductImportService
         private readonly AnanasEligibilityPolicy $eligibilityPolicy,
         private readonly AnanasProductMapper $productMapper,
         private readonly AnanasProductMappingService $mappingService,
+        private readonly AnanasMasterEanCatalogService $masterEanCatalog,
     ) {}
 
     /**
@@ -96,6 +97,11 @@ class AnanasProductImportService
         $import = $this->apiClient->importProducts($payloads, $allowProduction);
         $progressId = $import['progress_id'];
 
+        $eanExistence = $this->masterEanCatalog->checkEans(array_map(
+            static fn (array $payload): string => (string) ($payload['ean'] ?? ''),
+            $payloads,
+        ));
+
         foreach ($products->whereIn('id', $productIds) as $product) {
             if (! $product instanceof Product) {
                 continue;
@@ -108,7 +114,9 @@ class AnanasProductImportService
             }
 
             $payload = $this->productMapper->map($product, $categoryMapping);
-            $this->mappingService->recordSubmission($product, $payload, $progressId);
+            $ean = trim((string) ($payload['ean'] ?? ''));
+            $eanInMaster = $ean !== '' ? ($eanExistence[$ean] ?? null) : null;
+            $this->mappingService->recordSubmission($product, $payload, $progressId, $eanInMaster);
         }
 
         return [

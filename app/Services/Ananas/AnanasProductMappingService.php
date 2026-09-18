@@ -25,16 +25,27 @@ class AnanasProductMappingService
     /**
      * @param  array<string, mixed>  $payload
      */
-    public function recordSubmission(Product $product, array $payload, ?string $progressId): AnanasProductMapping
-    {
+    public function recordSubmission(
+        Product $product,
+        array $payload,
+        ?string $progressId,
+        ?bool $eanInMasterCatalog = null,
+    ): AnanasProductMapping {
         $mapping = $this->findOrCreate($product);
+
+        $localStatus = AnanasProductMapping::LOCAL_SUBMITTED;
+
+        if ($eanInMasterCatalog === false) {
+            $localStatus = AnanasProductMapping::LOCAL_PENDING_ONBOARDING;
+        }
 
         $mapping->fill([
             'export_enabled' => true,
             'ean' => (string) ($payload['ean'] ?? $product->barcode),
             'sku' => (string) ($payload['sku'] ?? ''),
             'external_id' => (string) ($payload['externalId'] ?? $product->id),
-            'local_status' => AnanasProductMapping::LOCAL_SUBMITTED,
+            'ean_exists_on_ananas' => $eanInMasterCatalog,
+            'local_status' => $localStatus,
             'last_progress_id' => $progressId,
             'payload_hash' => $this->productMapper->fingerprintPayload($payload),
             'stock_hash' => hash('sha256', (string) ($payload['stockLevel'] ?? 0)),

@@ -193,10 +193,8 @@ class AnanasApiClient
      * @param  list<string>  $eans
      * @return array<string, bool>
      */
-    public function checkEansExist(array $eans, bool $allowProduction = false): array
+    public function checkEansExist(array $eans): array
     {
-        $this->writeGuard->assertAllowed($allowProduction);
-
         $normalized = array_values(array_filter(array_map(
             static fn (mixed $ean): ?string => is_string($ean) && trim($ean) !== '' ? trim($ean) : null,
             $eans,
@@ -214,6 +212,119 @@ class AnanasApiClient
         );
 
         return $this->normalizeEanExistsPayload($payload);
+    }
+
+    public function eanExistsInMasterCatalog(string $ean): bool
+    {
+        $ean = trim($ean);
+
+        if ($ean === '') {
+            return false;
+        }
+
+        $result = $this->checkEansExist([$ean]);
+
+        return (bool) ($result[$ean] ?? false);
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $items
+     * @return list<array<string, mixed>>
+     */
+    public function updateProductsBulk(array $items, bool $allowProduction = false): array
+    {
+        $this->writeGuard->assertAllowed($allowProduction);
+
+        if ($items === []) {
+            return [];
+        }
+
+        $payload = $this->putJson(
+            $this->settings->productBaseUrl(),
+            '/product/api/v1/merchant-integration/product/bulk',
+            $items,
+            AnanasRateLimiter::CATEGORY_PRODUCTS,
+        );
+
+        return is_array($payload) ? array_values(array_filter($payload, is_array(...))) : [];
+    }
+
+    /**
+     * @param  array<string, mixed>  $body
+     * @return array<string, mixed>
+     */
+    public function updateSingleProduct(int $ananasProductId, array $body, bool $allowProduction = false): array
+    {
+        $this->writeGuard->assertAllowed($allowProduction);
+
+        $payload = $this->putJson(
+            $this->settings->productBaseUrl(),
+            '/product/api/v1/merchant-integration/product/'.$ananasProductId,
+            $body,
+            AnanasRateLimiter::CATEGORY_PRODUCTS,
+        );
+
+        return is_array($payload) ? $payload : [];
+    }
+
+    /**
+     * @param  list<int>  $merchantInventoryIds
+     * @return array{progress_id: string|null, raw: array<string, mixed>}
+     */
+    public function publishProducts(array $merchantInventoryIds, bool $allowProduction = false): array
+    {
+        $this->writeGuard->assertAllowed($allowProduction);
+
+        $ids = array_values(array_filter(array_map('intval', $merchantInventoryIds)));
+
+        if ($ids === []) {
+            throw new RuntimeException('Ananas publish requires at least one merchant inventory id.');
+        }
+
+        return $this->submitProgressJob(
+            '/product/api/v1/merchant-integration/product/publish',
+            $ids,
+        );
+    }
+
+    /**
+     * @param  list<int>  $merchantInventoryIds
+     * @return array{progress_id: string|null, raw: array<string, mixed>}
+     */
+    public function unpublishProducts(array $merchantInventoryIds, bool $allowProduction = false): array
+    {
+        $this->writeGuard->assertAllowed($allowProduction);
+
+        $ids = array_values(array_filter(array_map('intval', $merchantInventoryIds)));
+
+        if ($ids === []) {
+            throw new RuntimeException('Ananas unpublish requires at least one merchant inventory id.');
+        }
+
+        return $this->submitProgressJob(
+            '/product/api/v1/merchant-integration/product/unpublish',
+            $ids,
+        );
+    }
+
+    /**
+     * @return array{progress_id: string|null, raw: array<string, mixed>}
+     */
+    private function submitProgressJob(string $path, array $body): array
+    {
+        $payload = $this->postJson(
+            $this->settings->productBaseUrl(),
+            $path,
+            $body,
+            AnanasRateLimiter::CATEGORY_PRODUCTS,
+        );
+
+        $progressId = is_array($payload) ? (string) ($payload['id'] ?? '') : '';
+
+        return [
+            'progress_id' => $progressId !== '' ? $progressId : null,
+            'raw' => is_array($payload) ? $payload : [],
+        ];
     }
 
     /**
@@ -266,6 +377,15 @@ class AnanasApiClient
     private function postJson(string $baseUrl, string $path, array $body, string $rateCategory): mixed
     {
         return $this->requestJson('POST', $baseUrl, $path, $body, $rateCategory);
+    }
+
+    /**
+     * @param  array<string, mixed>|list<mixed>  $body
+     * @return array<string, mixed>|array<int, mixed>|null
+     */
+    private function putJson(string $baseUrl, string $path, array $body, string $rateCategory): mixed
+    {
+        return $this->requestJson('PUT', $baseUrl, $path, $body, $rateCategory);
     }
 
     /**
@@ -361,7 +481,8 @@ class AnanasApiClient
             return match (strtoupper($method)) {
                 'GET' => $request->get($path, $data),
                 'POST' => $request->asJson()->post($path, $data),
-                default => throw new RuntimeException("Ananas API client supports GET and POST only; attempted {$method}"),
+                'PUT' => $request->asJson()->put($path, $data),
+                default => throw new RuntimeException("Ananas API client supports GET, POST and PUT only; attempted {$method}"),
             };
         } catch (RequestException $exception) {
             if ($exception->response !== null) {

@@ -15,6 +15,9 @@ class AnanasCategoryProbe extends Model
 
     public const STATUS_FAILED = 'failed';
 
+    /** EAN not in Ananas master catalog — manual onboarding per API FAQ. */
+    public const STATUS_AWAITING_ONBOARDING = 'awaiting_onboarding';
+
     protected $fillable = [
         'category_mapping_id',
         'product_id',

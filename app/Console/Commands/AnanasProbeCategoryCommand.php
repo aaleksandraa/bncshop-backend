@@ -19,6 +19,7 @@ class AnanasProbeCategoryCommand extends Command
                             {--recheck= : Re-evaluate an existing probe ID without re-importing}
                             {--dry-run : Build payload only, do not POST import}
                             {--any-eligible : Use first eligible product from entire catalog (for category string validation only)}
+                            {--master-ean-only : Require probe product EAN to exist in Ananas master catalog (recommended for category validation)}
                             {--allow-production : Allow writes when ANANAS_ENV=production}';
 
     protected $description = 'Empirically validate Ananas category string via controlled Stage import + GET reconciliation';
@@ -103,6 +104,7 @@ class AnanasProbeCategoryCommand extends Command
                 dryRun: $dryRun,
                 waitSeconds: (int) $this->option('wait'),
                 useAnyEligibleProduct: (bool) $this->option('any-eligible'),
+                requireMasterEan: (bool) $this->option('master-ean-only'),
             );
         } catch (\Throwable $e) {
             if (str_contains($e->getMessage(), 'No eligible product found')) {
@@ -134,7 +136,9 @@ class AnanasProbeCategoryCommand extends Command
             $this->line($result->message);
         }
 
-        if ($result->isPending()) {
+        if ($result->isAwaitingOnboarding()) {
+            $this->warn('Awaiting Ananas onboarding — EAN not in master catalog. Email '.config('bnc.ananas_onboarding_email').' with Progress UUID, then --recheck=<probe_id>.');
+        } elseif ($result->isPending()) {
             $this->warn('Probe pending — re-run with --recheck=<probe_id> or bnc:ananas-reconcile-products after async import completes.');
         }
 
@@ -142,7 +146,11 @@ class AnanasProbeCategoryCommand extends Command
             return self::SUCCESS;
         }
 
-        return $result->isValidated() ? self::SUCCESS : ($result->isPending() ? self::SUCCESS : self::FAILURE);
+        if ($result->isValidated() || $result->isPending() || $result->isAwaitingOnboarding()) {
+            return self::SUCCESS;
+        }
+
+        return self::FAILURE;
     }
 
     private function listAvailableMappings(): void
@@ -230,6 +238,10 @@ class AnanasProbeCategoryCommand extends Command
         $this->info("Recheck probe {$probeId}: {$result->status}");
         $this->line($result->message ?? '');
 
-        return $result->isValidated() ? self::SUCCESS : self::FAILURE;
+        if ($result->isValidated() || $result->isPending() || $result->isAwaitingOnboarding()) {
+            return self::SUCCESS;
+        }
+
+        return self::FAILURE;
     }
 }

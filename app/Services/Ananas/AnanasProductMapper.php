@@ -80,9 +80,7 @@ class AnanasProductMapper
             $payload['category'] = $categoryMapping->ananas_category;
         }
 
-        if ($product->manufacturer !== null && filled($product->manufacturer->name)) {
-            $payload['brand'] = (string) $product->manufacturer->name;
-        }
+        $payload['brand'] = $this->resolveBrand($product);
 
         return $payload;
     }
@@ -198,5 +196,16 @@ class AnanasProductMapper
         }
 
         return 'BNC-'.$product->id;
+    }
+
+    private function resolveBrand(Product $product): string
+    {
+        if ($product->manufacturer !== null && filled($product->manufacturer->name)) {
+            return Str::limit(trim((string) $product->manufacturer->name), 255, '');
+        }
+
+        $fromConfig = trim((string) config('bnc.ananas_default_brand', 'BNC Shop'));
+
+        return $fromConfig !== '' ? $fromConfig : 'BNC Shop';
     }
 }

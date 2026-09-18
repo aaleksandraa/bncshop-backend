@@ -213,6 +213,11 @@ return [
     */
     'ananas_vat_rate' => ($rate = env('ANANAS_VAT_RATE')) !== null && $rate !== '' ? (int) $rate : 0,
 
+    // Required on Ananas import (Add). Used when product has no manufacturer.
+    'ananas_default_brand' => env('ANANAS_DEFAULT_BRAND', 'BNC Shop'),
+
+    'ananas_onboarding_email' => env('ANANAS_ONBOARDING_EMAIL', 'onboarding@ananas.rs'),
+
     'ananas_import_batch_max_size' => (int) env('ANANAS_IMPORT_BATCH_MAX_SIZE', 25),
     'ananas_import_poll_interval_seconds' => (int) env('ANANAS_IMPORT_POLL_INTERVAL_SECONDS', 5),
     'ananas_import_poll_max_attempts' => (int) env('ANANAS_IMPORT_POLL_MAX_ATTEMPTS', 12),

@@ -77,6 +77,19 @@ class AnanasProductMapperTest extends TestCase
         $this->assertSame(['https://images.bnc.ba/products/test-product/cover.webp'], $payload['gallery']);
     }
 
+    public function test_mapper_always_includes_brand_with_default_fallback(): void
+    {
+        config(['bnc.ananas_default_brand' => 'BNC Shop']);
+
+        [$product, $mapping] = $this->createExportReadyProduct();
+        $product->manufacturer_id = null;
+        $product->setRelation('manufacturer', null);
+
+        $payload = app(AnanasProductMapper::class)->map($product, $mapping);
+
+        $this->assertSame('BNC Shop', $payload['brand']);
+    }
+
     public function test_mapper_throws_when_product_not_eligible(): void
     {
         $product = Product::factory()->create([
