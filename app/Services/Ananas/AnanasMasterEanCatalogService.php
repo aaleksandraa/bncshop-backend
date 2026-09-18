@@ -35,7 +35,9 @@ class AnanasMasterEanCatalogService
         $result = [];
 
         foreach (array_chunk($unique, self::BATCH_SIZE) as $chunk) {
-            $result = array_merge($result, $this->apiClient->checkEansExist($chunk));
+            foreach ($this->apiClient->checkEansExist($chunk) as $ean => $exists) {
+                $result[(string) $ean] = (bool) $exists;
+            }
         }
 
         return $result;
@@ -291,9 +293,10 @@ class AnanasMasterEanCatalogService
     ): void {
         $unique = array_values(array_unique($eans));
         $eansChecked += count($unique);
+        $existence = $this->checkEans($unique);
 
-        foreach ($this->checkEans($unique) as $ean => $exists) {
-            if (! $exists) {
+        foreach ($unique as $ean) {
+            if (! ($existence[$ean] ?? false)) {
                 continue;
             }
 

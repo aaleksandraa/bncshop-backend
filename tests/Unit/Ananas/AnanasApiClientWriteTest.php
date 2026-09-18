@@ -81,6 +81,26 @@ class AnanasApiClientWriteTest extends TestCase
         $this->assertFalse($result['757670268125']);
     }
 
+    public function test_check_eans_exist_keeps_requested_keys_when_api_omits_leading_zero(): void
+    {
+        Http::fake([
+            'api.qa2.ananastest.com/iam/api/v1/auth/token' => Http::response([
+                'access_token' => 'token-abc',
+                'expires_in' => 900,
+            ], 200),
+            'api.qa2.ananastest.com/product/api/v1/merchant-integration/ean/exists' => Http::response([
+                '740617304350' => true,
+                '1234567890123' => false,
+            ], 200),
+        ]);
+
+        $result = app(AnanasApiClient::class)->checkEansExist(['0740617304350', '1234567890123']);
+
+        $this->assertTrue($result['0740617304350']);
+        $this->assertFalse($result['1234567890123']);
+        $this->assertArrayHasKey('0740617304350', $result);
+    }
+
     public function test_find_product_by_ean_returns_first_match(): void
     {
         Http::fake([

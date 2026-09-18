@@ -14,4 +14,10 @@ class AnanasEanLookupTest extends TestCase
         $this->assertContains('0736373267145', $candidates);
         $this->assertContains('736373267145', $candidates);
     }
+
+    public function test_exists_in_map_matches_leading_zero_variant(): void
+    {
+        $this->assertTrue(AnanasEanLookup::existsInMap('0740617304350', ['740617304350' => true]));
+        $this->assertFalse(AnanasEanLookup::existsInMap('0740617304350', ['740617304350' => false]));
+    }
 }

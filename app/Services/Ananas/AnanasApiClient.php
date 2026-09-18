@@ -211,7 +211,14 @@ class AnanasApiClient
             AnanasRateLimiter::CATEGORY_PRODUCTS,
         );
 
-        return $this->normalizeEanExistsPayload($payload);
+        $existsMap = $this->normalizeEanExistsPayload($payload);
+        $result = [];
+
+        foreach ($normalized as $ean) {
+            $result[$ean] = AnanasEanLookup::existsInMap($ean, $existsMap);
+        }
+
+        return $result;
     }
 
     public function eanExistsInMasterCatalog(string $ean): bool

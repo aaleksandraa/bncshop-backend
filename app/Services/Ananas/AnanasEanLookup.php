@@ -35,4 +35,20 @@ final class AnanasEanLookup
 
         return array_values(array_unique(array_filter($candidates)));
     }
+
+    /**
+     * Whether any string form of $ean is present as a true value in an exists-map.
+     *
+     * @param  array<string, bool>  $existsMap
+     */
+    public static function existsInMap(string $ean, array $existsMap): bool
+    {
+        foreach (self::candidateQueryValues($ean) as $candidate) {
+            if (array_key_exists($candidate, $existsMap) && $existsMap[$candidate]) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }
