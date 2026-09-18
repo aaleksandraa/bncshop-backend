@@ -93,9 +93,10 @@ class AnanasLookupProductCommand extends Command
         }
 
         $this->newLine();
-        $this->comment('If import returned 200 but GET stays empty: job may have failed (wrong productType/category for this EAN), or QA2 delay. Contact Ananas with Progress UUID from probe/import.');
+        $this->comment('If import returned 200 but GET stays empty: import job likely failed or was rejected (check productType/category for this EAN). Contact Ananas with Progress UUID from probe/import.');
 
-        return self::FAILURE;
+        // Exit 0: diagnostic completed; "not found" is a result, not a CLI/runtime error.
+        return self::SUCCESS;
     }
 
     /**
