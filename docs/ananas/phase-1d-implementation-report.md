@@ -23,7 +23,7 @@ Align BNC backend with `docs/ananas/ananasapi.md` beyond Phase 1C import/probe/r
 | Command | Purpose |
 |---------|---------|
 | `bnc:ananas-check-ean {ean}` | Master catalog lookup |
-| `bnc:ananas-find-master-ean-product` | Best probe candidate (instant GET reconciliation) |
+| `bnc:ananas-find-master-ean-product` | Best probe candidate; `--all`, `--ean=`, seed EANs via `ANANAS_PROBE_SEED_EANS` |
 | `bnc:ananas-sync-linked` | Bulk stock/price for LINKED rows |
 | `bnc:ananas-publish` / `bnc:ananas-unpublish` | Visibility jobs per API |
 | `bnc:ananas-probe-category … --master-ean-only` | Restrict probe to master-catalog EAN |
