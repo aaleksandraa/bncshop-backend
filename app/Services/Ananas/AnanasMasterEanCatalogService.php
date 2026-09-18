@@ -95,12 +95,19 @@ class AnanasMasterEanCatalogService
         return $this->searchEligibleWithMasterEan($maxProductsToScan)->product;
     }
 
-    public function searchEligibleWithMasterEan(?int $maxProductsToScan = null): AnanasMasterEanSearchResult
-    {
+    public function searchEligibleWithMasterEan(
+        ?int $maxProductsToScan = null,
+        int $limit = 1,
+        ?string $nameContains = null,
+    ): AnanasMasterEanSearchResult {
+        $limit = max(1, $limit);
+        $needle = $nameContains !== null ? mb_strtolower(trim($nameContains)) : '';
+
         $productsScanned = 0;
         $eligibleCandidates = 0;
         $eansChecked = 0;
         $masterCatalogHits = 0;
+        $matches = [];
 
         $pendingEans = [];
         $productsByEan = [];
@@ -110,10 +117,13 @@ class AnanasMasterEanCatalogService
             ->where('status', 'active')
             ->whereNotNull('barcode')
             ->where('barcode', '!=', '')
-            ->with(['images', 'manufacturer', 'attributeValues.attributeDefinition'])
+            ->with([
+                'images',
+                'manufacturer',
+                'attributeValues.attributeDefinition',
+                'category' => fn ($query) => $query->withCount('products'),
+            ])
             ->orderBy('id');
-
-        $match = null;
 
         $query->chunkById(200, function ($products) use (
             &$productsScanned,
@@ -122,10 +132,16 @@ class AnanasMasterEanCatalogService
             &$masterCatalogHits,
             &$pendingEans,
             &$productsByEan,
-            &$match,
+            &$matches,
             $maxProductsToScan,
+            $limit,
+            $needle,
         ): bool {
             foreach ($products as $product) {
+                if (count($matches) >= $limit) {
+                    return false;
+                }
+
                 if ($maxProductsToScan !== null && $productsScanned >= $maxProductsToScan) {
                     return false;
                 }
@@ -133,6 +149,10 @@ class AnanasMasterEanCatalogService
                 $productsScanned++;
 
                 if (! $product instanceof Product) {
+                    continue;
+                }
+
+                if ($needle !== '' && ! str_contains(mb_strtolower((string) $product->name), $needle)) {
                     continue;
                 }
 
@@ -154,32 +174,41 @@ class AnanasMasterEanCatalogService
                 }
 
                 if (count($pendingEans) >= self::BATCH_SIZE) {
-                    $batchMatch = $this->firstMatchFromBatch($pendingEans, $productsByEan, $eansChecked, $masterCatalogHits);
-
-                    if ($batchMatch !== null) {
-                        $match = $batchMatch;
-
-                        return false;
-                    }
+                    $this->collectMatchesFromBatch(
+                        $pendingEans,
+                        $productsByEan,
+                        $matches,
+                        $limit,
+                        $eansChecked,
+                        $masterCatalogHits,
+                    );
 
                     $pendingEans = [];
                     $productsByEan = [];
                 }
             }
 
-            return true;
+            return count($matches) < $limit;
         });
 
-        if ($match === null && $pendingEans !== []) {
-            $match = $this->firstMatchFromBatch($pendingEans, $productsByEan, $eansChecked, $masterCatalogHits);
+        if (count($matches) < $limit && $pendingEans !== []) {
+            $this->collectMatchesFromBatch(
+                $pendingEans,
+                $productsByEan,
+                $matches,
+                $limit,
+                $eansChecked,
+                $masterCatalogHits,
+            );
         }
 
         return new AnanasMasterEanSearchResult(
-            product: $match,
+            product: $matches[0] ?? null,
             productsScanned: $productsScanned,
             eligibleCandidates: $eligibleCandidates,
             eansChecked: $eansChecked,
             masterCatalogHits: $masterCatalogHits,
+            products: $matches,
         );
     }
 
@@ -250,13 +279,16 @@ class AnanasMasterEanCatalogService
     /**
      * @param  list<string>  $eans
      * @param  array<string, Product>  $productsByEan
+     * @param  list<Product>  $matches
      */
-    private function firstMatchFromBatch(
+    private function collectMatchesFromBatch(
         array $eans,
         array $productsByEan,
+        array &$matches,
+        int $limit,
         int &$eansChecked,
         int &$masterCatalogHits,
-    ): ?Product {
+    ): void {
         $unique = array_values(array_unique($eans));
         $eansChecked += count($unique);
 
@@ -267,11 +299,31 @@ class AnanasMasterEanCatalogService
 
             $masterCatalogHits++;
 
-            if (isset($productsByEan[$ean])) {
-                return $productsByEan[$ean];
+            if (! isset($productsByEan[$ean])) {
+                continue;
+            }
+
+            $matches[] = $productsByEan[$ean];
+
+            if (count($matches) >= $limit) {
+                return;
             }
         }
+    }
 
-        return null;
+    /**
+     * @param  list<string>  $eans
+     * @param  array<string, Product>  $productsByEan
+     */
+    private function firstMatchFromBatch(
+        array $eans,
+        array $productsByEan,
+        int &$eansChecked,
+        int &$masterCatalogHits,
+    ): ?Product {
+        $matches = [];
+        $this->collectMatchesFromBatch($eans, $productsByEan, $matches, 1, $eansChecked, $masterCatalogHits);
+
+        return $matches[0] ?? null;
     }
 }
