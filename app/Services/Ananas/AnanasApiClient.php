@@ -332,10 +332,64 @@ class AnanasApiClient
      */
     public function findProductByEan(string $ean): ?array
     {
-        $payload = $this->getProducts(['ean' => trim($ean), 'page' => 0, 'size' => 1]);
-        $items = $this->normalizeListPayload($payload);
+        $found = $this->findProductByEanDetailed($ean);
 
-        return $items[0] ?? null;
+        return $found['product'] ?? null;
+    }
+
+    /**
+     * @return array{product: array<string, mixed>|null, matched_ean: string|null, via: string|null}
+     */
+    public function findProductByEanDetailed(string $ean): array
+    {
+        $empty = [
+            'product' => null,
+            'matched_ean' => null,
+            'via' => null,
+        ];
+
+        foreach (AnanasEanLookup::candidateQueryValues($ean) as $candidate) {
+            $payload = $this->getProducts(['ean' => $candidate, 'page' => 0, 'size' => 1]);
+            $items = $this->normalizeListPayload($payload);
+            $product = $items[0] ?? null;
+
+            if (is_array($product)) {
+                return [
+                    'product' => $product,
+                    'matched_ean' => $candidate,
+                    'via' => 'ean',
+                ];
+            }
+        }
+
+        foreach (AnanasEanLookup::candidateQueryValues($ean) as $candidate) {
+            $payload = $this->getProducts(['search' => $candidate, 'page' => 0, 'size' => 5]);
+            $items = $this->normalizeListPayload($payload);
+
+            foreach ($items as $item) {
+                if (! is_array($item)) {
+                    continue;
+                }
+
+                $remoteEan = trim((string) ($item['ean'] ?? ''));
+
+                if ($remoteEan === '') {
+                    continue;
+                }
+
+                foreach (AnanasEanLookup::candidateQueryValues($ean) as $wanted) {
+                    if ($remoteEan === $wanted || ltrim($remoteEan, '0') === ltrim($wanted, '0')) {
+                        return [
+                            'product' => $item,
+                            'matched_ean' => $remoteEan,
+                            'via' => 'search',
+                        ];
+                    }
+                }
+            }
+        }
+
+        return $empty;
     }
 
     /**
