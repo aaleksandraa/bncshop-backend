@@ -51,6 +51,32 @@ class AnanasProductMapperTest extends TestCase
         $this->assertSame('ITShop', $payload['productType']);
     }
 
+    public function test_mapper_uses_absolute_https_image_urls_for_local_storage(): void
+    {
+        config(['bnc.media_origin' => 'https://images.bnc.ba']);
+
+        [$product, $mapping] = $this->createExportReadyProduct();
+
+        ProductImage::query()->where('product_id', $product->id)->delete();
+
+        ProductImage::query()->create([
+            'product_id' => $product->id,
+            'image_url' => 'https://cdn.example.test/legacy.jpg',
+            'local_path' => 'products/test-product/cover.webp',
+            'storage_disk' => 'r2',
+            'status' => 'active',
+            'is_primary' => true,
+            'sort_order' => 0,
+        ]);
+
+        $product = $product->fresh(['images', 'attributeValues.attributeDefinition', 'manufacturer']);
+
+        $payload = app(AnanasProductMapper::class)->map($product, $mapping);
+
+        $this->assertSame('https://images.bnc.ba/products/test-product/cover.webp', $payload['coverImage']);
+        $this->assertSame(['https://images.bnc.ba/products/test-product/cover.webp'], $payload['gallery']);
+    }
+
     public function test_mapper_throws_when_product_not_eligible(): void
     {
         $product = Product::factory()->create([

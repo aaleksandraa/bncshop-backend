@@ -6,6 +6,7 @@ use App\Models\AnanasCategoryMapping;
 use App\Models\Product;
 use App\Models\ProductImage;
 use App\Services\Pricing\PriceCalculator;
+use App\Support\PublicStorageUrl;
 use Illuminate\Support\Str;
 
 class AnanasProductMapper
@@ -123,14 +124,59 @@ class AnanasProductMapper
                 continue;
             }
 
-            $url = $image->resolvedUrl();
+            $url = $this->resolvePublicImageUrl($image);
 
-            if (filled($url)) {
-                $urls[] = (string) $url;
+            if ($url !== null) {
+                $urls[] = $url;
             }
         }
 
         return array_values(array_unique($urls));
+    }
+
+    /**
+     * Ananas must fetch coverImage/gallery over the public internet — never relative /storage paths.
+     */
+    private function resolvePublicImageUrl(ProductImage $image): ?string
+    {
+        if (filled($image->local_path)) {
+            $absolute = PublicStorageUrl::absoluteFromResolved(
+                PublicStorageUrl::url((string) $image->local_path),
+            );
+
+            if ($this->isPublicHttpsUrl($absolute)) {
+                return $absolute;
+            }
+        }
+
+        foreach ([$image->public_url, $image->image_url, $image->source_url, $image->resolvedUrl()] as $candidate) {
+            if (! filled($candidate)) {
+                continue;
+            }
+
+            $absolute = PublicStorageUrl::absoluteFromResolved((string) $candidate);
+
+            if ($this->isPublicHttpsUrl($absolute)) {
+                return $absolute;
+            }
+        }
+
+        return null;
+    }
+
+    private function isPublicHttpsUrl(?string $url): bool
+    {
+        if (! is_string($url) || $url === '') {
+            return false;
+        }
+
+        if (! str_starts_with($url, 'https://')) {
+            return false;
+        }
+
+        $host = strtolower((string) parse_url($url, PHP_URL_HOST));
+
+        return ! in_array($host, ['localhost', '127.0.0.1'], true);
     }
 
     private function sanitizeName(string $name): string
