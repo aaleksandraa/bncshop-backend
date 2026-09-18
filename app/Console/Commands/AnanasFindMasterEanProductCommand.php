@@ -2,8 +2,10 @@
 
 namespace App\Console\Commands;
 
+use App\Models\AnanasCategoryMapping;
 use App\Models\Product;
 use App\Services\Ananas\AnanasEligibilityPolicy;
+use App\Services\Ananas\AnanasExportScope;
 use App\Services\Ananas\AnanasMasterEanCatalogService;
 use App\Services\Ananas\AnanasMasterEanSearchResult;
 use App\Services\Ananas\AnanasSyncSettings;
@@ -144,8 +146,40 @@ class AnanasFindMasterEanProductCommand extends Command
         }
 
         $this->newLine();
-        $this->line('Example category probe (instant GET reconciliation expected):');
-        $this->line('  php artisan bnc:ananas-probe-category <mapping_id> --product='.$product->id.' --master-ean-only');
+        $this->line('Category probe (master EAN → GET /products should appear quickly):');
+
+        $mapping = app(AnanasExportScope::class)->resolveCategoryMapping($product);
+
+        if ($mapping === null && $product->category_id !== null) {
+            $mapping = AnanasCategoryMapping::query()
+                ->where('category_id', $product->category_id)
+                ->orderBy('id')
+                ->first();
+        }
+
+        $mappingId = $mapping instanceof AnanasCategoryMapping ? (int) $mapping->id : null;
+
+        if ($mappingId !== null) {
+            $this->line(sprintf(
+                '  php artisan bnc:ananas-probe-category %d --product=%d --master-ean-only --wait=90',
+                $mappingId,
+                $product->id,
+            ));
+
+            if ($mapping instanceof AnanasCategoryMapping) {
+                $this->line(sprintf(
+                    '  (mapping: productType=%s, category=%s)',
+                    $mapping->ananas_product_type,
+                    $mapping->ananas_category ?: '(empty)',
+                ));
+            }
+        } else {
+            $this->line('  php artisan bnc:ananas-list-category-mappings');
+            $this->line('  php artisan bnc:ananas-probe-category <mapping_id> --product='.$product->id.' --master-ean-only --wait=90');
+            $this->comment('  Tip: for validating a specific Ananas category string, any mapping_id works with --product= (product need not be in that BNC category).');
+        }
+
+        $this->line('  Dry-run first: add --dry-run');
 
         return self::SUCCESS;
     }
