@@ -22,7 +22,7 @@ class SyncOlxScheduledCommand extends Command
 
         $source = $settings->apiSource();
 
-        if ($source !== null && $settings->hasRunningBulkSyncJob($source->id)) {
+        if ($source !== null && $settings->hasRunningBulkSyncJob($source->id, includeStock: false)) {
             $this->line('OLX sync already running — skipping dispatch.');
 
             return self::SUCCESS;

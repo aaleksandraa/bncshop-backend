@@ -135,7 +135,7 @@ class SyncHealthChecker
                 continue;
             }
 
-            if (in_array($job->type, ['olx_incremental', 'olx_full'], true)) {
+            if (in_array($job->type, ['olx_incremental', 'olx_full', 'olx_stock'], true)) {
                 $olxCutoff = now()->subMinutes(max(
                     $idleMinutes,
                     (int) config('bnc.olx_sync_stale_idle_minutes', 90),
@@ -151,6 +151,7 @@ class SyncHealthChecker
                     || ($pending['update'] ?? []) !== []
                     || ($pending['hide'] ?? []) !== []
                     || ($pending['unhide'] ?? []) !== []
+                    || ($pending['delete'] ?? []) !== []
                 );
 
                 if ($hasPending) {
@@ -161,6 +162,7 @@ class SyncHealthChecker
                             ? (int) data_get($job->stats, 'limits.max_per_run')
                             : null,
                         $job->id,
+                        $job->type === 'olx_stock',
                     );
                     $job->touch();
 

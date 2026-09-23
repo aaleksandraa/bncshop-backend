@@ -14,6 +14,7 @@ class SyncOlxCommand extends Command
     protected $signature = 'bnc:sync-olx
                             {--sync : Run synchronously instead of queue}
                             {--full : Force recompute all managed listings}
+                            {--stock : Hide/unhide/delete only (no new listings, no 350/day cap)}
                             {--product= : Sync single product id}
                             {--max-creates= : Max new OLX listings this run (e.g. 350 for full daily quota)}
                             {--full-quota : Use entire remaining daily create limit this run}
@@ -33,9 +34,10 @@ class SyncOlxCommand extends Command
         }
 
         $fullSync = (bool) $this->option('full');
+        $stockOnly = (bool) $this->option('stock');
         $productId = $this->option('product') !== null ? (int) $this->option('product') : null;
 
-        if ($productId === null && $settings->hasRunningBulkSyncJob()) {
+        if ($productId === null && $settings->hasRunningBulkSyncJob(includeStock: $stockOnly)) {
             $this->warn('OLX sync već radi — preskačem dispatch. Provjerite Import jobove.');
 
             return self::SUCCESS;
@@ -62,14 +64,14 @@ class SyncOlxCommand extends Command
         }
 
         if ($this->option('sync')) {
-            $stats = $orchestrator->run($fullSync, $productId, $maxCreatesPerRun);
+            $stats = $orchestrator->run($fullSync, $productId, $maxCreatesPerRun, null, $stockOnly);
             $this->line(json_encode($stats, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
 
             return self::SUCCESS;
         }
 
-        RunOlxSyncJob::dispatch($fullSync, $productId, $maxCreatesPerRun);
-        $this->info('OLX sync job dispatched.');
+        RunOlxSyncJob::dispatch($fullSync, $productId, $maxCreatesPerRun, null, $stockOnly);
+        $this->info($stockOnly ? 'OLX stock sync job dispatched.' : 'OLX sync job dispatched.');
 
         return self::SUCCESS;
     }

@@ -112,7 +112,8 @@ class OlxSyncSettingsPage extends Page implements HasForms
                         Toggle::make('enabled')
                             ->label('OLX export uključen'),
                         Toggle::make('auto_sync_enabled')
-                            ->label('Automatski sync (scheduler)'),
+                            ->label('Automatski sync (scheduler)')
+                            ->helperText('Nove objave: u zadanim vremenima (limit 350/dan). Zaliha/status/brisanje: svakih 15 minuta, bez limita.'),
                         Repeater::make('sync_times')
                             ->label('Vremena sync-a (HH:MM)')
                             ->simple(TextInput::make('time')->placeholder('06:00')),
@@ -124,7 +125,7 @@ class OlxSyncSettingsPage extends Page implements HasForms
                             ->label('Dnevni limit novih OLX objava')
                             ->numeric()
                             ->default(350)
-                            ->helperText('OLX API limit je 350 objava po danu (provjereno).'),
+                            ->helperText('Vrijedi samo za NOVE objave. PUT (zaliha/status) i DELETE nemaju ovaj limit.'),
                         TextInput::make('max_creates_per_run')
                             ->label('Max novih objava po sync run-u')
                             ->numeric()

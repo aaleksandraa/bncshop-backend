@@ -20,8 +20,10 @@ class OlxChangeDetector
      *     update: list<int>,
      *     hide: list<int>,
      *     unhide: list<int>,
+     *     delete: list<int>,
      *     unchanged: int,
-     *     scanned: int
+     *     scanned: int,
+     *     frozen_invalid_create: int
      * }
      */
     public function detect(bool $forceAll = false, ?callable $onProgress = null): array
@@ -34,13 +36,18 @@ class OlxChangeDetector
         $hide = [];
         /** @var list<int> $unhide */
         $unhide = [];
+        /** @var list<int> $delete */
+        $delete = [];
         $unchanged = 0;
         $scanned = 0;
+        $frozenInvalidCreate = 0;
 
         $eligibleIds = $this->scope->scopedCategoryIds();
 
         if ($eligibleIds === []) {
-            return compact('create', 'update', 'hide', 'unhide', 'unchanged', 'scanned');
+            $this->collectDelisted($delete, $hide, $scanned);
+
+            return $this->result($create, $update, $hide, $unhide, $delete, $unchanged, $scanned, $frozenInvalidCreate);
         }
 
         Product::query()
@@ -48,7 +55,7 @@ class OlxChangeDetector
             ->whereIn('category_id', $eligibleIds)
             ->where('is_public', true)
             ->where('status', 'active')
-            ->chunkById(50, function ($products) use (&$create, &$update, &$hide, &$unhide, &$unchanged, &$scanned, $forceAll, $onProgress): void {
+            ->chunkById(50, function ($products) use (&$create, &$update, &$hide, &$unhide, &$unchanged, &$scanned, &$frozenInvalidCreate, $forceAll, $onProgress): void {
                 foreach ($products as $product) {
                     $scanned++;
 
@@ -68,7 +75,11 @@ class OlxChangeDetector
 
                     if (! $hasListing) {
                         if ($product->available_stock > 0) {
-                            $create[] = (int) $product->id;
+                            if ($this->isFrozenInvalidCreate($product, $hash, $forceAll)) {
+                                $frozenInvalidCreate++;
+                            } else {
+                                $create[] = (int) $product->id;
+                            }
                         }
 
                         continue;
@@ -98,6 +109,166 @@ class OlxChangeDetector
                 }
             });
 
-        return compact('create', 'update', 'hide', 'unhide', 'unchanged', 'scanned');
+        $this->collectDelisted($delete, $hide, $scanned);
+
+        return $this->result($create, $update, $hide, $unhide, $delete, $unchanged, $scanned, $frozenInvalidCreate);
+    }
+
+    /**
+     * Cheap stock/visibility pass: hide, unhide, delete. No new listings.
+     *
+     * @return array{
+     *     create: list<int>,
+     *     update: list<int>,
+     *     hide: list<int>,
+     *     unhide: list<int>,
+     *     delete: list<int>,
+     *     unchanged: int,
+     *     scanned: int,
+     *     frozen_invalid_create: int
+     * }
+     */
+    public function detectStock(?callable $onProgress = null): array
+    {
+        $create = [];
+        $update = [];
+        $hide = [];
+        $unhide = [];
+        $delete = [];
+        $unchanged = 0;
+        $scanned = 0;
+
+        Product::query()
+            ->whereNotNull('olx_listing_id')
+            ->where('olx_managed', true)
+            ->chunkById(100, function ($products) use (&$hide, &$unhide, &$delete, &$unchanged, &$scanned, $onProgress): void {
+                foreach ($products as $product) {
+                    $scanned++;
+
+                    if ($this->scope->isLegacyProtected($product)) {
+                        $unchanged++;
+
+                        continue;
+                    }
+
+                    if ($this->shouldDeleteListing($product)) {
+                        $delete[] = (int) $product->id;
+
+                        continue;
+                    }
+
+                    if ($product->available_stock <= 0 && $product->olx_listing_status !== 'hidden') {
+                        $hide[] = (int) $product->id;
+
+                        continue;
+                    }
+
+                    if ($product->available_stock > 0 && $product->olx_listing_status === 'hidden') {
+                        $unhide[] = (int) $product->id;
+
+                        continue;
+                    }
+
+                    $unchanged++;
+                }
+
+                if ($onProgress !== null) {
+                    $onProgress($scanned);
+                }
+            });
+
+        return $this->result($create, $update, $hide, $unhide, $delete, $unchanged, $scanned, 0);
+    }
+
+    /**
+     * @param  list<int>  $delete
+     * @param  list<int>  $hide
+     */
+    private function collectDelisted(array &$delete, array &$hide, int &$scanned): void
+    {
+        $alreadyQueued = array_fill_keys([...$delete, ...$hide], true);
+
+        Product::query()
+            ->whereNotNull('olx_listing_id')
+            ->where('olx_managed', true)
+            ->chunkById(100, function ($products) use (&$delete, &$hide, &$scanned, $alreadyQueued): void {
+                foreach ($products as $product) {
+                    $id = (int) $product->id;
+
+                    if (isset($alreadyQueued[$id]) || $this->scope->isLegacyProtected($product)) {
+                        continue;
+                    }
+
+                    if ($this->shouldDeleteListing($product)) {
+                        $scanned++;
+                        $delete[] = $id;
+
+                        continue;
+                    }
+
+                    if ($product->available_stock <= 0 && $product->olx_listing_status !== 'hidden') {
+                        $scanned++;
+                        $hide[] = $id;
+                    }
+                }
+            });
+    }
+
+    private function shouldDeleteListing(Product $product): bool
+    {
+        return ! $this->scope->isEligible($product)
+            || $this->scope->resolveCategoryMapping($product) === null;
+    }
+
+    private function isFrozenInvalidCreate(Product $product, string $hash, bool $forceAll): bool
+    {
+        if ($forceAll || $product->olx_listing_status !== 'error' || $product->olx_export_hash !== $hash) {
+            return false;
+        }
+
+        $error = (string) $product->olx_last_error;
+
+        return str_contains($error, 'obavezni OLX atributi')
+            || str_contains($error, 'Nedostaju obavezni')
+            || str_contains($error, 'validation_failed');
+    }
+
+    /**
+     * @param  list<int>  $create
+     * @param  list<int>  $update
+     * @param  list<int>  $hide
+     * @param  list<int>  $unhide
+     * @param  list<int>  $delete
+     * @return array{
+     *     create: list<int>,
+     *     update: list<int>,
+     *     hide: list<int>,
+     *     unhide: list<int>,
+     *     delete: list<int>,
+     *     unchanged: int,
+     *     scanned: int,
+     *     frozen_invalid_create: int
+     * }
+     */
+    private function result(
+        array $create,
+        array $update,
+        array $hide,
+        array $unhide,
+        array $delete,
+        int $unchanged,
+        int $scanned,
+        int $frozenInvalidCreate,
+    ): array {
+        return [
+            'create' => $create,
+            'update' => $update,
+            'hide' => $hide,
+            'unhide' => $unhide,
+            'delete' => $delete,
+            'unchanged' => $unchanged,
+            'scanned' => $scanned,
+            'frozen_invalid_create' => $frozenInvalidCreate,
+        ];
     }
 }

@@ -30,7 +30,7 @@ class SyncOlxResetCommand extends Command
             $cutoff = now()->subMinutes($releaseMinutes);
             $released = ApiImportJob::query()
                 ->where('api_source_id', $settings->resolveSource()->id)
-                ->whereIn('type', ['olx_incremental', 'olx_full'])
+                ->whereIn('type', ['olx_incremental', 'olx_full', 'olx_stock'])
                 ->where('status', 'running')
                 ->where('started_at', '<', $cutoff)
                 ->update([

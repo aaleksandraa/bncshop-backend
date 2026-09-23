@@ -26,6 +26,7 @@ class OlxSyncOrchestrator
         ?int $productId = null,
         ?int $maxCreatesPerRun = null,
         ?int $continueJobId = null,
+        bool $stockOnly = false,
     ): array {
         if (function_exists('set_time_limit')) {
             @set_time_limit(0);
@@ -43,10 +44,10 @@ class OlxSyncOrchestrator
         $source = $this->settings->resolveSource();
 
         if ($continueJobId !== null) {
-            return $this->continueExistingJob($continueJobId, $fullSync, $maxCreatesPerRun);
+            return $this->continueExistingJob($continueJobId, $fullSync, $maxCreatesPerRun, $stockOnly);
         }
 
-        if ($productId === null && $this->settings->hasRunningBulkSyncJob($source->id)) {
+        if ($productId === null && $this->settings->hasRunningBulkSyncJob($source->id, includeStock: $stockOnly)) {
             return [
                 'skipped' => true,
                 'reason' => 'concurrent_running',
@@ -58,13 +59,13 @@ class OlxSyncOrchestrator
 
         $job = ApiImportJob::query()->create([
             'api_source_id' => $source->id,
-            'type' => $fullSync ? 'olx_full' : 'olx_incremental',
+            'type' => $stockOnly ? 'olx_stock' : ($fullSync ? 'olx_full' : 'olx_incremental'),
             'status' => 'running',
             'sync_started_at' => $syncStartedAt,
             'started_at' => now(),
         ]);
 
-        $stats = $this->emptyStats($fullSync, $maxCreatesPerRun);
+        $stats = $this->emptyStats($fullSync, $maxCreatesPerRun, $stockOnly);
         $this->registerFatalShutdownHandler($job);
 
         try {
@@ -74,31 +75,39 @@ class OlxSyncOrchestrator
                 return $this->runSingleProduct($job, $source, $syncStartedAt, $stats, $productId, $maxCreatesPerRun);
             }
 
-            $detection = $this->changeDetector->detect(
-                $fullSync,
-                function (int $scanned) use ($job, &$stats): void {
+            $detection = $stockOnly
+                ? $this->changeDetector->detectStock(function (int $scanned) use ($job, &$stats): void {
                     $stats['scan']['scanned'] = $scanned;
                     $this->heartbeat($job, $stats, ['phase' => 'detect']);
-                },
-            );
+                })
+                : $this->changeDetector->detect(
+                    $fullSync,
+                    function (int $scanned) use ($job, &$stats): void {
+                        $stats['scan']['scanned'] = $scanned;
+                        $this->heartbeat($job, $stats, ['phase' => 'detect']);
+                    },
+                );
 
             $stats['scan'] = [
                 'scanned' => $detection['scanned'],
                 'unchanged' => $detection['unchanged'],
-                'pending_create' => count($detection['create']),
-                'pending_update' => count($detection['update']),
-                'pending_hide' => count($detection['hide']),
-                'pending_unhide' => count($detection['unhide']),
+                'pending_create' => count($detection['create'] ?? []),
+                'pending_update' => count($detection['update'] ?? []),
+                'pending_hide' => count($detection['hide'] ?? []),
+                'pending_unhide' => count($detection['unhide'] ?? []),
+                'pending_delete' => count($detection['delete'] ?? []),
+                'frozen_invalid_create' => (int) ($detection['frozen_invalid_create'] ?? 0),
             ];
             $stats['pending'] = [
-                'create' => $detection['create'],
-                'update' => $detection['update'],
-                'hide' => $detection['hide'],
-                'unhide' => $detection['unhide'],
+                'create' => $detection['create'] ?? [],
+                'update' => $detection['update'] ?? [],
+                'hide' => $detection['hide'] ?? [],
+                'unhide' => $detection['unhide'] ?? [],
+                'delete' => $detection['delete'] ?? [],
             ];
             $this->heartbeat($job, $stats, ['phase' => 'export']);
 
-            return $this->processPendingWave($job, $source, $syncStartedAt, $stats, $fullSync, $maxCreatesPerRun);
+            return $this->processPendingWave($job, $source, $syncStartedAt, $stats, $fullSync, $maxCreatesPerRun, $stockOnly);
         } catch (Throwable $e) {
             $this->failJob($source, $job, $stats, $e->getMessage());
 
@@ -110,7 +119,7 @@ class OlxSyncOrchestrator
      * @param  array<string, mixed>  $stats
      * @return array<string, mixed>
      */
-    private function continueExistingJob(int $jobId, bool $fullSync, ?int $maxCreatesPerRun): array
+    private function continueExistingJob(int $jobId, bool $fullSync, ?int $maxCreatesPerRun, bool $stockOnly): array
     {
         $job = ApiImportJob::query()->find($jobId);
 
@@ -140,29 +149,39 @@ class OlxSyncOrchestrator
             ]);
         }
 
-        $stats = is_array($job->stats) ? $job->stats : $this->emptyStats($fullSync, $maxCreatesPerRun);
+        $stockOnly = $stockOnly || $job->type === 'olx_stock';
+        $stats = is_array($job->stats) ? $job->stats : $this->emptyStats($fullSync, $maxCreatesPerRun, $stockOnly);
         $source = $this->settings->resolveSource();
         $syncStartedAt = $job->sync_started_at ?? now();
 
         $this->client->authenticate();
 
         if (! isset($stats['pending']) || ! is_array($stats['pending'])) {
-            $detection = $this->changeDetector->detect($fullSync);
+            $detection = $stockOnly
+                ? $this->changeDetector->detectStock()
+                : $this->changeDetector->detect($fullSync);
             $stats['pending'] = [
-                'create' => $detection['create'],
-                'update' => $detection['update'],
-                'hide' => $detection['hide'],
-                'unhide' => $detection['unhide'],
+                'create' => $detection['create'] ?? [],
+                'update' => $detection['update'] ?? [],
+                'hide' => $detection['hide'] ?? [],
+                'unhide' => $detection['unhide'] ?? [],
+                'delete' => $detection['delete'] ?? [],
             ];
             $stats['scan'] = [
                 'scanned' => $detection['scanned'],
                 'unchanged' => $detection['unchanged'],
-                'pending_create' => count($detection['create']),
-                'pending_update' => count($detection['update']),
+                'pending_create' => count($detection['create'] ?? []),
+                'pending_update' => count($detection['update'] ?? []),
+                'pending_hide' => count($detection['hide'] ?? []),
+                'pending_unhide' => count($detection['unhide'] ?? []),
+                'pending_delete' => count($detection['delete'] ?? []),
+                'frozen_invalid_create' => (int) ($detection['frozen_invalid_create'] ?? 0),
             ];
         }
 
-        return $this->processPendingWave($job, $source, $syncStartedAt, $stats, $fullSync, $maxCreatesPerRun);
+        $stats['pending'] = $this->normalizePending($stats['pending'] ?? []);
+
+        return $this->processPendingWave($job, $source, $syncStartedAt, $stats, $fullSync, $maxCreatesPerRun, $stockOnly);
     }
 
     /**
@@ -215,6 +234,7 @@ class OlxSyncOrchestrator
         array $stats,
         bool $fullSync,
         ?int $maxCreatesPerRun,
+        bool $stockOnly = false,
     ): array {
         $createQuota = (int) ($stats['limits']['allowed_this_run'] ?? $this->createLimiter->allowedThisRun($maxCreatesPerRun));
         $createQuota -= (int) ($stats['actions']['created'] ?? 0);
@@ -226,11 +246,23 @@ class OlxSyncOrchestrator
         $productRelations = ['category.parent', 'images', 'attributeValues.attributeDefinition', 'manufacturer'];
 
         foreach ([
-            'create' => 'created',
-            'update' => 'updated',
             'hide' => 'hidden',
             'unhide' => 'unhidden',
+            'delete' => 'deleted',
+            'update' => 'updated',
+            'create' => 'created',
         ] as $setKey => $statKey) {
+            if ($stockOnly && in_array($setKey, ['create', 'update'], true)) {
+                continue;
+            }
+
+            if ($setKey === 'create' && $createQuota <= 0) {
+                $leftover = count($stats['pending']['create'] ?? []);
+                $stats['actions']['skipped_quota'] += $leftover;
+                $stats['pending']['create'] = [];
+                continue;
+            }
+
             /** @var list<int> $productIds */
             $productIds = array_values(array_map('intval', $stats['pending'][$setKey] ?? []));
 
@@ -253,7 +285,7 @@ class OlxSyncOrchestrator
                         $processedThisWave++;
 
                         if ($processedThisWave >= $waveSize) {
-                            return $this->dispatchContinuation($job, $stats, $fullSync, $maxCreatesPerRun);
+                            return $this->dispatchContinuation($job, $stats, $fullSync, $maxCreatesPerRun, $stockOnly);
                         }
 
                         continue;
@@ -265,7 +297,7 @@ class OlxSyncOrchestrator
                         $processedThisWave++;
 
                         if ($processedThisWave >= $waveSize) {
-                            return $this->dispatchContinuation($job, $stats, $fullSync, $maxCreatesPerRun);
+                            return $this->dispatchContinuation($job, $stats, $fullSync, $maxCreatesPerRun, $stockOnly);
                         }
 
                         continue;
@@ -274,7 +306,7 @@ class OlxSyncOrchestrator
                     try {
                         $result = $this->listingExporter->export(
                             $product,
-                            $setKey === 'unhide' ? 'unhide' : ($setKey === 'hide' ? 'hide' : $setKey),
+                            $setKey,
                         );
 
                         if ($result['action'] === 'skipped_legacy') {
@@ -283,6 +315,8 @@ class OlxSyncOrchestrator
                             $this->createLimiter->recordCreate();
                             $createQuota--;
                             $stats['actions']['created']++;
+                        } elseif ($setKey === 'delete' && $result['action'] === 'delete') {
+                            $stats['actions']['deleted']++;
                         } else {
                             $stats['actions'][$statKey]++;
                         }
@@ -324,7 +358,7 @@ class OlxSyncOrchestrator
                     $processedThisWave++;
 
                     if ($processedThisWave >= $waveSize) {
-                        return $this->dispatchContinuation($job, $stats, $fullSync, $maxCreatesPerRun);
+                        return $this->dispatchContinuation($job, $stats, $fullSync, $maxCreatesPerRun, $stockOnly);
                     }
                 }
 
@@ -335,11 +369,11 @@ class OlxSyncOrchestrator
         $stats['pending'] = $this->normalizePending($stats['pending'] ?? []);
         $stats['limits'] = $this->createLimiter->snapshot($maxCreatesPerRun);
 
-        if ($this->hasPendingWork($stats)) {
-            return $this->dispatchContinuation($job, $stats, $fullSync, $maxCreatesPerRun);
+        if ($this->hasPendingWork($stats, $createQuota, $stockOnly)) {
+            return $this->dispatchContinuation($job, $stats, $fullSync, $maxCreatesPerRun, $stockOnly);
         }
 
-        $this->completeJob($source, $job, $syncStartedAt, $stats);
+        $this->completeJob($source, $job, $syncStartedAt, $stats, ! $stockOnly);
 
         return $stats;
     }
@@ -353,12 +387,13 @@ class OlxSyncOrchestrator
         array $stats,
         bool $fullSync,
         ?int $maxCreatesPerRun,
+        bool $stockOnly = false,
     ): array {
         $stats['waves'] = ((int) ($stats['waves'] ?? 0)) + 1;
         $stats['continued'] = true;
         $this->heartbeat($job, $stats, ['phase' => 'continue']);
 
-        RunOlxSyncJob::dispatch($fullSync, null, $maxCreatesPerRun, $job->id);
+        RunOlxSyncJob::dispatch($fullSync, null, $maxCreatesPerRun, $job->id, $stockOnly);
 
         return $stats;
     }
@@ -366,16 +401,17 @@ class OlxSyncOrchestrator
     /**
      * @return array<string, mixed>
      */
-    private function emptyStats(bool $fullSync, ?int $maxCreatesPerRun): array
+    private function emptyStats(bool $fullSync, ?int $maxCreatesPerRun, bool $stockOnly = false): array
     {
         return [
-            'mode' => $fullSync ? 'full' : 'incremental',
+            'mode' => $stockOnly ? 'stock' : ($fullSync ? 'full' : 'incremental'),
             'scan' => ['scanned' => 0, 'unchanged' => 0],
             'actions' => [
                 'created' => 0,
                 'updated' => 0,
                 'hidden' => 0,
                 'unhidden' => 0,
+                'deleted' => 0,
                 'skipped_legacy' => 0,
                 'skipped_validation' => 0,
                 'skipped_quota' => 0,
@@ -388,6 +424,7 @@ class OlxSyncOrchestrator
                 'update' => [],
                 'hide' => [],
                 'unhide' => [],
+                'delete' => [],
             ],
             'skipped_validation_reasons' => [],
             'network_retries' => [],
@@ -397,7 +434,7 @@ class OlxSyncOrchestrator
 
     /**
      * @param  array<string, mixed>  $pending
-     * @return array{create: list<int>, update: list<int>, hide: list<int>, unhide: list<int>}
+     * @return array{create: list<int>, update: list<int>, hide: list<int>, unhide: list<int>, delete: list<int>}
      */
     private function normalizePending(array $pending): array
     {
@@ -406,6 +443,7 @@ class OlxSyncOrchestrator
             'update' => [],
             'hide' => [],
             'unhide' => [],
+            'delete' => [],
         ];
 
         foreach ($normalized as $key => $_) {
@@ -418,12 +456,22 @@ class OlxSyncOrchestrator
     /**
      * @param  array<string, mixed>  $stats
      */
-    private function hasPendingWork(array $stats): bool
+    private function hasPendingWork(array $stats, int $createQuota = 1, bool $stockOnly = false): bool
     {
-        foreach ($stats['pending'] ?? [] as $ids) {
-            if (is_array($ids) && $ids !== []) {
-                return true;
+        foreach ($stats['pending'] ?? [] as $key => $ids) {
+            if (! is_array($ids) || $ids === []) {
+                continue;
             }
+
+            if ($stockOnly && in_array($key, ['create', 'update'], true)) {
+                continue;
+            }
+
+            if ($key === 'create' && $createQuota <= 0) {
+                continue;
+            }
+
+            return true;
         }
 
         return false;
@@ -483,14 +531,19 @@ class OlxSyncOrchestrator
     /**
      * @param  array<string, mixed>  $stats
      */
-    private function completeJob($source, ApiImportJob $job, $syncStartedAt, array $stats): void
+    private function completeJob($source, ApiImportJob $job, $syncStartedAt, array $stats, bool $touchLastSuccessfulSync = true): void
     {
-        DB::transaction(function () use ($source, $syncStartedAt, $job, $stats): void {
-            $source->update([
-                'last_successful_sync_at' => $syncStartedAt,
+        DB::transaction(function () use ($source, $syncStartedAt, $job, $stats, $touchLastSuccessfulSync): void {
+            $sourceUpdate = [
                 'connection_status' => 'connected',
                 'last_error' => null,
-            ]);
+            ];
+
+            if ($touchLastSuccessfulSync) {
+                $sourceUpdate['last_successful_sync_at'] = $syncStartedAt;
+            }
+
+            $source->update($sourceUpdate);
 
             $job->update([
                 'status' => 'completed',

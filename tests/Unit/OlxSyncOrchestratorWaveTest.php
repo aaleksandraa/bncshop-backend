@@ -245,6 +245,187 @@ class OlxSyncOrchestratorWaveTest extends TestCase
         Queue::assertPushed(RunOlxSyncJob::class);
     }
 
+    public function test_hides_before_creates_in_the_same_wave(): void
+    {
+        Queue::fake();
+        config(['bnc.olx_sync_wave_size' => 2]);
+
+        $source = $this->makeOlxSource();
+        $hideProduct = $this->makeProduct();
+        $createProducts = collect([
+            $this->makeProduct(),
+            $this->makeProduct(),
+        ]);
+
+        $settings = Mockery::mock(OlxSyncSettings::class);
+        $settings->shouldReceive('isEnabled')->andReturn(true);
+        $settings->shouldReceive('resolveSource')->andReturn($source);
+        $settings->shouldReceive('hasRunningBulkSyncJob')->andReturn(false);
+        $settings->shouldReceive('all')->andReturn(['batch_size' => 20, 'daily_create_limit' => 350, 'max_creates_per_run' => 175]);
+
+        $client = Mockery::mock(OlxApiClient::class);
+        $client->shouldReceive('authenticate')->andReturn('token');
+
+        $detector = Mockery::mock(OlxChangeDetector::class);
+        $detector->shouldReceive('detect')->andReturn([
+            'create' => $createProducts->pluck('id')->all(),
+            'update' => [],
+            'hide' => [$hideProduct->id],
+            'unhide' => [],
+            'delete' => [],
+            'unchanged' => 0,
+            'scanned' => 3,
+        ]);
+
+        $exporter = Mockery::mock(OlxListingExporter::class);
+        $exporter->shouldReceive('export')
+            ->once()
+            ->ordered()
+            ->with(Mockery::on(fn ($product): bool => (int) $product->id === (int) $hideProduct->id), 'hide')
+            ->andReturn(['action' => 'hide', 'listing_id' => 11]);
+        $exporter->shouldReceive('export')
+            ->once()
+            ->ordered()
+            ->with(Mockery::on(fn ($product): bool => (int) $product->id === (int) $createProducts[0]->id), 'create')
+            ->andReturn(['action' => 'create', 'listing_id' => 22]);
+
+        $this->app->instance(OlxSyncSettings::class, $settings);
+
+        $orchestrator = new OlxSyncOrchestrator(
+            $settings,
+            $client,
+            $detector,
+            $exporter,
+            app(OlxDailyCreateLimiter::class),
+        );
+
+        $stats = $orchestrator->run(false);
+
+        $this->assertTrue($stats['continued']);
+        $this->assertSame(1, $stats['actions']['hidden']);
+        $this->assertSame(1, $stats['actions']['created']);
+        $this->assertSame([$createProducts[1]->id], $stats['pending']['create']);
+    }
+
+    public function test_quota_zero_skips_leftover_creates_but_still_hides(): void
+    {
+        Queue::fake();
+        config(['bnc.olx_sync_wave_size' => 40]);
+        \Illuminate\Support\Facades\Cache::put('olx:daily_creates:'.now()->toDateString(), 350);
+
+        $source = $this->makeOlxSource();
+        $hideProduct = $this->makeProduct();
+        $createProduct = $this->makeProduct();
+
+        $settings = Mockery::mock(OlxSyncSettings::class);
+        $settings->shouldReceive('isEnabled')->andReturn(true);
+        $settings->shouldReceive('resolveSource')->andReturn($source);
+        $settings->shouldReceive('hasRunningBulkSyncJob')->andReturn(false);
+        $settings->shouldReceive('all')->andReturn(['batch_size' => 20, 'daily_create_limit' => 350, 'max_creates_per_run' => 175]);
+
+        $client = Mockery::mock(OlxApiClient::class);
+        $client->shouldReceive('authenticate')->andReturn('token');
+
+        $detector = Mockery::mock(OlxChangeDetector::class);
+        $detector->shouldReceive('detect')->andReturn([
+            'create' => [$createProduct->id],
+            'update' => [],
+            'hide' => [$hideProduct->id],
+            'unhide' => [],
+            'delete' => [],
+            'unchanged' => 0,
+            'scanned' => 2,
+        ]);
+
+        $exporter = Mockery::mock(OlxListingExporter::class);
+        $exporter->shouldReceive('export')
+            ->once()
+            ->with(Mockery::on(fn ($product): bool => (int) $product->id === (int) $hideProduct->id), 'hide')
+            ->andReturn(['action' => 'hide', 'listing_id' => 11]);
+        $exporter->shouldNotReceive('export')->with(Mockery::any(), 'create');
+
+        $this->app->instance(OlxSyncSettings::class, $settings);
+
+        $orchestrator = new OlxSyncOrchestrator(
+            $settings,
+            $client,
+            $detector,
+            $exporter,
+            app(OlxDailyCreateLimiter::class),
+        );
+
+        $stats = $orchestrator->run(false);
+
+        $this->assertSame(1, $stats['actions']['hidden']);
+        $this->assertSame(0, $stats['actions']['created']);
+        $this->assertSame(1, $stats['actions']['skipped_quota']);
+        $this->assertSame([], $stats['pending']['create']);
+        $this->assertSame('completed', ApiImportJob::query()->latest('id')->first()?->status);
+        Queue::assertNotPushed(RunOlxSyncJob::class);
+    }
+
+    public function test_stock_only_run_uses_detect_stock_and_does_not_create(): void
+    {
+        Queue::fake();
+        config(['bnc.olx_sync_wave_size' => 40]);
+
+        $source = $this->makeOlxSource();
+        $hideProduct = $this->makeProduct();
+        $deleteProduct = $this->makeProduct();
+
+        $settings = Mockery::mock(OlxSyncSettings::class);
+        $settings->shouldReceive('isEnabled')->andReturn(true);
+        $settings->shouldReceive('resolveSource')->andReturn($source);
+        $settings->shouldReceive('hasRunningBulkSyncJob')->andReturn(false);
+        $settings->shouldReceive('all')->andReturn(['batch_size' => 20, 'daily_create_limit' => 350, 'max_creates_per_run' => 175]);
+
+        $client = Mockery::mock(OlxApiClient::class);
+        $client->shouldReceive('authenticate')->andReturn('token');
+
+        $detector = Mockery::mock(OlxChangeDetector::class);
+        $detector->shouldReceive('detect')->never();
+        $detector->shouldReceive('detectStock')->andReturn([
+            'create' => [999],
+            'update' => [998],
+            'hide' => [$hideProduct->id],
+            'unhide' => [],
+            'delete' => [$deleteProduct->id],
+            'unchanged' => 0,
+            'scanned' => 2,
+        ]);
+
+        $exporter = Mockery::mock(OlxListingExporter::class);
+        $exporter->shouldReceive('export')
+            ->once()
+            ->with(Mockery::on(fn ($product): bool => (int) $product->id === (int) $hideProduct->id), 'hide')
+            ->andReturn(['action' => 'hide', 'listing_id' => 11]);
+        $exporter->shouldReceive('export')
+            ->once()
+            ->with(Mockery::on(fn ($product): bool => (int) $product->id === (int) $deleteProduct->id), 'delete')
+            ->andReturn(['action' => 'delete', 'listing_id' => 22]);
+
+        $this->app->instance(OlxSyncSettings::class, $settings);
+
+        $orchestrator = new OlxSyncOrchestrator(
+            $settings,
+            $client,
+            $detector,
+            $exporter,
+            app(OlxDailyCreateLimiter::class),
+        );
+
+        $stats = $orchestrator->run(false, null, null, null, true);
+        $job = ApiImportJob::query()->latest('id')->first();
+
+        $this->assertSame('stock', $stats['mode']);
+        $this->assertSame('olx_stock', $job?->type);
+        $this->assertSame(1, $stats['actions']['hidden']);
+        $this->assertSame(1, $stats['actions']['deleted']);
+        $this->assertSame(0, $stats['actions']['created']);
+        $this->assertSame('completed', $job?->status);
+        Queue::assertNotPushed(RunOlxSyncJob::class);
+    }
+
     public function test_health_checker_resumes_idle_olx_job_with_pending_work(): void
     {
         Queue::fake();

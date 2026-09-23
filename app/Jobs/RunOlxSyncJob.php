@@ -24,17 +24,22 @@ class RunOlxSyncJob implements ShouldQueue
         public ?int $productId = null,
         public ?int $maxCreatesPerRun = null,
         public ?int $continueJobId = null,
+        public bool $stockOnly = false,
     ) {
         $this->onQueue('sync');
 
         if ($maxCreatesPerRun !== null && $maxCreatesPerRun >= 300) {
             $this->timeout = 14400;
         }
+
+        if ($this->stockOnly) {
+            $this->timeout = 1800;
+        }
     }
 
     public function handle(OlxSyncOrchestrator $orchestrator): void
     {
-        $orchestrator->run($this->fullSync, $this->productId, $this->maxCreatesPerRun, $this->continueJobId);
+        $orchestrator->run($this->fullSync, $this->productId, $this->maxCreatesPerRun, $this->continueJobId, $this->stockOnly);
     }
 
     public function failed(?Throwable $exception): void
@@ -47,7 +52,7 @@ class RunOlxSyncJob implements ShouldQueue
 
         $job = ApiImportJob::query()
             ->where('api_source_id', $source->id)
-            ->whereIn('type', ['olx_incremental', 'olx_full'])
+            ->whereIn('type', ['olx_incremental', 'olx_full', 'olx_stock'])
             ->where('status', 'running')
             ->latest()
             ->first();
@@ -62,6 +67,7 @@ class RunOlxSyncJob implements ShouldQueue
             || ($pending['update'] ?? []) !== []
             || ($pending['hide'] ?? []) !== []
             || ($pending['unhide'] ?? []) !== []
+            || ($pending['delete'] ?? []) !== []
         );
 
         if ($hasPending) {
@@ -69,7 +75,7 @@ class RunOlxSyncJob implements ShouldQueue
                 'error_message' => 'Wave timed out; resuming remaining OLX listings.',
             ]);
 
-            static::dispatch($this->fullSync, null, $this->maxCreatesPerRun, $job->id);
+            static::dispatch($this->fullSync, null, $this->maxCreatesPerRun, $job->id, $this->stockOnly);
 
             return;
         }

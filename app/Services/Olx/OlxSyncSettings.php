@@ -149,13 +149,18 @@ class OlxSyncSettings
         );
     }
 
-    public function hasRunningBulkSyncJob(?int $sourceId = null): bool
+    public function hasRunningBulkSyncJob(?int $sourceId = null, bool $includeStock = true): bool
     {
         $sourceId ??= $this->resolveSource()->id;
+        $types = ['olx_incremental', 'olx_full'];
+
+        if ($includeStock) {
+            $types[] = 'olx_stock';
+        }
 
         return ApiImportJob::query()
             ->where('api_source_id', $sourceId)
-            ->whereIn('type', ['olx_incremental', 'olx_full'])
+            ->whereIn('type', $types)
             ->where('status', 'running')
             ->exists();
     }

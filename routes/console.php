@@ -20,6 +20,8 @@ foreach (config('bnc.olx_sync_times', ['06:00', '18:00']) as $time) {
     Schedule::command('bnc:sync-olx-scheduled')->dailyAt($time);
 }
 
+Schedule::command('bnc:sync-olx-stock')->everyFifteenMinutes()->withoutOverlapping(20);
+
 Schedule::command('analytics:aggregate-daily')->dailyAt('00:05');
 Schedule::command('bnc:loyalty-expire-points')->dailyAt('01:00');
 Schedule::command('sitemap:generate')->dailyAt('02:00');

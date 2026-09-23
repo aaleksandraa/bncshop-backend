@@ -111,17 +111,24 @@ class OlxListingExporter
             return ['action' => 'skipped_legacy', 'listing_id' => filled($product->olx_listing_id) ? (int) $product->olx_listing_id : null];
         }
 
-        $mapping = $this->scope->resolveCategoryMapping($product);
-
-        if ($mapping === null) {
-            throw new \RuntimeException("Product #{$product->id} has no enabled OLX category mapping.");
-        }
-
         try {
+            if ($action === 'hide') {
+                return $this->hide($product);
+            }
+
+            if ($action === 'delete') {
+                return $this->delete($product);
+            }
+
+            $mapping = $this->scope->resolveCategoryMapping($product);
+
+            if ($mapping === null) {
+                throw new \RuntimeException("Product #{$product->id} has no enabled OLX category mapping.");
+            }
+
             return match ($action) {
                 'create' => $this->create($product, $mapping),
                 'update' => $this->update($product, $mapping),
-                'hide' => $this->hide($product),
                 'unhide' => $this->unhide($product, $mapping),
                 default => throw new \InvalidArgumentException("Unknown export action: {$action}"),
             };
@@ -141,19 +148,22 @@ class OlxListingExporter
     private function create(Product $product, $mapping): array
     {
         $olxCategoryId = (int) $mapping->olx_category_id;
+        $payload = $this->listingMapper->map($product, $mapping);
         $missing = $this->attributeResolver->missingRequiredForPublish($product, $olxCategoryId);
 
         if ($missing !== []) {
-            throw new \RuntimeException(
-                'Nedostaju obavezni OLX atributi: '.implode(', ', array_map(
+            $product->update([
+                'olx_listing_status' => 'error',
+                'olx_last_error' => 'Nedostaju obavezni OLX atributi: '.implode(', ', array_map(
                     fn (int $id, string $label): string => "{$label} (#{$id})",
                     array_keys($missing),
                     array_values($missing),
                 )),
-            );
-        }
+                'olx_export_hash' => $this->listingMapper->fingerprintPayload($payload),
+            ]);
 
-        $payload = $this->listingMapper->map($product, $mapping);
+            throw new \RuntimeException((string) $product->olx_last_error);
+        }
         $response = $this->client->createListing($payload);
         $listingId = (int) ($response['id'] ?? 0);
 
@@ -210,6 +220,29 @@ class OlxListingExporter
         $this->markSynced($product, $listingId, $payload, 'active');
 
         return ['action' => 'unhide', 'listing_id' => $listingId];
+    }
+
+    /**
+     * @return array{action: string, listing_id: int|null}
+     */
+    private function delete(Product $product): array
+    {
+        $listingId = filled($product->olx_listing_id) ? (int) $product->olx_listing_id : 0;
+
+        if ($listingId > 0) {
+            $this->client->deleteListing($listingId);
+        }
+
+        $product->update([
+            'olx_listing_id' => null,
+            'olx_listing_status' => 'deleted',
+            'olx_export_hash' => null,
+            'olx_managed' => true,
+            'olx_synced_at' => now(),
+            'olx_last_error' => null,
+        ]);
+
+        return ['action' => 'delete', 'listing_id' => $listingId > 0 ? $listingId : null];
     }
 
     /**
