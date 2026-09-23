@@ -131,6 +131,12 @@ class ApiImportJobResource extends Resource
                         Infolists\Components\TextEntry::make('stats.actions.deleted')
                             ->label('Obrisano s OLX-a')
                             ->state(fn (ApiImportJob $record): string => (string) ((int) data_get($record->stats, 'actions.deleted', 0))),
+                        Infolists\Components\TextEntry::make('stats.scan.frozen_invalid_create')
+                            ->label('Blokirano (nedostaju atributi)')
+                            ->state(fn (ApiImportJob $record): string => (string) ((int) data_get($record->stats, 'scan.frozen_invalid_create', 0))),
+                        Infolists\Components\TextEntry::make('stats.actions.skipped_validation')
+                            ->label('Preskočeno (validacija)')
+                            ->state(fn (ApiImportJob $record): string => (string) ((int) data_get($record->stats, 'actions.skipped_validation', 0))),
                     ])
                     ->columns(3)
                     ->visible(fn (ApiImportJob $record): bool => $record->isOlxExportJob()),

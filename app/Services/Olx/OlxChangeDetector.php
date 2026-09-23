@@ -9,6 +9,7 @@ class OlxChangeDetector
     public function __construct(
         private readonly OlxExportScope $scope,
         private readonly OlxListingMapper $listingMapper,
+        private readonly OlxAttributeResolver $attributeResolver,
     ) {}
 
     /**
@@ -75,7 +76,15 @@ class OlxChangeDetector
 
                     if (! $hasListing) {
                         if ($product->available_stock > 0) {
-                            if ($this->isFrozenInvalidCreate($product, $hash, $forceAll)) {
+                            $missing = $this->attributeResolver->missingRequiredForPublish(
+                                $product,
+                                (int) $mapping->olx_category_id,
+                            );
+
+                            if ($missing !== []) {
+                                $this->persistInvalidCreate($product, $hash, $missing);
+                                $frozenInvalidCreate++;
+                            } elseif ($this->isFrozenInvalidCreate($product, $hash, $forceAll)) {
                                 $frozenInvalidCreate++;
                             } else {
                                 $create[] = (int) $product->id;
@@ -220,6 +229,32 @@ class OlxChangeDetector
             || $this->scope->resolveCategoryMapping($product) === null;
     }
 
+    /**
+     * @param  array<int, string>  $missing
+     */
+    private function persistInvalidCreate(Product $product, string $hash, array $missing): void
+    {
+        $message = 'Nedostaju obavezni OLX atributi: '.implode(', ', array_map(
+            fn (int $id, string $label): string => "{$label} (#{$id})",
+            array_keys($missing),
+            array_values($missing),
+        ));
+
+        if (
+            $product->olx_listing_status === 'error'
+            && $product->olx_last_error === $message
+            && $product->olx_export_hash === $hash
+        ) {
+            return;
+        }
+
+        $product->update([
+            'olx_listing_status' => 'error',
+            'olx_last_error' => $message,
+            'olx_export_hash' => $hash,
+        ]);
+    }
+
     private function isFrozenInvalidCreate(Product $product, string $hash, bool $forceAll): bool
     {
         if ($forceAll || $product->olx_listing_status !== 'error' || $product->olx_export_hash !== $hash) {
@@ -261,7 +296,7 @@ class OlxChangeDetector
         int $frozenInvalidCreate,
     ): array {
         return [
-            'create' => $create,
+            'create' => $this->newestFirst($create),
             'update' => $update,
             'hide' => $hide,
             'unhide' => $unhide,
@@ -270,5 +305,17 @@ class OlxChangeDetector
             'scanned' => $scanned,
             'frozen_invalid_create' => $frozenInvalidCreate,
         ];
+    }
+
+    /**
+     * @param  list<int>  $ids
+     * @return list<int>
+     */
+    private function newestFirst(array $ids): array
+    {
+        $ids = array_values(array_unique(array_map('intval', $ids)));
+        rsort($ids);
+
+        return $ids;
     }
 }
