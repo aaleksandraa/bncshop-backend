@@ -65,7 +65,8 @@ class ApiImportJobResource extends Resource
                             ->label('API izvor'),
                         Infolists\Components\TextEntry::make('type')
                             ->label('Tip')
-                            ->badge(),
+                            ->badge()
+                            ->formatStateUsing(fn (ApiImportJob $record): string => $record->typeLabel()),
                         Infolists\Components\TextEntry::make('status')
                             ->label('Status')
                             ->badge()
@@ -90,13 +91,13 @@ class ApiImportJobResource extends Resource
                     ->schema([
                         Infolists\Components\TextEntry::make('stats.products.created')
                             ->label('Ubačeno')
-                            ->state(fn (ApiImportJob $record): string => (string) ($record->stats['products']['created'] ?? '—')),
+                            ->state(fn (ApiImportJob $record): string => (string) ($record->summaryCreated() ?? '—')),
                         Infolists\Components\TextEntry::make('stats.products.updated')
                             ->label('Izmijenjeno')
-                            ->state(fn (ApiImportJob $record): string => (string) ($record->stats['products']['updated'] ?? '—')),
+                            ->state(fn (ApiImportJob $record): string => (string) ($record->summaryUpdated() ?? '—')),
                         Infolists\Components\TextEntry::make('stats.products.deactivated')
                             ->label('Deaktivirano')
-                            ->state(fn (ApiImportJob $record): string => (string) ($record->stats['products']['deactivated'] ?? '—')),
+                            ->state(fn (ApiImportJob $record): string => (string) ($record->summaryDeactivated() ?? '—')),
                         Infolists\Components\TextEntry::make('stats.products.imported')
                             ->label('Ukupno obrađeno')
                             ->state(fn (ApiImportJob $record): string => (string) ($record->stats['products']['imported'] ?? '—')),
@@ -109,7 +110,30 @@ class ApiImportJobResource extends Resource
                             ->columnSpanFull(),
                     ])
                     ->columns(3)
-                    ->visible(fn (ApiImportJob $record): bool => isset($record->stats['products'])),
+                    ->visible(fn (ApiImportJob $record): bool => isset($record->stats['products']) && ! $record->isOlxExportJob()),
+                Infolists\Components\Section::make('OLX export')
+                    ->schema([
+                        Infolists\Components\TextEntry::make('stats.scan.scanned')
+                            ->label('Skenirano')
+                            ->state(fn (ApiImportJob $record): string => (string) ((int) data_get($record->stats, 'scan.scanned', 0))),
+                        Infolists\Components\TextEntry::make('stats.actions.created')
+                            ->label('Ubačeno na OLX')
+                            ->state(fn (ApiImportJob $record): string => (string) ((int) data_get($record->stats, 'actions.created', 0))),
+                        Infolists\Components\TextEntry::make('stats.actions.updated')
+                            ->label('Ažurirano')
+                            ->state(fn (ApiImportJob $record): string => (string) ((int) data_get($record->stats, 'actions.updated', 0))),
+                        Infolists\Components\TextEntry::make('stats.actions.hidden')
+                            ->label('Sakriveno (zaliha 0)')
+                            ->state(fn (ApiImportJob $record): string => (string) ((int) data_get($record->stats, 'actions.hidden', 0))),
+                        Infolists\Components\TextEntry::make('stats.actions.unhidden')
+                            ->label('Ponovo aktivirano')
+                            ->state(fn (ApiImportJob $record): string => (string) ((int) data_get($record->stats, 'actions.unhidden', 0))),
+                        Infolists\Components\TextEntry::make('stats.actions.deleted')
+                            ->label('Obrisano s OLX-a')
+                            ->state(fn (ApiImportJob $record): string => (string) ((int) data_get($record->stats, 'actions.deleted', 0))),
+                    ])
+                    ->columns(3)
+                    ->visible(fn (ApiImportJob $record): bool => $record->isOlxExportJob()),
                 Infolists\Components\Section::make('Ostala statistika')
                     ->schema([
                         Infolists\Components\KeyValueEntry::make('stats')
@@ -135,7 +159,8 @@ class ApiImportJobResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('type')
                     ->label('Tip')
-                    ->badge(),
+                    ->badge()
+                    ->formatStateUsing(fn (ApiImportJob $record): string => $record->typeLabel()),
                 Tables\Columns\TextColumn::make('status')
                     ->label('Status')
                     ->badge()
@@ -156,20 +181,20 @@ class ApiImportJobResource extends Resource
                     ->timezone(config('app.timezone')),
                 Tables\Columns\TextColumn::make('stats.products.created')
                     ->label('Ubačeno')
-                    ->state(fn (ApiImportJob $record): ?string => isset($record->stats['products']['created'])
-                        ? (string) $record->stats['products']['created']
+                    ->state(fn (ApiImportJob $record): ?string => $record->summaryCreated() !== null
+                        ? (string) $record->summaryCreated()
                         : null)
                     ->placeholder('—'),
                 Tables\Columns\TextColumn::make('stats.products.updated')
                     ->label('Izmijenjeno')
-                    ->state(fn (ApiImportJob $record): ?string => isset($record->stats['products']['updated'])
-                        ? (string) $record->stats['products']['updated']
+                    ->state(fn (ApiImportJob $record): ?string => $record->summaryUpdated() !== null
+                        ? (string) $record->summaryUpdated()
                         : null)
                     ->placeholder('—'),
                 Tables\Columns\TextColumn::make('stats.products.deactivated')
                     ->label('Deaktivirano')
-                    ->state(fn (ApiImportJob $record): ?string => isset($record->stats['products']['deactivated'])
-                        ? (string) $record->stats['products']['deactivated']
+                    ->state(fn (ApiImportJob $record): ?string => $record->summaryDeactivated() !== null
+                        ? (string) $record->summaryDeactivated()
                         : null)
                     ->placeholder('—'),
             ])
@@ -181,6 +206,15 @@ class ApiImportJobResource extends Resource
                         'running' => 'U toku',
                         'completed' => 'Završeno',
                         'failed' => 'Neuspjelo',
+                    ]),
+                Tables\Filters\SelectFilter::make('type')
+                    ->label('Tip')
+                    ->options([
+                        'olx_stock' => 'OLX zaliha',
+                        'olx_incremental' => 'OLX incremental',
+                        'olx_full' => 'OLX full',
+                        'incremental' => 'Incremental',
+                        'full' => 'Full',
                     ]),
                 Tables\Filters\SelectFilter::make('api_source_id')
                     ->label('Izvor')

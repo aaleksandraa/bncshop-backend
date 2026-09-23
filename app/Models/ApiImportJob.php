@@ -43,4 +43,57 @@ class ApiImportJob extends Model
     {
         return $this->hasMany(ApiImportJobChange::class);
     }
+
+    public function isOlxExportJob(): bool
+    {
+        return in_array($this->type, ['olx_incremental', 'olx_full', 'olx_stock'], true);
+    }
+
+    public function typeLabel(): string
+    {
+        return match ($this->type) {
+            'olx_stock' => 'OLX zaliha',
+            'olx_incremental' => 'OLX incremental',
+            'olx_full' => 'OLX full',
+            'incremental' => 'Incremental',
+            'full' => 'Full',
+            default => (string) $this->type,
+        };
+    }
+
+    public function summaryCreated(): ?int
+    {
+        if ($this->isOlxExportJob()) {
+            return (int) data_get($this->stats, 'actions.created', 0);
+        }
+
+        return $this->nullableStatInt('products.created');
+    }
+
+    public function summaryUpdated(): ?int
+    {
+        if ($this->isOlxExportJob()) {
+            return (int) data_get($this->stats, 'actions.updated', 0)
+                + (int) data_get($this->stats, 'actions.unhidden', 0);
+        }
+
+        return $this->nullableStatInt('products.updated');
+    }
+
+    public function summaryDeactivated(): ?int
+    {
+        if ($this->isOlxExportJob()) {
+            return (int) data_get($this->stats, 'actions.hidden', 0)
+                + (int) data_get($this->stats, 'actions.deleted', 0);
+        }
+
+        return $this->nullableStatInt('products.deactivated');
+    }
+
+    private function nullableStatInt(string $path): ?int
+    {
+        $value = data_get($this->stats, $path);
+
+        return is_numeric($value) ? (int) $value : null;
+    }
 }

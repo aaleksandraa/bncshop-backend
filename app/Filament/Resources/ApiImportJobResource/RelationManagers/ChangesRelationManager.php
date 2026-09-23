@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\ApiImportJobResource\RelationManagers;
 
 use App\Filament\Resources\ProductResource;
+use App\Models\ApiImportJob;
 use App\Services\Sync\ImportJobFieldLabels;
 use Filament\Forms\Form;
 use Filament\Resources\Components\Tab;
@@ -10,12 +11,22 @@ use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 class ChangesRelationManager extends RelationManager
 {
     protected static string $relationship = 'changes';
 
     protected static ?string $title = 'Promjene proizvoda';
+
+    public static function canViewForRecord(Model $ownerRecord, string $pageClass): bool
+    {
+        if ($ownerRecord instanceof ApiImportJob && $ownerRecord->isOlxExportJob()) {
+            return false;
+        }
+
+        return parent::canViewForRecord($ownerRecord, $pageClass);
+    }
 
     public function form(Form $form): Form
     {
