@@ -55,6 +55,30 @@ class OlxSyncOrchestrator
             ];
         }
 
+        $prefetchedStockDetection = null;
+
+        if ($stockOnly && $productId === null) {
+            $prefetchedStockDetection = $this->changeDetector->detectStock();
+
+            if (! $this->stockDetectionHasWork($prefetchedStockDetection)) {
+                return [
+                    'skipped' => true,
+                    'reason' => 'no_stock_changes',
+                    'mode' => 'stock',
+                    'scan' => [
+                        'scanned' => $prefetchedStockDetection['scanned'] ?? 0,
+                        'unchanged' => $prefetchedStockDetection['unchanged'] ?? 0,
+                        'pending_create' => 0,
+                        'pending_update' => 0,
+                        'pending_hide' => 0,
+                        'pending_unhide' => 0,
+                        'pending_delete' => 0,
+                        'frozen_invalid_create' => 0,
+                    ],
+                ];
+            }
+        }
+
         $syncStartedAt = now();
 
         $job = ApiImportJob::query()->create([
@@ -75,18 +99,20 @@ class OlxSyncOrchestrator
                 return $this->runSingleProduct($job, $source, $syncStartedAt, $stats, $productId, $maxCreatesPerRun);
             }
 
-            $detection = $stockOnly
-                ? $this->changeDetector->detectStock(function (int $scanned) use ($job, &$stats): void {
-                    $stats['scan']['scanned'] = $scanned;
-                    $this->heartbeat($job, $stats, ['phase' => 'detect']);
-                })
-                : $this->changeDetector->detect(
-                    $fullSync,
-                    function (int $scanned) use ($job, &$stats): void {
+            $detection = $prefetchedStockDetection ?? (
+                $stockOnly
+                    ? $this->changeDetector->detectStock(function (int $scanned) use ($job, &$stats): void {
                         $stats['scan']['scanned'] = $scanned;
                         $this->heartbeat($job, $stats, ['phase' => 'detect']);
-                    },
-                );
+                    })
+                    : $this->changeDetector->detect(
+                        $fullSync,
+                        function (int $scanned) use ($job, &$stats): void {
+                            $stats['scan']['scanned'] = $scanned;
+                            $this->heartbeat($job, $stats, ['phase' => 'detect']);
+                        },
+                    )
+            );
 
             $stats['scan'] = [
                 'scanned' => $detection['scanned'],
@@ -472,6 +498,20 @@ class OlxSyncOrchestrator
             }
 
             return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param  array<string, mixed>  $detection
+     */
+    private function stockDetectionHasWork(array $detection): bool
+    {
+        foreach (['hide', 'unhide', 'delete'] as $key) {
+            if (($detection[$key] ?? []) !== []) {
+                return true;
+            }
         }
 
         return false;

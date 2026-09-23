@@ -10,7 +10,7 @@ class SyncOlxStockScheduledCommand extends Command
 {
     protected $signature = 'bnc:sync-olx-stock';
 
-    protected $description = 'Dispatch OLX stock/status sync (hide, unhide, delete) without the daily create cap';
+    protected $description = 'Dispatch hourly OLX stock/status sync (hide, unhide, delete) without the daily create cap';
 
     public function handle(OlxSyncSettings $settings): int
     {

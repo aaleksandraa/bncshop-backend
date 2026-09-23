@@ -426,6 +426,54 @@ class OlxSyncOrchestratorWaveTest extends TestCase
         Queue::assertNotPushed(RunOlxSyncJob::class);
     }
 
+    public function test_idle_stock_scan_does_not_create_a_job_record(): void
+    {
+        Queue::fake();
+
+        $source = $this->makeOlxSource();
+
+        $settings = Mockery::mock(OlxSyncSettings::class);
+        $settings->shouldReceive('isEnabled')->andReturn(true);
+        $settings->shouldReceive('resolveSource')->andReturn($source);
+        $settings->shouldReceive('hasRunningBulkSyncJob')->andReturn(false);
+
+        $client = Mockery::mock(OlxApiClient::class);
+        $client->shouldReceive('authenticate')->never();
+
+        $detector = Mockery::mock(OlxChangeDetector::class);
+        $detector->shouldReceive('detect')->never();
+        $detector->shouldReceive('detectStock')->once()->andReturn([
+            'create' => [],
+            'update' => [],
+            'hide' => [],
+            'unhide' => [],
+            'delete' => [],
+            'unchanged' => 2468,
+            'scanned' => 2468,
+        ]);
+
+        $exporter = Mockery::mock(OlxListingExporter::class);
+        $exporter->shouldReceive('export')->never();
+
+        $this->app->instance(OlxSyncSettings::class, $settings);
+
+        $orchestrator = new OlxSyncOrchestrator(
+            $settings,
+            $client,
+            $detector,
+            $exporter,
+            app(OlxDailyCreateLimiter::class),
+        );
+
+        $stats = $orchestrator->run(false, null, null, null, true);
+
+        $this->assertTrue($stats['skipped']);
+        $this->assertSame('no_stock_changes', $stats['reason']);
+        $this->assertSame(2468, $stats['scan']['scanned']);
+        $this->assertSame(0, ApiImportJob::query()->count());
+        Queue::assertNotPushed(RunOlxSyncJob::class);
+    }
+
     public function test_health_checker_resumes_idle_olx_job_with_pending_work(): void
     {
         Queue::fake();
