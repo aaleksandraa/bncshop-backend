@@ -52,6 +52,7 @@ return [
         trim(...),
         explode(',', (string) env('ELINE_SYNC_TIMES', '06:00,18:00')),
     ))),
+    'eline_content_sync_time' => env('ELINE_CONTENT_SYNC_TIME', '03:00'),
     'eline_active_value' => 255,
 
     'frontend_url' => env('FRONTEND_URL', 'http://localhost:3000'),

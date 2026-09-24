@@ -13,8 +13,12 @@ Schedule::command('horizon:snapshot')->everyFiveMinutes();
 Schedule::command('bnc:sync-scheduled')->everyFiveMinutes();
 
 foreach (config('bnc.eline_sync_times', ['06:00', '18:00']) as $time) {
-    Schedule::command('bnc:sync-eline-scheduled')->dailyAt($time);
+    Schedule::command('bnc:sync-eline-scheduled')->dailyAt($time)->withoutOverlapping(55);
 }
+
+Schedule::command('bnc:sync-eline-content-scheduled')
+    ->dailyAt((string) config('bnc.eline_content_sync_time', '03:00'))
+    ->withoutOverlapping(55);
 
 foreach (config('bnc.olx_sync_times', ['06:00', '18:00']) as $time) {
     Schedule::command('bnc:sync-olx-scheduled')->dailyAt($time);

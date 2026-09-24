@@ -143,7 +143,6 @@ class ElineProductImporter
         $product->fill([
             'import_source' => 'eline',
             'eline_sifra' => $sifra,
-            'eline_feed_hash' => ElineSupport::feedHash($item),
             'sku' => $sifra,
             'api_source_id' => $source->id,
             'name' => (string) ($item['naziv'] ?? $sifra),
@@ -168,6 +167,8 @@ class ElineProductImporter
 
         $this->applyLockedField($product, 'description', $description);
         $this->applyLockedField($product, 'short_description', $shortDescription);
+
+        $product->eline_feed_hash = $this->feedHashForStorage($product, $item);
 
         $product->save();
         $this->priceCalculator->recalculateAndPersist($product->fresh());
@@ -230,6 +231,155 @@ class ElineProductImporter
             || (bool) $product->is_new !== $expected['is_new']
             || (bool) $product->is_public !== $expected['is_public']
             || (string) $product->status !== $expected['status'];
+    }
+
+    /**
+     * @param  Collection<int, array<string, mixed>>  $items
+     * @param  Collection<string, ElineCategoryMapping>  $mappingsByCategory
+     * @return array{
+     *     updated: int,
+     *     skipped: int,
+     *     unchanged: int,
+     *     errors: array<int, string>,
+     *     updated_product_ids: array<int, int>
+     * }
+     */
+    public function reconcileContentMany(
+        Collection $items,
+        Collection $mappingsByCategory,
+    ): array {
+        $stats = [
+            'updated' => 0,
+            'skipped' => 0,
+            'unchanged' => 0,
+            'errors' => [],
+            'updated_product_ids' => [],
+        ];
+
+        foreach ($items as $item) {
+            try {
+                $result = $this->applyContent($item, $mappingsByCategory);
+
+                match ($result['status']) {
+                    'updated' => $stats['updated']++,
+                    'skipped' => $stats['skipped']++,
+                    default => $stats['unchanged']++,
+                };
+
+                if ($result['status'] === 'updated' && $result['product_id'] !== null) {
+                    $stats['updated_product_ids'][] = $result['product_id'];
+                }
+            } catch (\Throwable $e) {
+                $stats['errors'][] = sprintf(
+                    'sifra %s: %s',
+                    (string) ($item['sifra'] ?? '?'),
+                    $e->getMessage(),
+                );
+            }
+        }
+
+        return $stats;
+    }
+
+    /**
+     * @param  array<string, mixed>  $item
+     * @param  Collection<string, ElineCategoryMapping>  $mappingsByCategory
+     */
+    /**
+     * @param  array<string, mixed>  $item
+     * @param  Collection<string, ElineCategoryMapping>  $mappingsByCategory
+     * @return array{status: string, product_id: int|null}
+     */
+    public function applyContent(array $item, Collection $mappingsByCategory): array
+    {
+        $skipped = ['status' => 'skipped', 'product_id' => null];
+
+        $sifra = (string) ($item['sifra'] ?? '');
+        $elineCategory = trim((string) ($item['eline_category'] ?? ''));
+
+        if ($sifra === '' || $elineCategory === '') {
+            return $skipped;
+        }
+
+        /** @var ElineCategoryMapping|null $mapping */
+        $mapping = $mappingsByCategory->get($elineCategory);
+
+        if ($mapping === null || ! $mapping->is_enabled || $mapping->category_id === null) {
+            return $skipped;
+        }
+
+        $override = ElineProductOverride::query()->where('eline_sifra', $sifra)->first();
+
+        if ($override !== null && ! $override->is_enabled) {
+            return $skipped;
+        }
+
+        $externalId = ElineSupport::externalProductId($sifra);
+        $product = Product::query()->where('external_product_id', $externalId)->first();
+
+        if ($product === null || ! $product->isFromEline() || $product->is_set) {
+            return $skipped;
+        }
+
+        if (! $this->contentDiffersFromFeed($product, $item)) {
+            return ['status' => 'unchanged', 'product_id' => null];
+        }
+
+        $feedName = (string) ($item['naziv'] ?? $sifra);
+        $description = (string) ($item['opis'] ?? '');
+        $shortDescription = Str::limit($description, 255, '');
+
+        if ($product->name !== $feedName) {
+            $product->name = $feedName;
+        }
+
+        $this->applyLockedField($product, 'description', $description);
+        $this->applyLockedField($product, 'short_description', $shortDescription);
+
+        $product->eline_feed_hash = $this->feedHashForStorage($product, $item);
+        $product->save();
+
+        return ['status' => 'updated', 'product_id' => (int) $product->id];
+    }
+
+    /**
+     * @param  array<string, mixed>  $item
+     */
+    public function contentDiffersFromFeed(Product $product, array $item): bool
+    {
+        $feedName = (string) ($item['naziv'] ?? '');
+        $feedDescription = (string) ($item['opis'] ?? '');
+        $feedShort = Str::limit($feedDescription, 255, '');
+
+        if ($feedName !== '' && $product->name !== $feedName) {
+            return true;
+        }
+
+        if (! $this->fieldLockService->isLocked($product, 'description')
+            && (string) $product->description !== $feedDescription) {
+            return true;
+        }
+
+        if (! $this->fieldLockService->isLocked($product, 'short_description')
+            && (string) $product->short_description !== $feedShort) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param  array<string, mixed>  $item
+     */
+    private function feedHashForStorage(Product $product, array $item): string
+    {
+        $forHash = $item;
+
+        if ($product->exists && $this->fieldLockService->isLocked($product, 'description')) {
+            $forHash['opis'] = (string) $product->description;
+        }
+
+        return ElineSupport::feedHash($forHash);
     }
 
     private function applyLockedField(Product $product, string $field, mixed $newValue): void

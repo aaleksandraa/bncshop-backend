@@ -90,6 +90,10 @@ php artisan bnc:sync-eline --sync
 
 # Puni sync (sve mapirane kategorije + opciono discovery)
 php artisan bnc:sync-eline --full --refresh-categories --sync
+
+# Noćna usklađivanja naziva i opisa (ne dira cijenu, zalihu, slug)
+php artisan bnc:sync-eline-content
+php artisan bnc:sync-eline-content --sync
 ```
 
 ## Automatski raspored
@@ -102,7 +106,15 @@ ELINE_SYNC_TIMES=06:00,18:00
 
 Scheduler pokreće `bnc:sync-eline-scheduled` → inkrementalni sync (bez discovery).
 
-**Napomena:** eLine API nema `date-modified-after` filter kao A1. Sistem preuzima feed, ali u bazu upisuje **samo proizvode čiji se hash promijenio** (naziv, opis, cijena, stanje, kategorija, aktivan status). Feed se i dalje skida cijeli zbog ograničenja API-ja.
+**Noćni content reconcile** (default **03:00**) usklađuje **naziv** i **opis** postojećih eLine proizvoda sa feedom. Ne kreira nove artikle, ne mijenja cijenu, zalihu, kategoriju ni slug. Opis zaključan u seller panelu ostaje netaknut.
+
+```env
+ELINE_CONTENT_SYNC_TIME=03:00
+```
+
+Inkrementalni i content job dijele queue lock (`eline-sync-orchestrator`) i scheduler `withoutOverlapping`, da se ne preklapaju.
+
+**Napomena:** eLine API nema `date-modified-after` filter kao A1. Sistem preuzima feed, ali u bazu upisuje **samo proizvode čiji se hash promijenio** (naziv, opis, cijena, stanje, kategorija, aktivan status). Feed se i dalje skida cijeli zbog ograničenja API-ja. Kad je opis zaključan, `eline_feed_hash` za opis prati lokalnu vrijednost da inkrementalni sync i dalje hvata promjene cijene i zalihe.
 
 ## Baza podataka
 

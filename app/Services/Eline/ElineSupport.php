@@ -94,9 +94,24 @@ class ElineSupport
             'opis' => (string) ($item['opis'] ?? ''),
             'eline_category' => (string) ($item['eline_category'] ?? ''),
             'aktivan' => $item['aktivan'] ?? null,
-            'mpc' => $item['mpc'],
+            'mpc' => $item['mpc'] ?? null,
             'stanje' => (int) ($item['stanje'] ?? 0),
             'price_aktivan' => $item['price_aktivan'] ?? null,
+        ], JSON_UNESCAPED_UNICODE);
+
+        return hash('sha256', $payload);
+    }
+
+    /**
+     * Hash of textual catalog fields only (name + description from feed).
+     *
+     * @param  array<string, mixed>  $item
+     */
+    public static function contentHash(array $item): string
+    {
+        $payload = json_encode([
+            'naziv' => (string) ($item['naziv'] ?? ''),
+            'opis' => (string) ($item['opis'] ?? ''),
         ], JSON_UNESCAPED_UNICODE);
 
         return hash('sha256', $payload);
