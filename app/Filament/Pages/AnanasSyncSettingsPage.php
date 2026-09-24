@@ -2,10 +2,16 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Resources\AnanasCategoryMappingResource;
 use App\Services\Ananas\AnanasApiClient;
+use App\Services\Ananas\AnanasCatalogWriteGuard;
 use App\Services\Ananas\AnanasEligibilityReporter;
+use App\Services\Ananas\AnanasLinkedProductSyncService;
+use App\Services\Ananas\AnanasProductImportService;
+use App\Services\Ananas\AnanasProductReconciliationService;
 use App\Services\Ananas\AnanasProductTypeSyncService;
 use App\Services\Ananas\AnanasSyncSettings;
+use App\Services\Ananas\AnanasValidatedMappingService;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
@@ -16,7 +22,6 @@ use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\HtmlString;
 
 class AnanasSyncSettingsPage extends Page implements HasForms
@@ -43,6 +48,14 @@ class AnanasSyncSettingsPage extends Page implements HasForms
     /** @var array<string, mixed> */
     public array $eligibilitySummary = [];
 
+    /** @var list<array<string, mixed>> */
+    public array $mappingRows = [];
+
+    /** @var array<string, mixed>|null */
+    public ?array $lastCatalogAction = null;
+
+    public int $importLimit = 50;
+
     public static function canAccess(): bool
     {
         $user = auth()->user();
@@ -54,11 +67,15 @@ class AnanasSyncSettingsPage extends Page implements HasForms
         );
     }
 
-    public function mount(AnanasSyncSettings $settings, AnanasEligibilityReporter $reporter): void
-    {
+    public function mount(
+        AnanasSyncSettings $settings,
+        AnanasEligibilityReporter $reporter,
+        AnanasValidatedMappingService $mappingService,
+    ): void {
         $this->status = $settings->status();
         $settings->resolveSource();
         $this->eligibilitySummary = $reporter->summarize();
+        $this->mappingRows = $mappingService->summaryRows();
 
         $all = $settings->all();
         $credentials = $settings->credentials();
@@ -112,7 +129,7 @@ class AnanasSyncSettingsPage extends Page implements HasForms
                             ->label('Ananas export uključen'),
                         Toggle::make('allow_catalog_writes')
                             ->label('Dozvoli catalog write API pozive')
-                            ->helperText('Ostaje isključeno dok Ananas ne potvrdi BiH VAT i dok mapiranja nisu spremna. Phase 1B ne šalje import automatski.'),
+                            ->helperText('Uključite prije live importa, probe i publish. Dry-run radi i bez ovoga. POST import ostaje blokiran dok je isključeno.'),
                         Select::make('vat_rate')
                             ->label('Ananas VAT (0 / 10 / 20)')
                             ->options([
@@ -202,14 +219,238 @@ class AnanasSyncSettingsPage extends Page implements HasForms
             ->send();
     }
 
-    public function runEligibilityReportCommand(): void
+    public function applyValidatedMappings(AnanasValidatedMappingService $mappingService): void
     {
-        Artisan::call('bnc:ananas-eligibility-report');
+        $result = $mappingService->apply();
+        $this->mappingRows = $mappingService->summaryRows();
+
+        $appliedCount = count($result['applied']);
+        $skippedCount = count($result['skipped']);
+        $disabledCount = count($result['disabled']);
+
+        $lines = [];
+        foreach ($result['applied'] as $row) {
+            $lines[] = sprintf(
+                '%s #%d → %s (%s)',
+                $row['action'] === 'created' ? 'Novo' : 'Ažurirano',
+                $row['mapping_id'],
+                $row['ananas_category'],
+                $row['enabled'] ? 'uključeno' : 'isključeno',
+            );
+        }
+        foreach ($result['skipped'] as $skip) {
+            $lines[] = $skip;
+        }
+        foreach ($result['disabled'] as $row) {
+            $lines[] = sprintf('Isključeno zastarjelo #%d: %s', $row['mapping_id'], $row['reason']);
+        }
+
+        $this->lastCatalogAction = [
+            'title' => 'Mapiranja',
+            'body' => implode("\n", $lines),
+        ];
+
+        if ($appliedCount === 0) {
+            Notification::make()
+                ->title('Nijedno mapiranje nije primijenjeno')
+                ->body($skippedCount > 0
+                    ? implode(' ', $result['skipped'])
+                    : 'Provjerite da BNC kategorije 199 i 231 postoje.')
+                ->warning()
+                ->send();
+
+            return;
+        }
 
         Notification::make()
-            ->title('CLI izvještaj')
-            ->body(trim(Artisan::output()) ?: 'Gotovo.')
+            ->title('Stage mapiranja primijenjena')
+            ->body($appliedCount.' spremno za import'
+                .($disabledCount > 0 ? ', '.$disabledCount.' zastarjelih isključeno.' : '.'))
             ->success()
             ->send();
+    }
+
+    public function importDryRun(AnanasProductImportService $importService): void
+    {
+        $this->runImport($importService, dryRun: true);
+    }
+
+    public function importLive(
+        AnanasProductImportService $importService,
+        AnanasSyncSettings $settings,
+        AnanasCatalogWriteGuard $writeGuard,
+    ): void {
+        if ($settings->isProduction()) {
+            Notification::make()
+                ->title('Production import je blokiran u adminu')
+                ->body('Za production koristite CLI: php artisan bnc:ananas-import-products --confirm --allow-production')
+                ->warning()
+                ->send();
+
+            return;
+        }
+
+        if (! $writeGuard->isAllowed()) {
+            Notification::make()
+                ->title('Catalog writes su isključeni')
+                ->body('Uključite „Dozvoli catalog write API pozive“, sačuvajte, pa ponovo pokrenite import.')
+                ->warning()
+                ->send();
+
+            return;
+        }
+
+        $this->runImport($importService, dryRun: false);
+    }
+
+    public function reconcileProducts(AnanasProductReconciliationService $reconciliationService): void
+    {
+        try {
+            $result = $reconciliationService->reconcileSubmittedMappings(limit: max(1, min($this->importLimit, 100)));
+        } catch (\Throwable $e) {
+            Notification::make()->title('Reconcile neuspješan')->body($e->getMessage())->danger()->send();
+
+            return;
+        }
+
+        $this->lastCatalogAction = [
+            'title' => 'Reconcile',
+            'body' => sprintf(
+                "Linked: %d\nPending: %d\nFailed: %d%s",
+                $result['linked'],
+                $result['pending'],
+                $result['failed'],
+                $result['details'] !== [] ? "\n".implode("\n", array_slice($result['details'], 0, 12)) : '',
+            ),
+        ];
+
+        Notification::make()
+            ->title('Reconcile završen')
+            ->body(sprintf('Linked %d, pending %d, failed %d', $result['linked'], $result['pending'], $result['failed']))
+            ->success()
+            ->send();
+    }
+
+    public function publishDryRun(AnanasLinkedProductSyncService $syncService): void
+    {
+        $this->runPublish($syncService, dryRun: true);
+    }
+
+    public function publishLive(
+        AnanasLinkedProductSyncService $syncService,
+        AnanasSyncSettings $settings,
+        AnanasCatalogWriteGuard $writeGuard,
+    ): void {
+        if ($settings->isProduction()) {
+            Notification::make()
+                ->title('Production publish je blokiran u adminu')
+                ->body('Za production koristite CLI: php artisan bnc:ananas-publish --confirm --allow-production')
+                ->warning()
+                ->send();
+
+            return;
+        }
+
+        if (! $writeGuard->isAllowed()) {
+            Notification::make()
+                ->title('Catalog writes su isključeni')
+                ->body('Uključite „Dozvoli catalog write API pozive“, sačuvajte, pa ponovo pokrenite publish.')
+                ->warning()
+                ->send();
+
+            return;
+        }
+
+        $this->runPublish($syncService, dryRun: false);
+    }
+
+    public function mappingsUrl(): string
+    {
+        return AnanasCategoryMappingResource::getUrl();
+    }
+
+    private function runImport(AnanasProductImportService $importService, bool $dryRun): void
+    {
+        $limit = max(1, min($this->importLimit, (int) config('bnc.ananas_import_batch_max_size', 100)));
+
+        try {
+            $result = $importService->importBatch(
+                limit: $limit,
+                dryRun: $dryRun,
+            );
+        } catch (\Throwable $e) {
+            Notification::make()->title('Import neuspješan')->body($e->getMessage())->danger()->send();
+
+            return;
+        }
+
+        $this->lastCatalogAction = [
+            'title' => $dryRun ? 'Import dry-run' : 'Import',
+            'body' => sprintf(
+                "Submitted: %d\nSkipped: %d\nProgress UUID: %s\nProduct IDs: %s%s",
+                $result['submitted'],
+                $result['skipped'],
+                $result['progress_id'] ?? '—',
+                $result['product_ids'] !== [] ? implode(', ', $result['product_ids']) : '—',
+                $result['errors'] !== [] ? "\n".implode("\n", $result['errors']) : '',
+            ),
+        ];
+
+        $title = $dryRun ? 'Dry-run importa' : 'Import poslan';
+        $body = 'Submitted: '.$result['submitted'].', skipped: '.$result['skipped'];
+
+        if (! $dryRun && filled($result['progress_id'])) {
+            $body .= '. UUID: '.$result['progress_id'];
+        }
+
+        if ($result['submitted'] === 0 && ! $dryRun) {
+            Notification::make()
+                ->title('Nijedan SKU nije poslan')
+                ->body($body.'. Primijenite mapiranja i uključite export, pa dry-run.')
+                ->warning()
+                ->send();
+
+            return;
+        }
+
+        Notification::make()->title($title)->body($body)->success()->send();
+    }
+
+    private function runPublish(AnanasLinkedProductSyncService $syncService, bool $dryRun): void
+    {
+        $limit = max(1, min($this->importLimit, 100));
+
+        try {
+            $result = $syncService->publishReadyLinked(
+                limit: $limit,
+                dryRun: $dryRun,
+            );
+        } catch (\Throwable $e) {
+            Notification::make()->title('Publish neuspješan')->body($e->getMessage())->danger()->send();
+
+            return;
+        }
+
+        $this->lastCatalogAction = [
+            'title' => $dryRun ? 'Publish dry-run' : 'Publish',
+            'body' => sprintf(
+                "Items: %d\nProgress UUID: %s%s",
+                $result['published'],
+                $result['progress_id'] ?? '—',
+                $result['errors'] !== [] ? "\n".implode("\n", $result['errors']) : '',
+            ),
+        ];
+
+        $notification = Notification::make()
+            ->title($dryRun ? 'Publish dry-run' : 'Publish poslan')
+            ->body('Items: '.$result['published'].($result['progress_id'] ? ', UUID: '.$result['progress_id'] : ''));
+
+        if ($result['errors'] !== []) {
+            $notification->danger()->send();
+
+            return;
+        }
+
+        $notification->success()->send();
     }
 }

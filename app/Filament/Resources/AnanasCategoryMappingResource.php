@@ -50,7 +50,7 @@ class AnanasCategoryMappingResource extends Resource
             Forms\Components\TextInput::make('ananas_category')
                 ->label('Ananas category (free text)')
                 ->maxLength(255)
-                ->helperText('Tačan string za POST import polje "category". Validirajte empirski komandom bnc:ananas-probe-category.'),
+                ->helperText('Tačan string iz GET products categories[] (npr. Gaming laptopi, Nosači za televizor). Ne koristiti „Laptopi“ dok probe to ne potvrdi.'),
             Forms\Components\Select::make('category_validation_status')
                 ->label('Validacija kategorije')
                 ->options([
@@ -83,6 +83,9 @@ class AnanasCategoryMappingResource extends Resource
                         : '—')
                     ->wrap()
                     ->searchable(),
+                Tables\Columns\TextColumn::make('category.products_count')
+                    ->label('SKU')
+                    ->numeric(),
                 Tables\Columns\TextColumn::make('ananas_product_type')->label('Product type')->wrap(),
                 Tables\Columns\TextColumn::make('ananas_category')->label('Ananas category')->wrap(),
                 Tables\Columns\TextColumn::make('category_validation_status')
@@ -98,7 +101,7 @@ class AnanasCategoryMappingResource extends Resource
                     ->label('Observed categories')
                     ->formatStateUsing(fn ($state): string => is_array($state) && $state !== [] ? implode(', ', $state) : '—')
                     ->wrap(),
-                Tables\Columns\IconColumn::make('is_enabled')->label('Uključeno')->boolean(),
+                Tables\Columns\ToggleColumn::make('is_enabled')->label('Uključeno'),
                 Tables\Columns\IconColumn::make('include_descendants')->label('Podkategorije')->boolean(),
             ])
             ->filters([

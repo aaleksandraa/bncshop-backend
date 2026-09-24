@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\AnanasCategoryMapping;
 use App\Models\AnanasProductType;
 use App\Models\Category;
+use App\Services\Ananas\AnanasValidatedMappingService;
 use App\Support\CategoryAdminSearch;
 use Illuminate\Console\Command;
 
@@ -13,13 +14,14 @@ class AnanasCreateCategoryMappingCommand extends Command
     protected $signature = 'bnc:ananas-create-category-mapping
                             {--category-id= : BNC categories.id}
                             {--product-type= : Ananas product type, e.g. ITShop}
-                            {--ananas-category= : Ananas subcategory string, e.g. Laptopi}
+                            {--ananas-category= : Ananas subcategory string, e.g. Gaming laptopi}
                             {--enable : Enable mapping for export immediately}
-                            {--no-descendants : Do not include descendant BNC categories}';
+                            {--no-descendants : Do not include descendant BNC categories}
+                            {--update : Upsert if mapping for this BNC category already exists}';
 
-    protected $description = 'Create Ananas BNC→Ananas category mapping (alternative to Filament admin)';
+    protected $description = 'Create or upsert Ananas BNC→Ananas category mapping (alternative to Filament admin)';
 
-    public function handle(): int
+    public function handle(AnanasValidatedMappingService $mappingService): int
     {
         $categoryId = (int) $this->option('category-id');
         $productType = trim((string) $this->option('product-type'));
@@ -32,7 +34,9 @@ class AnanasCreateCategoryMappingCommand extends Command
             $this->line('  php artisan bnc:ananas-list-bnc-categories --search=laptop');
             $this->newLine();
             $this->line('Step 2 — create mapping:');
-            $this->line('  php artisan bnc:ananas-create-category-mapping --category-id=123 --product-type=ITShop --ananas-category=Laptopi');
+            $this->line('  php artisan bnc:ananas-create-category-mapping --category-id=199 --product-type=ITShop --ananas-category="Gaming laptopi" --enable');
+            $this->line('Stage-validated set (199 + 231):');
+            $this->line('  php artisan bnc:ananas-apply-validated-mappings');
 
             return self::FAILURE;
         }
@@ -52,22 +56,30 @@ class AnanasCreateCategoryMappingCommand extends Command
             $this->line('Known types: '.implode(', ', $known));
         }
 
-        if (AnanasCategoryMapping::query()->where('category_id', $categoryId)->exists()) {
-            $this->error('Mapping for this BNC category already exists. Use Filament admin or delete the existing row first.');
+        $existing = AnanasCategoryMapping::query()->where('category_id', $categoryId)->first();
+
+        if ($existing instanceof AnanasCategoryMapping && ! $this->option('update')) {
+            $this->error('Mapping for this BNC category already exists. Re-run with --update or use Filament admin.');
+            $this->line("Existing mapping ID: {$existing->id} (Ananas category: ".($existing->ananas_category ?: '—').')');
 
             return self::FAILURE;
         }
 
-        $mapping = AnanasCategoryMapping::query()->create([
-            'category_id' => $categoryId,
-            'ananas_product_type' => $productType,
-            'ananas_category' => $ananasCategory !== '' ? $ananasCategory : null,
-            'category_validation_status' => AnanasCategoryMapping::VALIDATION_UNKNOWN,
-            'is_enabled' => (bool) $this->option('enable'),
-            'include_descendants' => ! $this->option('no-descendants'),
-        ]);
+        $mapping = $mappingService->upsert(
+            categoryId: $categoryId,
+            productType: $productType,
+            ananasCategory: $ananasCategory !== '' ? $ananasCategory : null,
+            enabled: (bool) $this->option('enable'),
+            includeDescendants: ! $this->option('no-descendants'),
+            validationStatus: $existing instanceof AnanasCategoryMapping
+                ? (string) ($existing->category_validation_status ?: AnanasCategoryMapping::VALIDATION_UNKNOWN)
+                : AnanasCategoryMapping::VALIDATION_UNKNOWN,
+            preserveEnabledWhenUpdating: $existing instanceof AnanasCategoryMapping && ! $this->option('enable'),
+        );
 
-        $this->info('Ananas category mapping created.');
+        $this->info($existing instanceof AnanasCategoryMapping
+            ? 'Ananas category mapping updated.'
+            : 'Ananas category mapping created.');
         $this->table(['Field', 'Value'], [
             ['Mapping ID', (string) $mapping->id],
             ['BNC category', CategoryAdminSearch::formatOptionLabel($category)],
@@ -80,10 +92,10 @@ class AnanasCreateCategoryMappingCommand extends Command
         $this->newLine();
 
         if ($ananasCategory === '') {
-            $this->warn('Set --ananas-category before probe (e.g. Laptopi, Notebooki, …).');
+            $this->warn('Set --ananas-category before probe (e.g. Gaming laptopi, Nosači za televizor).');
         } else {
-            $this->line('Next: dry-run probe');
-            $this->line("  php artisan bnc:ananas-probe-category {$mapping->id} --dry-run");
+            $this->line('Next: dry-run import from admin (Ananas → Postavke) or:');
+            $this->line('  php artisan bnc:ananas-import-products --limit=50 --dry-run');
         }
 
         return self::SUCCESS;

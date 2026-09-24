@@ -225,6 +225,34 @@ return [
     ))),
 
     'ananas_import_batch_max_size' => (int) env('ANANAS_IMPORT_BATCH_MAX_SIZE', 100),
+
+    /*
+    | Stage-validated BNC category_id → Ananas POST import "category" strings.
+    | Observed on QA2 GET /products (2026-09-24):
+    |   id 2566378 EAN 4711387431504 → Gaming laptopi (BNC cat 199 Laptopi)
+    |   id 2566379 EAN 0736373267145 → Nosači za televizor (BNC cat 231)
+    | Apply via Filament Ananas postavke or `php artisan bnc:ananas-apply-validated-mappings`.
+    */
+    'ananas_validated_mappings' => [
+        [
+            'category_id' => 199,
+            'ananas_product_type' => 'ITShop',
+            'ananas_category' => 'Gaming laptopi',
+            'include_descendants' => true,
+            'is_enabled' => true,
+            'observed_categories' => ['Gaming laptopi'],
+            'notes' => 'Stage GET 2566378 / EAN 4711387431504 (ASUS TUF). Ne koristiti „Laptopi“.',
+        ],
+        [
+            'category_id' => 231,
+            'ananas_product_type' => 'ITShop',
+            'ananas_category' => 'Nosači za televizor',
+            'include_descendants' => true,
+            'is_enabled' => true,
+            'observed_categories' => ['Nosači za televizor'],
+            'notes' => 'Stage GET 2566379 / EAN 0736373267145 (SBOX nosač).',
+        ],
+    ],
     'ananas_import_poll_interval_seconds' => (int) env('ANANAS_IMPORT_POLL_INTERVAL_SECONDS', 5),
     'ananas_import_poll_max_attempts' => (int) env('ANANAS_IMPORT_POLL_MAX_ATTEMPTS', 12),
 

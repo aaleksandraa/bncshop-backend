@@ -174,6 +174,19 @@ class AnanasExportScope
     }
 
     /**
+     * Drop in-request caches after mappings are created or toggled.
+     */
+    public function flushCaches(): void
+    {
+        $this->enabledMappingsCache = null;
+        $this->scopedCategoryIdsCache = null;
+        $this->scopedCategoryIdSetCache = null;
+        $this->parentByCategoryIdCache = null;
+        $this->childrenByParentIdCache = null;
+        $this->mappingByCategoryIdCache = null;
+    }
+
+    /**
      * @return array<int, AnanasCategoryMapping>
      */
     private function mappingByCategoryId(): array
