@@ -7,6 +7,7 @@ use App\Filament\Resources\ApiSourceResource\Pages;
 use App\Filament\Pages\A1SyncSettingsPage;
 use App\Filament\Pages\OlxSyncSettingsPage;
 use App\Jobs\RunApiSyncJob;
+use App\Jobs\RunElineContentReconcileJob;
 use App\Jobs\RunElineSyncJob;
 use App\Models\ApiSource;
 use App\Services\Eline\ElineSyncOrchestrator;
@@ -313,6 +314,24 @@ class ApiSourceResource extends Resource
 
                         Notification::make()
                             ->title('Puni eLine sync pokrenut')
+                            ->success()
+                            ->send();
+                    }),
+                Tables\Actions\Action::make('runElineContentReconcile')
+                    ->label('eLine naziv/opis')
+                    ->icon('heroicon-o-document-text')
+                    ->color('info')
+                    ->requiresConfirmation()
+                    ->modalHeading('Usklađivanje naziva i opisa')
+                    ->modalDescription('Povlači feed i ažurira samo naziv i opis postojećih eLine proizvoda. Ne mijenja cijenu, zalihu ni slug. Zaključan opis u seller panelu ostaje netaknut.')
+                    ->visible(fn (ApiSource $record): bool => $record->target_system_code === 'eline'
+                        && ((auth()->user()?->can('api_sources.update') ?? false) || (auth()->user()?->can('manage_sync') ?? false)))
+                    ->action(function (ApiSource $record): void {
+                        RunElineContentReconcileJob::dispatch($record);
+
+                        Notification::make()
+                            ->title('Usklađivanje sadržaja pokrenuto')
+                            ->body('Job je u redu (queue sync).')
                             ->success()
                             ->send();
                     }),

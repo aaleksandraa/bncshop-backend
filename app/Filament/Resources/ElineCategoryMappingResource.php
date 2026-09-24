@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Forms\CategoryMappingSelect;
 use App\Filament\Resources\ElineCategoryMappingResource\Pages;
+use App\Jobs\RunElineContentReconcileJob;
 use App\Jobs\RunElineSyncJob;
 use App\Models\ApiSource;
 use App\Support\CategoryAdminSearch;
@@ -161,6 +162,17 @@ class ElineCategoryMappingResource extends Resource
                     ->action(function (): void {
                         static::dispatchElineSync(fullSync: true, refreshCategories: true);
                     }),
+                Tables\Actions\Action::make('runContentReconcile')
+                    ->label('Uskladi naziv/opis')
+                    ->icon('heroicon-o-document-text')
+                    ->color('info')
+                    ->requiresConfirmation()
+                    ->modalHeading('Ručno usklađivanje naziva i opisa')
+                    ->modalDescription('Ažurira naziv i opis postojećih eLine proizvoda prema feedu. Ne dira cijenu, zalihu ni slug. Job se izvršava u pozadini.')
+                    ->visible(fn (): bool => auth()->user()?->can('manage_sync') ?? false)
+                    ->action(function (): void {
+                        static::dispatchElineContentReconcile();
+                    }),
                 Tables\Actions\Action::make('discoverCategories')
                     ->label('Osvježi kategorije iz eLine')
                     ->icon('heroicon-o-arrow-path')
@@ -184,18 +196,9 @@ class ElineCategoryMappingResource extends Resource
 
     protected static function dispatchElineSync(bool $fullSync, bool $refreshCategories): void
     {
-        $source = ApiSource::query()
-            ->where('target_system_code', 'eline')
-            ->where('is_active', true)
-            ->first();
+        $source = static::resolveActiveElineSource();
 
         if ($source === null) {
-            Notification::make()
-                ->title('eLine izvor nije pronađen')
-                ->body('Provjerite da je eLine ERP aktivan u API izvorima.')
-                ->danger()
-                ->send();
-
             return;
         }
 
@@ -208,6 +211,41 @@ class ElineCategoryMappingResource extends Resource
                 : 'Inkrementalni sync je u redu. Povlače se samo novi i izmijenjeni artikli.')
             ->success()
             ->send();
+    }
+
+    protected static function dispatchElineContentReconcile(): void
+    {
+        $source = static::resolveActiveElineSource();
+
+        if ($source === null) {
+            return;
+        }
+
+        RunElineContentReconcileJob::dispatch($source);
+
+        Notification::make()
+            ->title('Usklađivanje naziva i opisa pokrenuto')
+            ->body('Job je u redu. Ažuriraju se samo tekstualna polja postojećih proizvoda.')
+            ->success()
+            ->send();
+    }
+
+    protected static function resolveActiveElineSource(): ?ApiSource
+    {
+        $source = ApiSource::query()
+            ->where('target_system_code', 'eline')
+            ->where('is_active', true)
+            ->first();
+
+        if ($source === null) {
+            Notification::make()
+                ->title('eLine izvor nije pronađen')
+                ->body('Provjerite da je eLine ERP aktivan u API izvorima.')
+                ->danger()
+                ->send();
+        }
+
+        return $source;
     }
 
     public static function getPages(): array

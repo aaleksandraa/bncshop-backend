@@ -56,8 +56,9 @@ U adminu: **Integracije → API izvori** → red *eLine ERP* → **Test konekcij
    - odaberi BNC kategoriju (npr. Računari)
    - postavi stanje: Refurbished ili Novo
    - uključi import (`is_enabled`)
-3. **Integracije → API izvori → eLine ERP** → **eLine sync**
-4. Po potrebi u **Proizvodi** filtriraj `Izvor = eLine` i isključi pojedinačne artikle akcijom **Isključi iz eLine**
+3. **Integracije → API izvori → eLine ERP** → **eLine sync** (cijena, zaliha, novi artikli) ili **eLine naziv/opis** (samo tekst)
+4. Isto ručno: **Integracije → eLine mapiranje kategorija** → **Uskladi naziv/opis**
+5. Po potrebi u **Proizvodi** filtriraj `Izvor = eLine` i isključi pojedinačne artikle akcijom **Isključi iz eLine**
 
 ## Prenos mapiranja (lokal → produkcija)
 
