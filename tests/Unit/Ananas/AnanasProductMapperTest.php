@@ -90,6 +90,34 @@ class AnanasProductMapperTest extends TestCase
         $this->assertSame('BNC Shop', $payload['brand']);
     }
 
+    public function test_mapper_includes_all_product_specs_in_attributes_map(): void
+    {
+        [$product, $mapping] = $this->createExportReadyProduct();
+
+        $color = AttributeDefinition::query()->create([
+            'external_attribute_id' => (string) \Illuminate\Support\Str::uuid(),
+            'name' => 'Boja',
+            'display_name' => 'Boja',
+            'internal_type' => 'text',
+            'is_public' => true,
+        ]);
+
+        ProductAttributeValue::query()->create([
+            'product_id' => $product->id,
+            'attribute_definition_id' => $color->id,
+            'attribute_name_snapshot' => 'Boja',
+            'raw_value' => 'Crna',
+            'normalized_value' => 'Crna',
+            'normalized_type' => 'text',
+        ]);
+
+        $product = $product->fresh(['images', 'attributeValues.attributeDefinition', 'manufacturer']);
+        $payload = app(AnanasProductMapper::class)->map($product, $mapping);
+
+        $this->assertSame(['1.2 kg'], $payload['attributes']['Težina']);
+        $this->assertSame(['Crna'], $payload['attributes']['Boja']);
+    }
+
     public function test_mapper_throws_when_product_not_eligible(): void
     {
         $product = Product::factory()->create([

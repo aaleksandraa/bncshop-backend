@@ -4,6 +4,7 @@ namespace App\Services\Ananas;
 
 use App\Models\AnanasCategoryMapping;
 use App\Models\Product;
+use App\Models\ProductAttributeValue;
 use App\Models\ProductImage;
 use App\Services\Pricing\PriceCalculator;
 use App\Support\PublicStorageUrl;
@@ -49,7 +50,7 @@ class AnanasProductMapper
      */
     private function buildPayload(Product $product, AnanasCategoryMapping $categoryMapping): array
     {
-        $product->loadMissing(['manufacturer', 'images']);
+        $product->loadMissing(['manufacturer', 'images', 'attributeValues.attributeDefinition']);
 
         $weight = $this->packageWeightResolver->resolve($product);
         $pricing = $this->priceCalculator->calculate($product);
@@ -82,6 +83,12 @@ class AnanasProductMapper
 
         $payload['brand'] = $this->resolveBrand($product);
 
+        $attributes = $this->resolveAttributes($product);
+
+        if ($attributes !== []) {
+            $payload['attributes'] = $attributes;
+        }
+
         return $payload;
     }
 
@@ -105,6 +112,7 @@ class AnanasProductMapper
             'productType' => $payload['productType'] ?? '',
             'category' => $payload['category'] ?? '',
             'brand' => $payload['brand'] ?? '',
+            'attributes' => $payload['attributes'] ?? [],
         ];
 
         return hash('sha256', json_encode($stable, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR));
@@ -207,5 +215,71 @@ class AnanasProductMapper
         $fromConfig = trim((string) config('bnc.ananas_default_brand', 'BNC Shop'));
 
         return $fromConfig !== '' ? $fromConfig : 'BNC Shop';
+    }
+
+    /**
+     * Ananas import field attributes: Map<String, List<String>> of all filled BNC specs.
+     *
+     * @return array<string, list<string>>
+     */
+    private function resolveAttributes(Product $product): array
+    {
+        $grouped = [];
+
+        foreach ($product->attributeValues as $value) {
+            if (! $value instanceof ProductAttributeValue) {
+                continue;
+            }
+
+            $label = $this->attributeLabel($value);
+            $display = $this->attributeDisplayValue($value);
+
+            if ($label === '' || $display === '') {
+                continue;
+            }
+
+            $grouped[$label] ??= [];
+
+            if (! in_array($display, $grouped[$label], true)) {
+                $grouped[$label][] = $display;
+            }
+        }
+
+        ksort($grouped, SORT_NATURAL | SORT_FLAG_CASE);
+
+        return $grouped;
+    }
+
+    private function attributeLabel(ProductAttributeValue $value): string
+    {
+        $definition = $value->attributeDefinition;
+        $label = trim((string) (
+            $definition?->display_name
+            ?: $definition?->name
+            ?: $value->attribute_name_snapshot
+        ));
+
+        return Str::limit($label, 255, '');
+    }
+
+    private function attributeDisplayValue(ProductAttributeValue $value): string
+    {
+        $raw = trim((string) ($value->raw_value ?? ''));
+
+        if ($raw === '') {
+            $raw = trim((string) ($value->normalized_value ?? ''));
+        }
+
+        if ($raw === '') {
+            return '';
+        }
+
+        $unit = trim((string) ($value->attributeDefinition?->display_unit ?? ''));
+
+        if ($unit !== '' && ! str_contains(mb_strtolower($raw), mb_strtolower($unit))) {
+            $raw .= ' '.$unit;
+        }
+
+        return Str::limit($raw, 500, '');
     }
 }

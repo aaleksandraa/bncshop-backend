@@ -10,7 +10,7 @@ use Illuminate\Console\Command;
 class AnanasImportProductsCommand extends Command
 {
     protected $signature = 'bnc:ananas-import-products
-                            {--limit=10 : Max products in one import batch}
+                            {--limit=50 : Max products in one import POST (Ananas asked to group many SKUs per request)}
                             {--product= : Import a single product by BNC ID}
                             {--dry-run : Build payloads without POST import}
                             {--confirm : Required for actual POST import}

@@ -6,6 +6,8 @@ Align BNC backend with `docs/ananas/ananasapi.md` beyond Phase 1C import/probe/r
 
 - Master catalog EAN check (`POST ean/exists`) drives onboarding vs instant load semantics (FAQ).
 - Mandatory import field **brand** (manufacturer name or `ANANAS_DEFAULT_BRAND`).
+- Import **`attributes`**: all filled BNC specs as `Map<string, list<string>>`.
+- Larger default import batch (`ANANAS_IMPORT_BATCH_MAX_SIZE` default 100; CLI `--limit=50`).
 - Bulk update (`PUT product/bulk`), publish/unpublish progress jobs.
 - CLI for EAN diagnostics, master-EAN product discovery, linked sync, publish/unpublish.
 - Probe status `awaiting_onboarding` when import succeeds but EAN is not in master catalog.

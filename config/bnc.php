@@ -224,7 +224,7 @@ return [
         explode(',', (string) env('ANANAS_PROBE_SEED_EANS', '9788644105886')),
     ))),
 
-    'ananas_import_batch_max_size' => (int) env('ANANAS_IMPORT_BATCH_MAX_SIZE', 25),
+    'ananas_import_batch_max_size' => (int) env('ANANAS_IMPORT_BATCH_MAX_SIZE', 100),
     'ananas_import_poll_interval_seconds' => (int) env('ANANAS_IMPORT_POLL_INTERVAL_SECONDS', 5),
     'ananas_import_poll_max_attempts' => (int) env('ANANAS_IMPORT_POLL_MAX_ATTEMPTS', 12),
 
