@@ -594,10 +594,11 @@ class AnanasApiClient
             $this->logApiError($method, $path, $response);
 
             throw new RuntimeException(sprintf(
-                'Ananas API %s %s failed: HTTP %s',
+                'Ananas API %s %s failed: HTTP %s %s',
                 $method,
                 $path,
                 $response->status(),
+                $this->truncateBody((string) $response->body()),
             ));
         }
 
@@ -750,5 +751,18 @@ class AnanasApiClient
         );
 
         return (string) $redacted;
+    }
+
+    private function truncateBody(string $body): string
+    {
+        $redacted = trim(self::redactSensitiveText($body));
+
+        if ($redacted === '') {
+            return '';
+        }
+
+        $collapsed = preg_replace('/\s+/', ' ', $redacted) ?? $redacted;
+
+        return mb_substr($collapsed, 0, 500);
     }
 }

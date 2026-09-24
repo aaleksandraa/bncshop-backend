@@ -10,6 +10,7 @@ use App\Services\Ananas\AnanasDiscountService;
 use App\Services\Ananas\AnanasLinkedProductSyncService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class AnanasDiscountServiceTest extends TestCase
@@ -53,6 +54,128 @@ class AnanasDiscountServiceTest extends TestCase
         $this->assertSame('SALE', $result['payloads'][0]['discountType']);
         $this->assertSame(2566378, $result['payloads'][0]['merchantInventoryId']);
         $this->assertSame($product->id, $result['results'][0]['product_id']);
+    }
+
+    public function test_live_schedule_surfaces_ananas_error_instead_of_preview(): void
+    {
+        config([
+            'bnc.ananas_allow_catalog_writes' => true,
+            'bnc.ananas_env' => 'stage',
+            'bnc.ananas_client_id' => 'test-client-id',
+            'bnc.ananas_client_secret' => 'test-client-secret',
+            'bnc.ananas_stage_token_url' => 'https://api.qa2.ananastest.com/iam/api/v1/auth/token',
+            'bnc.ananas_stage_product_base_url' => 'https://api.qa2.ananastest.com',
+        ]);
+
+        $this->createLinkedProduct(2566378, 199.00);
+
+        Http::fake([
+            'api.qa2.ananastest.com/iam/api/v1/auth/token' => Http::response([
+                'access_token' => 'token-abc',
+                'expires_in' => 900,
+            ], 200),
+            'api.qa2.ananastest.com/payment/api/v1/merchant-integration/discounts' => Http::response([
+                'scheduleResult' => [
+                    [
+                        'success' => false,
+                        'error' => [
+                            'merchantInventoryId' => 2566378,
+                            'errorMessage' => 'Product is not published',
+                        ],
+                    ],
+                ],
+            ], 200),
+        ]);
+
+        $result = app(AnanasDiscountService::class)->schedule(
+            inventoryIds: [2566378],
+            percentOff: 10,
+            days: 7,
+            useBncSale: false,
+            dryRun: false,
+        );
+
+        $this->assertSame(0, $result['scheduled']);
+        $this->assertSame(1, $result['failed']);
+        $this->assertFalse($result['results'][0]['success']);
+        $this->assertSame('Product is not published', $result['results'][0]['error']);
+        $this->assertArrayHasKey('scheduleResult', $result['raw']);
+    }
+
+    public function test_live_schedule_empty_body_includes_raw_in_error(): void
+    {
+        config([
+            'bnc.ananas_allow_catalog_writes' => true,
+            'bnc.ananas_env' => 'stage',
+            'bnc.ananas_client_id' => 'test-client-id',
+            'bnc.ananas_client_secret' => 'test-client-secret',
+            'bnc.ananas_stage_token_url' => 'https://api.qa2.ananastest.com/iam/api/v1/auth/token',
+            'bnc.ananas_stage_product_base_url' => 'https://api.qa2.ananastest.com',
+        ]);
+
+        $this->createLinkedProduct(2566378, 199.00);
+
+        Http::fake([
+            'api.qa2.ananastest.com/iam/api/v1/auth/token' => Http::response([
+                'access_token' => 'token-abc',
+                'expires_in' => 900,
+            ], 200),
+            'api.qa2.ananastest.com/payment/api/v1/merchant-integration/discounts' => Http::response([], 200),
+        ]);
+
+        $result = app(AnanasDiscountService::class)->schedule(
+            inventoryIds: [2566378],
+            percentOff: 10,
+            days: 7,
+            useBncSale: false,
+            dryRun: false,
+        );
+
+        $this->assertSame(1, $result['failed']);
+        $this->assertStringContainsString('Unexpected discount response', (string) $result['results'][0]['error']);
+    }
+
+    public function test_schedule_command_prints_api_error_not_preview(): void
+    {
+        config([
+            'bnc.ananas_allow_catalog_writes' => true,
+            'bnc.ananas_env' => 'stage',
+            'bnc.ananas_client_id' => 'test-client-id',
+            'bnc.ananas_client_secret' => 'test-client-secret',
+            'bnc.ananas_stage_token_url' => 'https://api.qa2.ananastest.com/iam/api/v1/auth/token',
+            'bnc.ananas_stage_product_base_url' => 'https://api.qa2.ananastest.com',
+        ]);
+
+        $this->createLinkedProduct(2566378, 199.00);
+
+        Http::fake([
+            'api.qa2.ananastest.com/iam/api/v1/auth/token' => Http::response([
+                'access_token' => 'token-abc',
+                'expires_in' => 900,
+            ], 200),
+            'api.qa2.ananastest.com/payment/api/v1/merchant-integration/discounts' => Http::response([
+                'scheduleResult' => [
+                    [
+                        'success' => false,
+                        'error' => [
+                            'merchantInventoryId' => 2566378,
+                            'errorMessage' => 'Product is not published',
+                        ],
+                    ],
+                ],
+            ], 200),
+        ]);
+
+        $this->artisan('bnc:ananas-schedule-discount', [
+            '--inventory' => '2566378',
+            '--percent' => '10',
+            '--days' => '7',
+            '--type' => 'SALE',
+            '--confirm' => true,
+        ])
+            ->expectsOutputToContain('Product is not published')
+            ->expectsOutputToContain('Raw POST')
+            ->assertFailed();
     }
 
     public function test_publish_dry_run_returns_ready_inventory_ids(): void

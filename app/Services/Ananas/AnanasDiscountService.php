@@ -6,6 +6,7 @@ use App\Models\AnanasDiscountAction;
 use App\Models\AnanasProductMapping;
 use App\Services\Pricing\PriceCalculator;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
 
 class AnanasDiscountService
@@ -130,7 +131,8 @@ class AnanasDiscountService
      *     failed: int,
      *     skipped: list<string>,
      *     results: list<array<string, mixed>>,
-     *     payloads: list<array<string, mixed>>
+     *     payloads: list<array<string, mixed>>,
+     *     raw: array<string, mixed>|list<mixed>|null
      * }
      */
     public function schedule(
@@ -163,18 +165,39 @@ class AnanasDiscountService
                 'skipped' => $built['skipped'],
                 'results' => $built['rows'],
                 'payloads' => $built['payloads'],
+                'raw' => null,
             ];
         }
 
         $this->writeGuard->assertAllowed($allowProduction);
 
         $response = $this->apiClient->scheduleDiscounts($built['payloads'], $allowProduction);
+
+        Log::info('Ananas discount schedule response', [
+            'integration' => 'ananas',
+            'inventory_ids' => array_column($built['rows'], 'merchant_inventory_id'),
+            'body' => $response,
+        ]);
+
         $parsed = $this->parseScheduleResult($response);
+
+        if ($parsed === [] && $built['payloads'] !== []) {
+            $snippet = mb_substr((string) json_encode($response, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), 0, 800);
+            foreach ($built['rows'] as $index => $row) {
+                $parsed[$index] = [
+                    'success' => false,
+                    'merchant_inventory_id' => (int) $row['merchant_inventory_id'],
+                    'discount_id' => null,
+                    'error' => 'Unexpected discount response: '.($snippet !== '' ? $snippet : '(empty)'),
+                ];
+            }
+        }
+
         $scheduled = 0;
         $failed = 0;
 
         foreach ($built['rows'] as $index => $row) {
-            $item = $parsed[$index] ?? $this->resultByInventory($parsed, (int) $row['merchant_inventory_id']);
+            $item = $this->resultByInventory($parsed, (int) $row['merchant_inventory_id']);
             $success = (bool) ($item['success'] ?? false);
             $discountId = $item['discount_id'] ?? null;
             $error = $item['error'] ?? ($success ? null : 'Unknown discount schedule error.');
@@ -215,6 +238,7 @@ class AnanasDiscountService
             'skipped' => $built['skipped'],
             'results' => $built['rows'],
             'payloads' => $built['payloads'],
+            'raw' => $response,
         ];
     }
 
@@ -345,12 +369,8 @@ class AnanasDiscountService
      */
     private function parseScheduleResult(array $payload): array
     {
-        $rows = $payload['scheduleResult'] ?? $payload;
+        $rows = $this->extractScheduleRows($payload);
         $parsed = [];
-
-        if (! is_array($rows)) {
-            return [];
-        }
 
         foreach ($rows as $row) {
             if (! is_array($row)) {
@@ -359,15 +379,30 @@ class AnanasDiscountService
 
             $success = (bool) ($row['success'] ?? false);
             $data = is_array($row['data'] ?? null) ? $row['data'] : [];
-            $error = is_array($row['error'] ?? null) ? $row['error'] : [];
+            $error = $row['error'] ?? null;
+            $errorBag = is_array($error) ? $error : [];
+            $errorMessage = null;
+
+            if (is_string($error) && $error !== '') {
+                $errorMessage = $error;
+            } elseif (isset($errorBag['errorMessage'])) {
+                $errorMessage = (string) $errorBag['errorMessage'];
+            } elseif (isset($row['errorMessage'])) {
+                $errorMessage = (string) $row['errorMessage'];
+            }
+
+            $inventory = $data['merchantInventoryId']
+                ?? $errorBag['merchantInventoryId']
+                ?? $row['merchantInventoryId']
+                ?? null;
 
             $parsed[] = [
                 'success' => $success,
-                'merchant_inventory_id' => isset($data['merchantInventoryId'])
-                    ? (int) $data['merchantInventoryId']
-                    : (isset($error['merchantInventoryId']) ? (int) $error['merchantInventoryId'] : null),
-                'discount_id' => isset($data['discountId']) ? (string) $data['discountId'] : null,
-                'error' => $success ? null : (string) ($error['errorMessage'] ?? 'Schedule failed.'),
+                'merchant_inventory_id' => $inventory !== null ? (int) $inventory : null,
+                'discount_id' => isset($data['discountId'])
+                    ? (string) $data['discountId']
+                    : (isset($row['discountId']) ? (string) $row['discountId'] : null),
+                'error' => $success ? null : ($errorMessage ?: 'Schedule failed.'),
             ];
         }
 
@@ -392,5 +427,51 @@ class AnanasDiscountService
             'discount_id' => null,
             'error' => 'No matching scheduleResult row.',
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>|list<mixed>  $payload
+     * @return list<array<string, mixed>>
+     */
+    private function extractScheduleRows(array $payload): array
+    {
+        foreach (['scheduleResult', 'ScheduleResult'] as $key) {
+            if (isset($payload[$key]) && is_array($payload[$key])) {
+                return $this->wrapSingleResult($payload[$key]);
+            }
+        }
+
+        $nested = $payload['data'] ?? null;
+        if (is_array($nested) && isset($nested['scheduleResult']) && is_array($nested['scheduleResult'])) {
+            return $this->wrapSingleResult($nested['scheduleResult']);
+        }
+
+        if (array_is_list($payload) && isset($payload[0]) && is_array($payload[0])
+            && (array_key_exists('success', $payload[0]) || isset($payload[0]['data']) || isset($payload[0]['error']))) {
+            return $payload;
+        }
+
+        return [];
+    }
+
+    /**
+     * @param  array<string, mixed>|list<mixed>  $rows
+     * @return list<array<string, mixed>>
+     */
+    private function wrapSingleResult(array $rows): array
+    {
+        if ($rows !== [] && ! array_is_list($rows)
+            && (array_key_exists('success', $rows) || isset($rows['data']) || isset($rows['error']))) {
+            return [$rows];
+        }
+
+        $list = [];
+        foreach ($rows as $row) {
+            if (is_array($row)) {
+                $list[] = $row;
+            }
+        }
+
+        return $list;
     }
 }

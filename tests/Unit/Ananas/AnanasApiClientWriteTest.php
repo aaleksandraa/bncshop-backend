@@ -170,6 +170,36 @@ class AnanasApiClientWriteTest extends TestCase
         });
     }
 
+    public function test_schedule_discounts_includes_response_body_on_http_error(): void
+    {
+        config(['bnc.ananas_allow_catalog_writes' => true]);
+
+        Http::fake([
+            'api.qa2.ananastest.com/iam/api/v1/auth/token' => Http::response([
+                'access_token' => 'token-abc',
+                'expires_in' => 900,
+            ], 200),
+            'api.qa2.ananastest.com/payment/api/v1/merchant-integration/discounts' => Http::response([
+                'message' => 'Invalid discount payload',
+            ], 400),
+        ]);
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('HTTP 400');
+        $this->expectExceptionMessage('Invalid discount payload');
+
+        app(AnanasApiClient::class)->scheduleDiscounts([
+            [
+                'merchantInventoryId' => 2566378,
+                'discountPrice' => '900.00',
+                'discountPriceCurrency' => 'RSD',
+                'dateFrom' => '24/09/2026',
+                'dateTo' => '30/09/2026',
+                'discountType' => 'SALE',
+            ],
+        ]);
+    }
+
     public function test_publish_products_sends_inventory_id_list(): void
     {
         config(['bnc.ananas_allow_catalog_writes' => true]);

@@ -105,8 +105,10 @@ class AnanasScheduleDiscountCommand extends Command
                         (string) ($payload['discountType'] ?? ''),
                         (string) ($payload['dateFrom'] ?? ''),
                         (string) ($payload['dateTo'] ?? '—'),
-                        isset($row['discount_id'])
-                            ? (($row['success'] ?? false) ? (string) $row['discount_id'] : (string) ($row['error'] ?? 'fail'))
+                        array_key_exists('success', $row)
+                            ? (($row['success'] ?? false)
+                                ? (string) ($row['discount_id'] ?: 'ok')
+                                : (string) ($row['error'] ?? 'fail'))
                             : 'preview',
                     ];
                 }, $result['results']),
@@ -115,6 +117,27 @@ class AnanasScheduleDiscountCommand extends Command
 
         foreach ($result['skipped'] as $skip) {
             $this->warn($skip);
+        }
+
+        if (! $dryRun && $result['raw'] !== null) {
+            $this->newLine();
+            $this->line('Raw POST /payment/api/v1/merchant-integration/discounts response:');
+            $encoded = json_encode($result['raw'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            $this->output->writeln(
+                is_string($encoded) ? $encoded : '(unencodable)',
+                \Symfony\Component\Console\Output\OutputInterface::OUTPUT_RAW,
+            );
+        }
+
+        $stillUnpublished = array_filter(
+            $result['results'],
+            static fn (array $row): bool => ($row['remote_status'] ?? '') === 'READY_FOR_PUBLISH',
+        );
+
+        if ($stillUnpublished !== [] && ($dryRun || ($result['failed'] ?? 0) > 0)) {
+            $this->newLine();
+            $this->warn('GET still shows READY_FOR_PUBLISH. Publish is async — wait for Ananas email / status PUBLISHED before retrying akcija.');
+            $this->comment('  php artisan bnc:ananas-lookup-product');
         }
 
         if (! $dryRun && $result['scheduled'] > 0) {

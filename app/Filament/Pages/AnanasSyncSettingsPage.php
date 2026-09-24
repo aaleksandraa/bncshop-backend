@@ -519,6 +519,15 @@ class AnanasSyncSettingsPage extends Page implements HasForms
         $lines = [];
         foreach ($result['results'] as $row) {
             $payload = $row['payload'] ?? [];
+            $suffix = '';
+            if ($dryRun && ! array_key_exists('success', $row)) {
+                $suffix = ' preview';
+            } elseif (($row['success'] ?? false) && ! empty($row['discount_id'])) {
+                $suffix = ' '.$row['discount_id'];
+            } elseif (array_key_exists('success', $row) && ! ($row['success'] ?? false)) {
+                $suffix = ' FAIL: '.($row['error'] ?? 'fail');
+            }
+
             $lines[] = sprintf(
                 '%s BNC %s → %s (reg %s, akcija %s %s–%s)%s',
                 $row['merchant_inventory_id'],
@@ -528,7 +537,7 @@ class AnanasSyncSettingsPage extends Page implements HasForms
                 number_format((float) $row['discount_price'], 2, '.', ''),
                 $payload['dateFrom'] ?? '',
                 $payload['dateTo'] ?? '—',
-                isset($row['discount_id']) ? ' '.$row['discount_id'] : '',
+                $suffix,
             );
         }
 
