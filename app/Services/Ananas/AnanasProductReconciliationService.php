@@ -18,14 +18,19 @@ class AnanasProductReconciliationService
     /**
      * @return array{linked: int, pending: int, failed: int, details: list<string>}
      */
-    public function reconcileSubmittedMappings(int $limit = 50, ?string $ean = null): array
+    public function reconcileSubmittedMappings(int $limit = 50, ?string $ean = null, bool $includeLinked = false): array
     {
+        $statuses = [
+            AnanasProductMapping::LOCAL_SUBMITTED,
+            AnanasProductMapping::LOCAL_PENDING_ONBOARDING,
+        ];
+
+        if ($includeLinked || ($ean !== null && trim($ean) !== '')) {
+            $statuses[] = AnanasProductMapping::LOCAL_LINKED;
+        }
+
         $query = AnanasProductMapping::query()
-            ->whereIn('local_status', [
-                AnanasProductMapping::LOCAL_SUBMITTED,
-                AnanasProductMapping::LOCAL_PENDING_ONBOARDING,
-                AnanasProductMapping::LOCAL_LINKED,
-            ])
+            ->whereIn('local_status', $statuses)
             ->whereNotNull('ean')
             ->orderByDesc('last_submitted_at')
             ->limit(max(1, $limit));

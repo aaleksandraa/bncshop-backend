@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Laravel\Scout\Searchable;
 
@@ -213,6 +214,11 @@ class Product extends Model
     public function syncDiffLogs(): HasMany
     {
         return $this->hasMany(SyncDiffLog::class);
+    }
+
+    public function ananasProductMapping(): HasOne
+    {
+        return $this->hasOne(AnanasProductMapping::class);
     }
 
     public function tags(): BelongsToMany

@@ -98,6 +98,64 @@ class AnanasProductImportServiceTest extends TestCase
         $this->assertSame([$first->id, $second->id], $result['product_ids']);
     }
 
+    public function test_dry_run_skips_already_submitted_products(): void
+    {
+        $category = Category::factory()->create();
+
+        AnanasCategoryMapping::query()->create([
+            'category_id' => $category->id,
+            'ananas_product_type' => 'ITShop',
+            'ananas_category' => 'Gaming laptopi',
+            'is_enabled' => true,
+        ]);
+
+        $already = $this->createEligibleProduct($category, '4200000000001');
+        $next = $this->createEligibleProduct($category, '4200000000002');
+
+        AnanasProductMapping::query()->create([
+            'product_id' => $already->id,
+            'ean' => '4200000000001',
+            'local_status' => AnanasProductMapping::LOCAL_SUBMITTED,
+            'export_enabled' => true,
+        ]);
+
+        $result = app(AnanasProductImportService::class)->importBatch(limit: 10, dryRun: true);
+
+        $this->assertSame(1, $result['submitted']);
+        $this->assertSame([$next->id], $result['product_ids']);
+        $this->assertSame(AnanasProductMapping::LOCAL_SUBMITTED, $already->fresh()->ananasProductMapping?->local_status);
+    }
+
+    public function test_explicit_product_option_can_reimport_submitted_sku(): void
+    {
+        $category = Category::factory()->create();
+
+        AnanasCategoryMapping::query()->create([
+            'category_id' => $category->id,
+            'ananas_product_type' => 'ITShop',
+            'ananas_category' => 'Gaming laptopi',
+            'is_enabled' => true,
+        ]);
+
+        $already = $this->createEligibleProduct($category, '4300000000001');
+
+        AnanasProductMapping::query()->create([
+            'product_id' => $already->id,
+            'ean' => '4300000000001',
+            'local_status' => AnanasProductMapping::LOCAL_SUBMITTED,
+            'export_enabled' => true,
+        ]);
+
+        $result = app(AnanasProductImportService::class)->importBatch(
+            limit: 10,
+            productId: (int) $already->id,
+            dryRun: true,
+        );
+
+        $this->assertSame(1, $result['submitted']);
+        $this->assertSame([$already->id], $result['product_ids']);
+    }
+
     public function test_scoped_product_count_includes_descendants(): void
     {
         $parent = Category::factory()->create(['name' => 'Laptopi']);

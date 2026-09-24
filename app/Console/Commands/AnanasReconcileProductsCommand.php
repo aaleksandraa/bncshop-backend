@@ -9,8 +9,9 @@ use Illuminate\Console\Command;
 class AnanasReconcileProductsCommand extends Command
 {
     protected $signature = 'bnc:ananas-reconcile-products
-                            {--limit=50 : Max local mappings to reconcile}
-                            {--ean= : Reconcile a single EAN}';
+                            {--limit=100 : Max local mappings to reconcile}
+                            {--ean= : Reconcile a single EAN}
+                            {--include-linked : Also refresh already LINKED mappings}';
 
     protected $description = 'Reconcile submitted Ananas product mappings via GET /products and refresh category validation';
 
@@ -32,6 +33,7 @@ class AnanasReconcileProductsCommand extends Command
         $result = $reconciliationService->reconcileSubmittedMappings(
             limit: (int) $this->option('limit'),
             ean: $ean,
+            includeLinked: (bool) $this->option('include-linked'),
         );
 
         $this->line('Linked: '.$result['linked']);
@@ -40,6 +42,12 @@ class AnanasReconcileProductsCommand extends Command
 
         foreach ($result['details'] as $detail) {
             $this->line(' - '.$detail);
+        }
+
+        if ($result['pending'] > 0) {
+            $this->newLine();
+            $this->comment('GET /products je merchant lista i kasni za POST import. Sačekajte par minuta pa ponovite reconcile.');
+            $this->comment('Novi EAN-ovi mogu ostati pending dok Ananas ne uradi onboarding.');
         }
 
         return self::SUCCESS;

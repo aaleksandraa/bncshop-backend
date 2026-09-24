@@ -2,6 +2,7 @@
 
 namespace App\Services\Ananas;
 
+use App\Models\AnanasProductMapping;
 use App\Models\Product;
 use RuntimeException;
 
@@ -57,6 +58,7 @@ class AnanasProductImportService
             $this->considerProduct(
                 $product,
                 $dryRun,
+                $productId !== null,
                 $payloads,
                 $productIds,
                 $skipped,
@@ -131,7 +133,10 @@ class AnanasProductImportService
         }
 
         foreach ($this->exportScope->baseQuery()
-            ->with(['images', 'manufacturer', 'attributeValues.attributeDefinition'])
+            ->with(['images', 'manufacturer', 'attributeValues.attributeDefinition', 'ananasProductMapping'])
+            ->whereDoesntHave('ananasProductMapping', function ($query): void {
+                $query->whereIn('local_status', AnanasProductMapping::inFlightStatuses());
+            })
             ->lazyById(100) as $product) {
             yield $product;
         }
@@ -146,12 +151,26 @@ class AnanasProductImportService
     private function considerProduct(
         Product $product,
         bool $dryRun,
+        bool $allowReimport,
         array &$payloads,
         array &$productIds,
         int &$skipped,
         array &$skipReasons,
         array &$errors,
     ): void {
+        if (! $allowReimport && $this->isAlreadyExported($product)) {
+            $this->recordSkip(
+                $product,
+                AnanasEligibilityPolicy::ALREADY_EXPORTED,
+                $dryRun,
+                $skipped,
+                $skipReasons,
+                persist: false,
+            );
+
+            return;
+        }
+
         $mapping = $this->exportScope->resolveCategoryMapping($product);
 
         if ($mapping === null) {
@@ -200,13 +219,27 @@ class AnanasProductImportService
         bool $dryRun,
         int &$skipped,
         array &$skipReasons,
+        bool $persist = true,
     ): void {
         $skipped++;
         $skipReasons[$reason] = ($skipReasons[$reason] ?? 0) + 1;
 
-        if (! $dryRun) {
+        if (! $dryRun && $persist) {
             $this->mappingService->markNotEligible($product, $reason);
         }
+    }
+
+    private function isAlreadyExported(Product $product): bool
+    {
+        $mapping = $product->relationLoaded('ananasProductMapping')
+            ? $product->ananasProductMapping
+            : $product->ananasProductMapping()->first();
+
+        if (! $mapping instanceof AnanasProductMapping) {
+            return false;
+        }
+
+        return in_array((string) $mapping->local_status, AnanasProductMapping::inFlightStatuses(), true);
     }
 
     /**

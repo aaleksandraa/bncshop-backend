@@ -15,6 +15,8 @@ class AnanasEligibilityPolicy
 
     public const CATEGORY_UNMAPPED = 'CATEGORY_UNMAPPED';
 
+    public const ALREADY_EXPORTED = 'ALREADY_EXPORTED';
+
     public const MISSING_EAN = 'MISSING_EAN';
 
     public const INVALID_EAN = 'INVALID_EAN';

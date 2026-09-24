@@ -59,6 +59,20 @@ class AnanasProductMapping extends Model
         ];
     }
 
+    /**
+     * Local statuses that already have an Ananas import in progress or linked.
+     *
+     * @return list<string>
+     */
+    public static function inFlightStatuses(): array
+    {
+        return [
+            self::LOCAL_SUBMITTED,
+            self::LOCAL_PENDING_ONBOARDING,
+            self::LOCAL_LINKED,
+        ];
+    }
+
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);

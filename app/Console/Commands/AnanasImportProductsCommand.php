@@ -94,7 +94,9 @@ class AnanasImportProductsCommand extends Command
 
         if (! $dryRun && $result['submitted'] > 0) {
             $this->newLine();
-            $this->comment('Import is asynchronous. Run bnc:ananas-reconcile-products after processing completes.');
+            $this->comment('Import is asynchronous. Wait a few minutes, then:');
+            $this->comment('  php artisan bnc:ananas-reconcile-products');
+            $this->comment('Next --confirm sends new SKUs (already submitted/linked are skipped).');
         }
 
         return $result['submitted'] > 0 || $dryRun ? self::SUCCESS : self::FAILURE;
