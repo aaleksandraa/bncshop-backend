@@ -2,7 +2,6 @@
 
 namespace App\Services\Ananas;
 
-use App\Models\AnanasProductMapping;
 use App\Models\Product;
 use RuntimeException;
 
@@ -22,9 +21,11 @@ class AnanasProductImportService
      * @return array{
      *   submitted: int,
      *   skipped: int,
+     *   scanned: int,
      *   progress_id: string|null,
      *   product_ids: list<int>,
-     *   errors: list<string>
+     *   errors: list<string>,
+     *   skip_reasons: array<string, int>
      * }
      */
     public function importBatch(
@@ -34,62 +35,42 @@ class AnanasProductImportService
         bool $dryRun = false,
     ): array {
         $limit = max(1, min($limit, (int) config('bnc.ananas_import_batch_max_size', 25)));
-
-        $products = $this->resolveProducts($limit, $productId);
+        $maxScan = max($limit, (int) config('bnc.ananas_import_scan_max', 2000));
 
         $payloads = [];
         $productIds = [];
         $skipped = 0;
+        $scanned = 0;
         $errors = [];
+        $skipReasons = [];
 
-        foreach ($products as $product) {
-            $mapping = $this->exportScope->resolveCategoryMapping($product);
-
-            if ($mapping === null) {
-                $skipped++;
-                $this->mappingService->markNotEligible($product, AnanasEligibilityPolicy::CATEGORY_UNMAPPED);
+        foreach ($this->nextCandidates($productId) as $product) {
+            if (! $product instanceof Product) {
                 continue;
             }
 
-            $eligibility = $this->eligibilityPolicy->evaluate($product);
-
-            if (! $eligibility->eligible) {
-                $skipped++;
-                $this->mappingService->markNotEligible($product, (string) $eligibility->reasonCode);
-                continue;
+            if ($scanned >= $maxScan || count($payloads) >= $limit) {
+                break;
             }
 
-            try {
-                $payloads[] = $this->productMapper->map($product, $mapping);
-                $productIds[] = (int) $product->id;
-            } catch (\Throwable $e) {
-                $skipped++;
-                $errors[] = sprintf('Product %d: %s', $product->id, $e->getMessage());
-                $this->mappingService->markFailed(
-                    $this->mappingService->findOrCreate($product),
-                    $e->getMessage(),
-                );
-            }
+            $scanned++;
+            $this->considerProduct(
+                $product,
+                $dryRun,
+                $payloads,
+                $productIds,
+                $skipped,
+                $skipReasons,
+                $errors,
+            );
         }
 
         if ($payloads === []) {
-            return [
-                'submitted' => 0,
-                'skipped' => $skipped,
-                'progress_id' => null,
-                'product_ids' => [],
-                'errors' => $errors,
-            ];
+            return $this->result(0, $skipped, $scanned, null, [], $errors, $skipReasons);
         }
 
         if ($dryRun) {
-            return [
-                'submitted' => count($payloads),
-                'skipped' => $skipped,
-                'progress_id' => null,
-                'product_ids' => $productIds,
-                'errors' => $errors,
-            ];
+            return $this->result(count($payloads), $skipped, $scanned, null, $productIds, $errors, $skipReasons);
         }
 
         $this->writeGuard->assertAllowed($allowProduction);
@@ -102,7 +83,15 @@ class AnanasProductImportService
             $payloads,
         ));
 
-        foreach ($products->whereIn('id', $productIds) as $product) {
+        $submittedProducts = Product::query()
+            ->with(['images', 'manufacturer', 'attributeValues.attributeDefinition'])
+            ->whereIn('id', $productIds)
+            ->get()
+            ->keyBy('id');
+
+        foreach ($productIds as $id) {
+            $product = $submittedProducts->get($id);
+
             if (! $product instanceof Product) {
                 continue;
             }
@@ -119,19 +108,13 @@ class AnanasProductImportService
             $this->mappingService->recordSubmission($product, $payload, $progressId, $eanInMaster);
         }
 
-        return [
-            'submitted' => count($payloads),
-            'skipped' => $skipped,
-            'progress_id' => $progressId,
-            'product_ids' => $productIds,
-            'errors' => $errors,
-        ];
+        return $this->result(count($payloads), $skipped, $scanned, $progressId, $productIds, $errors, $skipReasons);
     }
 
     /**
-     * @return \Illuminate\Support\Collection<int, Product>
+     * @return iterable<int, Product>
      */
-    private function resolveProducts(int $limit, ?int $productId)
+    private function nextCandidates(?int $productId): iterable
     {
         if ($productId !== null) {
             $product = Product::query()
@@ -142,12 +125,123 @@ class AnanasProductImportService
                 throw new RuntimeException("Product {$productId} not found.");
             }
 
-            return collect([$product]);
+            yield $product;
+
+            return;
         }
 
-        return $this->exportScope->baseQuery()
+        foreach ($this->exportScope->baseQuery()
             ->with(['images', 'manufacturer', 'attributeValues.attributeDefinition'])
-            ->limit($limit)
-            ->get();
+            ->lazyById(100) as $product) {
+            yield $product;
+        }
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $payloads
+     * @param  list<int>  $productIds
+     * @param  array<string, int>  $skipReasons
+     * @param  list<string>  $errors
+     */
+    private function considerProduct(
+        Product $product,
+        bool $dryRun,
+        array &$payloads,
+        array &$productIds,
+        int &$skipped,
+        array &$skipReasons,
+        array &$errors,
+    ): void {
+        $mapping = $this->exportScope->resolveCategoryMapping($product);
+
+        if ($mapping === null) {
+            $this->recordSkip($product, AnanasEligibilityPolicy::CATEGORY_UNMAPPED, $dryRun, $skipped, $skipReasons);
+
+            return;
+        }
+
+        $eligibility = $this->eligibilityPolicy->evaluate($product);
+
+        if (! $eligibility->eligible) {
+            $this->recordSkip(
+                $product,
+                (string) ($eligibility->reasonCode ?? 'NOT_ELIGIBLE'),
+                $dryRun,
+                $skipped,
+                $skipReasons,
+            );
+
+            return;
+        }
+
+        try {
+            $payloads[] = $this->productMapper->map($product, $mapping);
+            $productIds[] = (int) $product->id;
+        } catch (\Throwable $e) {
+            $skipped++;
+            $skipReasons['MAPPER_ERROR'] = ($skipReasons['MAPPER_ERROR'] ?? 0) + 1;
+            $errors[] = sprintf('Product %d: %s', $product->id, $e->getMessage());
+
+            if (! $dryRun) {
+                $this->mappingService->markFailed(
+                    $this->mappingService->findOrCreate($product),
+                    $e->getMessage(),
+                );
+            }
+        }
+    }
+
+    /**
+     * @param  array<string, int>  $skipReasons
+     */
+    private function recordSkip(
+        Product $product,
+        string $reason,
+        bool $dryRun,
+        int &$skipped,
+        array &$skipReasons,
+    ): void {
+        $skipped++;
+        $skipReasons[$reason] = ($skipReasons[$reason] ?? 0) + 1;
+
+        if (! $dryRun) {
+            $this->mappingService->markNotEligible($product, $reason);
+        }
+    }
+
+    /**
+     * @param  list<int>  $productIds
+     * @param  list<string>  $errors
+     * @param  array<string, int>  $skipReasons
+     * @return array{
+     *   submitted: int,
+     *   skipped: int,
+     *   scanned: int,
+     *   progress_id: string|null,
+     *   product_ids: list<int>,
+     *   errors: list<string>,
+     *   skip_reasons: array<string, int>
+     * }
+     */
+    private function result(
+        int $submitted,
+        int $skipped,
+        int $scanned,
+        ?string $progressId,
+        array $productIds,
+        array $errors,
+        array $skipReasons,
+    ): array {
+        ksort($skipReasons);
+
+        return [
+            'submitted' => $submitted,
+            'skipped' => $skipped,
+            'scanned' => $scanned,
+            'progress_id' => $progressId,
+            'product_ids' => $productIds,
+            'errors' => $errors,
+            'skip_reasons' => $skipReasons,
+        ];
     }
 }

@@ -185,7 +185,7 @@ class AnanasValidatedMappingService
     public function summaryRows(): array
     {
         return AnanasCategoryMapping::query()
-            ->with(['category' => fn ($query) => $query->withCount('products')])
+            ->with('category')
             ->orderBy('id')
             ->get()
             ->map(function (AnanasCategoryMapping $mapping): array {
@@ -201,7 +201,7 @@ class AnanasValidatedMappingService
                     'ananas_category' => (string) ($mapping->ananas_category ?: '—'),
                     'enabled' => (bool) $mapping->is_enabled,
                     'validation' => (string) ($mapping->category_validation_status ?: AnanasCategoryMapping::VALIDATION_UNKNOWN),
-                    'products_count' => (int) ($category?->products_count ?? 0),
+                    'products_count' => $this->exportScope->scopedProductCountForMapping($mapping),
                 ];
             })
             ->all();

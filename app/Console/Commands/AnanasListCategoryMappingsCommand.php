@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\AnanasCategoryMapping;
+use App\Services\Ananas\AnanasExportScope;
 use App\Support\CategoryAdminSearch;
 use Illuminate\Console\Command;
 
@@ -12,10 +13,10 @@ class AnanasListCategoryMappingsCommand extends Command
 
     protected $description = 'List Ananas BNC→Ananas category mappings with IDs for probe/import commands';
 
-    public function handle(): int
+    public function handle(AnanasExportScope $exportScope): int
     {
         $mappings = AnanasCategoryMapping::query()
-            ->with(['category' => fn ($query) => $query->withCount('products')])
+            ->with('category')
             ->orderBy('id')
             ->get();
 
@@ -42,7 +43,7 @@ class AnanasListCategoryMappingsCommand extends Command
                 $mapping->category !== null
                     ? CategoryAdminSearch::formatOptionLabel($mapping->category)
                     : (string) $mapping->category_id,
-                (string) ($mapping->category?->products_count ?? 0),
+                (string) $exportScope->scopedProductCountForMapping($mapping),
                 (string) $mapping->ananas_product_type,
                 (string) ($mapping->ananas_category ?: '—'),
                 $mapping->is_enabled ? 'yes' : 'no',

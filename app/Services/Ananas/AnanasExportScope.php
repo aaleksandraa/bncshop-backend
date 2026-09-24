@@ -86,6 +86,33 @@ class AnanasExportScope
         return isset($this->scopedCategoryIdSet()[(int) $product->category_id]);
     }
 
+    /**
+     * Category IDs covered by one mapping, including descendants when enabled.
+     *
+     * @return list<int>
+     */
+    public function categoryIdsForMapping(AnanasCategoryMapping $mapping): array
+    {
+        $ids = [(int) $mapping->category_id];
+
+        if ($mapping->include_descendants) {
+            $ids = array_merge($ids, $this->descendantCategoryIds((int) $mapping->category_id));
+        }
+
+        return array_values(array_unique(array_filter($ids)));
+    }
+
+    public function scopedProductCountForMapping(AnanasCategoryMapping $mapping): int
+    {
+        $ids = $this->categoryIdsForMapping($mapping);
+
+        if ($ids === []) {
+            return 0;
+        }
+
+        return Product::query()->whereIn('category_id', $ids)->count();
+    }
+
     public function resolveCategoryMapping(Product $product): ?AnanasCategoryMapping
     {
         $categoryId = $product->category_id !== null ? (int) $product->category_id : null;

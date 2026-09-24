@@ -387,11 +387,15 @@ class AnanasSyncSettingsPage extends Page implements HasForms
         $this->lastCatalogAction = [
             'title' => $dryRun ? 'Import dry-run' : 'Import',
             'body' => sprintf(
-                "Submitted: %d\nSkipped: %d\nProgress UUID: %s\nProduct IDs: %s%s",
+                "Scanned: %d\nSubmitted: %d\nSkipped: %d\nProgress UUID: %s\nProduct IDs: %s%s%s",
+                $result['scanned'] ?? 0,
                 $result['submitted'],
                 $result['skipped'],
                 $result['progress_id'] ?? '—',
                 $result['product_ids'] !== [] ? implode(', ', $result['product_ids']) : '—',
+                ($result['skip_reasons'] ?? []) !== []
+                    ? "\nSkip: ".collect($result['skip_reasons'])->map(fn (int $count, string $code): string => $code.' '.$count)->implode(', ')
+                    : '',
                 $result['errors'] !== [] ? "\n".implode("\n", $result['errors']) : '',
             ),
         ];

@@ -67,12 +67,25 @@ class AnanasImportProductsCommand extends Command
             return self::FAILURE;
         }
 
+        $this->line('Scanned: '.$result['scanned']);
         $this->line('Submitted: '.$result['submitted']);
         $this->line('Skipped: '.$result['skipped']);
         $this->line('Progress UUID: '.($result['progress_id'] ?? '—'));
 
         if ($result['product_ids'] !== []) {
             $this->line('Product IDs: '.implode(', ', $result['product_ids']));
+        }
+
+        if ($result['skip_reasons'] !== []) {
+            $this->newLine();
+            $this->comment('Skip reasons:');
+            $this->table(
+                ['Reason', 'Count'],
+                collect($result['skip_reasons'])
+                    ->map(fn (int $count, string $code): array => [$code, (string) $count])
+                    ->values()
+                    ->all(),
+            );
         }
 
         foreach ($result['errors'] as $error) {
