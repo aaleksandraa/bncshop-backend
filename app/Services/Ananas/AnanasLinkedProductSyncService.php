@@ -112,35 +112,48 @@ class AnanasLinkedProductSyncService
     }
 
     /**
-     * @return array{published: int, progress_id: string|null, errors: list<string>}
+     * @param  list<int>  $inventoryIds
+     * @return array{published: int, progress_id: string|null, errors: list<string>, inventory_ids: list<int>}
      */
-    public function publishReadyLinked(int $limit = 25, bool $dryRun = false, bool $allowProduction = false): array
-    {
+    public function publishReadyLinked(
+        int $limit = 25,
+        bool $dryRun = false,
+        bool $allowProduction = false,
+        array $inventoryIds = [],
+    ): array {
         return $this->runInventoryJob(
             limit: $limit,
             dryRun: $dryRun,
             allowProduction: $allowProduction,
             remoteStatus: 'READY_FOR_PUBLISH',
             action: 'publish',
+            inventoryIds: $inventoryIds,
         );
     }
 
     /**
-     * @return array{published: int, progress_id: string|null, errors: list<string>}
+     * @param  list<int>  $inventoryIds
+     * @return array{published: int, progress_id: string|null, errors: list<string>, inventory_ids: list<int>}
      */
-    public function unpublishPublished(int $limit = 25, bool $dryRun = false, bool $allowProduction = false): array
-    {
+    public function unpublishPublished(
+        int $limit = 25,
+        bool $dryRun = false,
+        bool $allowProduction = false,
+        array $inventoryIds = [],
+    ): array {
         return $this->runInventoryJob(
             limit: $limit,
             dryRun: $dryRun,
             allowProduction: $allowProduction,
             remoteStatus: 'PUBLISHED',
             action: 'unpublish',
+            inventoryIds: $inventoryIds,
         );
     }
 
     /**
-     * @return array{published: int, progress_id: string|null, errors: list<string>}
+     * @param  list<int>  $inventoryIds
+     * @return array{published: int, progress_id: string|null, errors: list<string>, inventory_ids: list<int>}
      */
     private function runInventoryJob(
         int $limit,
@@ -148,25 +161,37 @@ class AnanasLinkedProductSyncService
         bool $allowProduction,
         string $remoteStatus,
         string $action,
+        array $inventoryIds = [],
     ): array {
-        $ids = AnanasProductMapping::query()
+        $query = AnanasProductMapping::query()
             ->where('local_status', AnanasProductMapping::LOCAL_LINKED)
             ->where('remote_status', $remoteStatus)
-            ->whereNotNull('merchant_inventory_id')
-            ->orderByDesc('last_success_at')
-            ->limit(max(1, $limit))
-            ->pluck('merchant_inventory_id')
-            ->map(fn ($id): int => (int) $id)
+            ->orderByDesc('last_success_at');
+
+        $wanted = array_values(array_unique(array_filter(array_map('intval', $inventoryIds), fn (int $id): bool => $id > 0)));
+
+        if ($wanted !== []) {
+            $query->where(function ($inner) use ($wanted): void {
+                $inner->whereIn('merchant_inventory_id', $wanted)
+                    ->orWhereIn('ananas_product_id', array_map('strval', $wanted));
+            });
+        }
+
+        $mappings = $query->limit(max(1, $limit))->get();
+
+        $ids = $mappings
+            ->map(fn (AnanasProductMapping $mapping): int => $mapping->inventoryId())
             ->filter(fn (int $id): bool => $id > 0)
+            ->unique()
             ->values()
             ->all();
 
         if ($ids === []) {
-            return ['published' => 0, 'progress_id' => null, 'errors' => []];
+            return ['published' => 0, 'progress_id' => null, 'errors' => [], 'inventory_ids' => []];
         }
 
         if ($dryRun) {
-            return ['published' => count($ids), 'progress_id' => null, 'errors' => []];
+            return ['published' => count($ids), 'progress_id' => null, 'errors' => [], 'inventory_ids' => $ids];
         }
 
         try {
@@ -174,13 +199,27 @@ class AnanasLinkedProductSyncService
                 ? $this->apiClient->publishProducts($ids, $allowProduction)
                 : $this->apiClient->unpublishProducts($ids, $allowProduction);
         } catch (\Throwable $e) {
-            return ['published' => 0, 'progress_id' => null, 'errors' => [$e->getMessage()]];
+            return ['published' => 0, 'progress_id' => null, 'errors' => [$e->getMessage()], 'inventory_ids' => $ids];
+        }
+
+        $progressId = $result['progress_id'];
+
+        foreach ($mappings as $mapping) {
+            if (! $mapping instanceof AnanasProductMapping) {
+                continue;
+            }
+
+            $mapping->update([
+                'last_progress_id' => $progressId,
+                'last_submitted_at' => now(),
+            ]);
         }
 
         return [
             'published' => count($ids),
-            'progress_id' => $result['progress_id'],
+            'progress_id' => $progressId,
             'errors' => [],
+            'inventory_ids' => $ids,
         ];
     }
 

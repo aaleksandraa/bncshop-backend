@@ -122,4 +122,75 @@ class AnanasApiClientWriteTest extends TestCase
         $this->assertSame(42, $product['id']);
         $this->assertSame(['Laptopi'], $product['categories']);
     }
+
+    public function test_schedule_discounts_posts_rsd_payload_when_writes_enabled(): void
+    {
+        config(['bnc.ananas_allow_catalog_writes' => true]);
+
+        Http::fake([
+            'api.qa2.ananastest.com/iam/api/v1/auth/token' => Http::response([
+                'access_token' => 'token-abc',
+                'expires_in' => 900,
+            ], 200),
+            'api.qa2.ananastest.com/payment/api/v1/merchant-integration/discounts' => Http::response([
+                'scheduleResult' => [
+                    [
+                        'success' => true,
+                        'data' => [
+                            'merchantInventoryId' => 2566378,
+                            'discountId' => 'ee7c907d-b2cc-48f8-9226-1ba6e4db1055',
+                        ],
+                    ],
+                ],
+            ], 200),
+        ]);
+
+        $result = app(AnanasApiClient::class)->scheduleDiscounts([
+            [
+                'merchantInventoryId' => 2566378,
+                'discountPrice' => '900.00',
+                'discountPriceCurrency' => 'RSD',
+                'dateFrom' => '24/09/2026',
+                'dateTo' => '30/09/2026',
+                'discountType' => 'SALE',
+            ],
+        ]);
+
+        $this->assertTrue($result['scheduleResult'][0]['success']);
+
+        Http::assertSent(function ($request): bool {
+            if (! str_contains($request->url(), '/payment/api/v1/merchant-integration/discounts')) {
+                return false;
+            }
+
+            $body = $request->data();
+
+            return ($body['discounts'][0]['merchantInventoryId'] ?? null) === 2566378
+                && ($body['discounts'][0]['discountPriceCurrency'] ?? null) === 'RSD';
+        });
+    }
+
+    public function test_publish_products_sends_inventory_id_list(): void
+    {
+        config(['bnc.ananas_allow_catalog_writes' => true]);
+
+        Http::fake([
+            'api.qa2.ananastest.com/iam/api/v1/auth/token' => Http::response([
+                'access_token' => 'token-abc',
+                'expires_in' => 900,
+            ], 200),
+            'api.qa2.ananastest.com/product/api/v1/merchant-integration/product/publish' => Http::response([
+                'id' => 'c52813ec-f69b-4202-bb03-0a2534c93781',
+            ], 200),
+        ]);
+
+        $result = app(AnanasApiClient::class)->publishProducts([2566378, 2566379]);
+
+        $this->assertSame('c52813ec-f69b-4202-bb03-0a2534c93781', $result['progress_id']);
+
+        Http::assertSent(function ($request): bool {
+            return str_contains($request->url(), '/product/publish')
+                && $request->data() === [2566378, 2566379];
+        });
+    }
 }

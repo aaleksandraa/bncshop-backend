@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class AnanasProductMapping extends Model
 {
@@ -76,5 +77,17 @@ class AnanasProductMapping extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function discountActions(): HasMany
+    {
+        return $this->hasMany(AnanasDiscountAction::class);
+    }
+
+    public function inventoryId(): int
+    {
+        $inventory = (int) ($this->merchant_inventory_id ?: $this->ananas_product_id);
+
+        return max(0, $inventory);
     }
 }

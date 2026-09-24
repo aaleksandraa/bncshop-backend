@@ -213,6 +213,12 @@ return [
     */
     'ananas_vat_rate' => ($rate = env('ANANAS_VAT_RATE')) !== null && $rate !== '' ? (int) $rate : 0,
 
+    /*
+    | Ananas payment discounts API allows only RSD in discountPriceCurrency.
+    | Numeric discountPrice uses the same BAM figure we send as import basePrice.
+    */
+    'ananas_discount_currency' => env('ANANAS_DISCOUNT_CURRENCY', 'RSD'),
+
     // Required on Ananas import (Add). Used when product has no manufacturer.
     'ananas_default_brand' => env('ANANAS_DEFAULT_BRAND', 'BNC Shop'),
 

@@ -162,8 +162,53 @@
                         </x-filament::button>
                     </div>
                     <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                        Dry-run ne zove Ananas write API. Live import/publish rade samo na Stage i samo kad su catalog writes uključeni.
-                        Nakon live importa sačekajte pa reconcile — GET mora vratiti merchant proizvod.
+                        Publish body je lista merchant inventory ID-eva (GET <code>id</code>: 2566378 / 2566379).
+                        Job je async — Ananas šalje email; GET status treba postati PUBLISHED.
+                    </p>
+                </div>
+
+                <div>
+                    <p class="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Akcija (discounts API)</p>
+                    <div class="mb-3 grid max-w-md grid-cols-2 gap-3">
+                        <div>
+                            <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">Popust % (min 5)</label>
+                            <input
+                                type="number"
+                                min="5"
+                                max="95"
+                                wire:model="discountPercent"
+                                class="block w-full rounded-lg border-gray-300 text-sm shadow-sm dark:border-gray-600 dark:bg-gray-900"
+                            />
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">Trajanje dana (SALE max 31)</label>
+                            <input
+                                type="number"
+                                min="1"
+                                max="31"
+                                wire:model="discountDays"
+                                class="block w-full rounded-lg border-gray-300 text-sm shadow-sm dark:border-gray-600 dark:bg-gray-900"
+                            />
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-3">
+                        <x-filament::button type="button" color="gray" wire:click="discountDryRun" wire:loading.attr="disabled">
+                            Akcija dry-run
+                        </x-filament::button>
+                        <x-filament::button
+                            type="button"
+                            color="warning"
+                            wire:click="discountLive"
+                            wire:confirm="Šalje POST /discounts (SALE, currency RSD po API enumu). Nastaviti?"
+                            wire:loading.attr="disabled"
+                        >
+                            Akcija (live)
+                        </x-filament::button>
+                    </div>
+                    <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                        Ananas: SALE ≤ 31 dan, cijena akcije ≤ 95% regularne, bez preklapanja.
+                        <code>discountPriceCurrency</code> smije biti samo <code>RSD</code> — broj je isti kao import <code>basePrice</code>.
+                        Ako BNC artikal već ima nižu display cijenu (≥5% off), koristi se ta.
                     </p>
                 </div>
             </div>

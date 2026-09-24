@@ -5,6 +5,7 @@ namespace App\Filament\Pages;
 use App\Filament\Resources\AnanasCategoryMappingResource;
 use App\Services\Ananas\AnanasApiClient;
 use App\Services\Ananas\AnanasCatalogWriteGuard;
+use App\Services\Ananas\AnanasDiscountService;
 use App\Services\Ananas\AnanasEligibilityReporter;
 use App\Services\Ananas\AnanasLinkedProductSyncService;
 use App\Services\Ananas\AnanasProductImportService;
@@ -55,6 +56,10 @@ class AnanasSyncSettingsPage extends Page implements HasForms
     public ?array $lastCatalogAction = null;
 
     public int $importLimit = 50;
+
+    public int $discountPercent = 10;
+
+    public int $discountDays = 7;
 
     public static function canAccess(): bool
     {
@@ -364,6 +369,39 @@ class AnanasSyncSettingsPage extends Page implements HasForms
         $this->runPublish($syncService, dryRun: false);
     }
 
+    public function discountDryRun(AnanasDiscountService $discountService): void
+    {
+        $this->runDiscount($discountService, dryRun: true);
+    }
+
+    public function discountLive(
+        AnanasDiscountService $discountService,
+        AnanasSyncSettings $settings,
+        AnanasCatalogWriteGuard $writeGuard,
+    ): void {
+        if ($settings->isProduction()) {
+            Notification::make()
+                ->title('Production akcija je blokirana u adminu')
+                ->body('Za production: php artisan bnc:ananas-schedule-discount --confirm --allow-production')
+                ->warning()
+                ->send();
+
+            return;
+        }
+
+        if (! $writeGuard->isAllowed()) {
+            Notification::make()
+                ->title('Catalog writes su isključeni')
+                ->body('Uključite „Dozvoli catalog write API pozive“, sačuvajte, pa ponovo pokrenite akciju.')
+                ->warning()
+                ->send();
+
+            return;
+        }
+
+        $this->runDiscount($discountService, dryRun: false);
+    }
+
     public function mappingsUrl(): string
     {
         return AnanasCategoryMappingResource::getUrl();
@@ -438,8 +476,9 @@ class AnanasSyncSettingsPage extends Page implements HasForms
         $this->lastCatalogAction = [
             'title' => $dryRun ? 'Publish dry-run' : 'Publish',
             'body' => sprintf(
-                "Items: %d\nProgress UUID: %s%s",
+                "Items: %d\nInventory IDs: %s\nProgress UUID: %s%s",
                 $result['published'],
+                ($result['inventory_ids'] ?? []) !== [] ? implode(', ', $result['inventory_ids']) : '—',
                 $result['progress_id'] ?? '—',
                 $result['errors'] !== [] ? "\n".implode("\n", $result['errors']) : '',
             ),
@@ -451,6 +490,65 @@ class AnanasSyncSettingsPage extends Page implements HasForms
 
         if ($result['errors'] !== []) {
             $notification->danger()->send();
+
+            return;
+        }
+
+        $notification->success()->send();
+    }
+
+    private function runDiscount(AnanasDiscountService $discountService, bool $dryRun): void
+    {
+        $percent = max(5, min(95, $this->discountPercent));
+        $days = max(1, min(31, $this->discountDays));
+
+        try {
+            $inventory = $discountService->actionableInventoryIds(limit: max(1, min($this->importLimit, 100)));
+            $result = $discountService->schedule(
+                inventoryIds: $inventory,
+                percentOff: $percent,
+                days: $days,
+                dryRun: $dryRun,
+            );
+        } catch (\Throwable $e) {
+            Notification::make()->title('Akcija neuspješna')->body($e->getMessage())->danger()->send();
+
+            return;
+        }
+
+        $lines = [];
+        foreach ($result['results'] as $row) {
+            $payload = $row['payload'] ?? [];
+            $lines[] = sprintf(
+                '%s BNC %s → %s (reg %s, akcija %s %s–%s)%s',
+                $row['merchant_inventory_id'],
+                $row['product_id'],
+                $row['ean'] ?: '—',
+                number_format((float) $row['regular_price'], 2, '.', ''),
+                number_format((float) $row['discount_price'], 2, '.', ''),
+                $payload['dateFrom'] ?? '',
+                $payload['dateTo'] ?? '—',
+                isset($row['discount_id']) ? ' '.$row['discount_id'] : '',
+            );
+        }
+
+        $this->lastCatalogAction = [
+            'title' => $dryRun ? 'Akcija dry-run' : 'Akcija',
+            'body' => sprintf(
+                "Scheduled: %d\nFailed: %d\n%s%s",
+                $result['scheduled'],
+                $result['failed'],
+                implode("\n", $lines),
+                $result['skipped'] !== [] ? "\n".implode("\n", $result['skipped']) : '',
+            ),
+        ];
+
+        $notification = Notification::make()
+            ->title($dryRun ? 'Akcija dry-run' : 'Akcija poslana')
+            ->body('Scheduled: '.$result['scheduled'].', failed: '.$result['failed']);
+
+        if ($result['failed'] > 0 || ($result['scheduled'] === 0 && ! $dryRun)) {
+            $notification->warning()->send();
 
             return;
         }

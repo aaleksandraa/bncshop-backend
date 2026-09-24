@@ -315,6 +315,90 @@ class AnanasApiClient
     }
 
     /**
+     * POST /payment/.../discounts — schedule bulk actions.
+     * Docs currency enum is RSD only. Body: { discounts: [...] }.
+     *
+     * @param  list<array<string, mixed>>  $discounts
+     * @return array<string, mixed>
+     */
+    public function scheduleDiscounts(array $discounts, bool $allowProduction = false): array
+    {
+        $this->writeGuard->assertAllowed($allowProduction);
+
+        if ($discounts === []) {
+            throw new RuntimeException('Ananas discount schedule requires at least one discount payload.');
+        }
+
+        $payload = $this->postJson(
+            $this->settings->productBaseUrl(),
+            '/payment/api/v1/merchant-integration/discounts',
+            ['discounts' => array_values($discounts)],
+            AnanasRateLimiter::CATEGORY_PRODUCTS,
+        );
+
+        return is_array($payload) ? $payload : [];
+    }
+
+    /**
+     * GET /payment/.../discounts?dateFrom=&dateTo= (dd/MM/yyyy).
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function getDiscounts(string $dateFrom, string $dateTo): array
+    {
+        $payload = $this->getJson(
+            $this->settings->productBaseUrl(),
+            '/payment/api/v1/merchant-integration/discounts',
+            [
+                'dateFrom' => $dateFrom,
+                'dateTo' => $dateTo,
+            ],
+            AnanasRateLimiter::CATEGORY_PRODUCTS,
+        );
+
+        if (! is_array($payload)) {
+            return [];
+        }
+
+        if (array_is_list($payload)) {
+            return array_values(array_filter($payload, is_array(...)));
+        }
+
+        foreach (['discounts', 'content', 'data'] as $key) {
+            if (isset($payload[$key]) && is_array($payload[$key])) {
+                return array_values(array_filter($payload[$key], is_array(...)));
+            }
+        }
+
+        return [];
+    }
+
+    /**
+     * PUT /payment/.../discounts/{discountId}/cancellations
+     *
+     * @return array<string, mixed>
+     */
+    public function cancelDiscount(string $discountId, bool $allowProduction = false): array
+    {
+        $this->writeGuard->assertAllowed($allowProduction);
+
+        $id = trim($discountId);
+
+        if ($id === '') {
+            throw new RuntimeException('Ananas discount cancel requires a discountId UUID.');
+        }
+
+        $payload = $this->putJson(
+            $this->settings->productBaseUrl(),
+            '/payment/api/v1/merchant-integration/discounts/'.$id.'/cancellations',
+            [],
+            AnanasRateLimiter::CATEGORY_PRODUCTS,
+        );
+
+        return is_array($payload) ? $payload : [];
+    }
+
+    /**
      * @return array{progress_id: string|null, raw: array<string, mixed>}
      */
     private function submitProgressJob(string $path, array $body): array

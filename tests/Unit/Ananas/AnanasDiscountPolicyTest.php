@@ -1,0 +1,138 @@
+<?php
+
+namespace Tests\Unit\Ananas;
+
+use App\Services\Ananas\AnanasDiscountPolicy;
+use Carbon\Carbon;
+use InvalidArgumentException;
+use Tests\TestCase;
+
+class AnanasDiscountPolicyTest extends TestCase
+{
+    private AnanasDiscountPolicy $policy;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->policy = new AnanasDiscountPolicy;
+        Carbon::setTestNow(Carbon::create(2026, 9, 24, 12, 0, 0, 'Europe/Sarajevo'));
+    }
+
+    protected function tearDown(): void
+    {
+        Carbon::setTestNow();
+
+        parent::tearDown();
+    }
+
+    public function test_sale_payload_is_valid_for_seven_days_and_ten_percent_off(): void
+    {
+        $payload = $this->policy->assertValidScheduleItem([
+            'merchantInventoryId' => 2566378,
+            'discountPrice' => 900,
+            'discountPriceCurrency' => 'RSD',
+            'dateFrom' => '24/09/2026',
+            'dateTo' => '30/09/2026',
+            'discountType' => 'SALE',
+            'regularPrice' => 1000,
+        ]);
+
+        $this->assertSame(2566378, $payload['merchantInventoryId']);
+        $this->assertSame('900.00', $payload['discountPrice']);
+        $this->assertSame('RSD', $payload['discountPriceCurrency']);
+        $this->assertSame('SALE', $payload['discountType']);
+        $this->assertSame('24/09/2026', $payload['dateFrom']);
+        $this->assertSame('30/09/2026', $payload['dateTo']);
+    }
+
+    public function test_sale_rejects_more_than_31_inclusive_days(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('31 days');
+
+        $this->policy->assertValidScheduleItem([
+            'merchantInventoryId' => 1,
+            'discountPrice' => 900,
+            'dateFrom' => '24/09/2026',
+            'dateTo' => '25/10/2026',
+            'discountType' => 'SALE',
+            'regularPrice' => 1000,
+        ]);
+    }
+
+    public function test_discount_price_must_be_at_most_95_percent_of_regular(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('95%');
+
+        $this->policy->assertValidScheduleItem([
+            'merchantInventoryId' => 1,
+            'discountPrice' => 980,
+            'dateFrom' => '24/09/2026',
+            'dateTo' => '30/09/2026',
+            'discountType' => 'SALE',
+            'regularPrice' => 1000,
+        ]);
+    }
+
+    public function test_clearance_rejects_date_to(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('only dateFrom');
+
+        $this->policy->assertValidScheduleItem([
+            'merchantInventoryId' => 1,
+            'discountPrice' => 800,
+            'dateFrom' => '24/09/2026',
+            'dateTo' => '30/09/2026',
+            'discountType' => 'CLEARANCE_SALE',
+            'regularPrice' => 1000,
+        ]);
+    }
+
+    public function test_clearance_allows_start_only(): void
+    {
+        $payload = $this->policy->assertValidScheduleItem([
+            'merchantInventoryId' => 2566379,
+            'discountPrice' => 800,
+            'dateFrom' => '24/09/2026',
+            'discountType' => 'CLEARANCE_SALE',
+            'regularPrice' => 1000,
+        ]);
+
+        $this->assertArrayNotHasKey('dateTo', $payload);
+        $this->assertSame('CLEARANCE_SALE', $payload['discountType']);
+    }
+
+    public function test_seasonal_sale_rejected_outside_july_or_winter_window(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('SEASONAL_SALE');
+
+        $this->policy->assertValidScheduleItem([
+            'merchantInventoryId' => 1,
+            'discountPrice' => 800,
+            'dateFrom' => '24/09/2026',
+            'dateTo' => '20/10/2026',
+            'discountType' => 'SEASONAL_SALE',
+            'regularPrice' => 1000,
+        ]);
+    }
+
+    public function test_currency_must_be_rsd(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('RSD');
+
+        $this->policy->assertValidScheduleItem([
+            'merchantInventoryId' => 1,
+            'discountPrice' => 800,
+            'discountPriceCurrency' => 'BAM',
+            'dateFrom' => '24/09/2026',
+            'dateTo' => '30/09/2026',
+            'discountType' => 'SALE',
+            'regularPrice' => 1000,
+        ]);
+    }
+}

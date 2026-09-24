@@ -11,11 +11,12 @@ class AnanasPublishProductsCommand extends Command
 {
     protected $signature = 'bnc:ananas-publish
                             {--limit=25 : Max READY_FOR_PUBLISH inventory rows}
-                            {--dry-run : Count candidates only}
+                            {--inventory= : Comma-separated merchant inventory ids (e.g. 2566378,2566379)}
+                            {--dry-run : List candidates without POST publish}
                             {--confirm : Required for live publish job}
                             {--allow-production : Allow writes when ANANAS_ENV=production}';
 
-    protected $description = 'Submit Ananas publish job for LINKED products in READY_FOR_PUBLISH status';
+    protected $description = 'POST /product/publish for LINKED products in READY_FOR_PUBLISH (merchant inventory ids)';
 
     public function handle(
         AnanasLinkedProductSyncService $syncService,
@@ -44,10 +45,13 @@ class AnanasPublishProductsCommand extends Command
             return self::FAILURE;
         }
 
+        $inventory = $this->parseInventoryOption();
+
         $result = $syncService->publishReadyLinked(
             limit: (int) $this->option('limit'),
             dryRun: $dryRun,
             allowProduction: $allowProduction,
+            inventoryIds: $inventory,
         );
 
         $this->info(sprintf(
@@ -57,10 +61,35 @@ class AnanasPublishProductsCommand extends Command
             $result['progress_id'] ?? '—',
         ));
 
+        if ($result['inventory_ids'] !== []) {
+            $this->line('Merchant inventory IDs: '.implode(', ', $result['inventory_ids']));
+        }
+
         foreach ($result['errors'] as $error) {
             $this->error($error);
         }
 
+        if (! $dryRun && $result['published'] > 0) {
+            $this->newLine();
+            $this->comment('Publish is asynchronous. Ananas emails when done. Then:');
+            $this->comment('  php artisan bnc:ananas-lookup-product');
+            $this->comment('  php artisan bnc:ananas-schedule-discount --percent=10 --days=7 --dry-run');
+        }
+
         return $result['errors'] === [] ? self::SUCCESS : self::FAILURE;
+    }
+
+    /**
+     * @return list<int>
+     */
+    private function parseInventoryOption(): array
+    {
+        $raw = trim((string) $this->option('inventory'));
+
+        if ($raw === '') {
+            return [];
+        }
+
+        return array_values(array_filter(array_map('intval', explode(',', $raw)), fn (int $id): bool => $id > 0));
     }
 }
