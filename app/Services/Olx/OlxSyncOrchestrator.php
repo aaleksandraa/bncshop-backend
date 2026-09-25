@@ -16,6 +16,7 @@ class OlxSyncOrchestrator
         private readonly OlxChangeDetector $changeDetector,
         private readonly OlxListingExporter $listingExporter,
         private readonly OlxDailyCreateLimiter $createLimiter,
+        private readonly OlxProfileReconciler $profileReconciler,
     ) {}
 
     /**
@@ -58,7 +59,10 @@ class OlxSyncOrchestrator
         $prefetchedStockDetection = null;
 
         if ($stockOnly && $productId === null) {
-            $prefetchedStockDetection = $this->changeDetector->detectStock();
+            $this->client->authenticate();
+            $prefetchedStockDetection = $this->mergeProfileReconciliation(
+                $this->changeDetector->detectStock(),
+            );
 
             if (! $this->stockDetectionHasWork($prefetchedStockDetection)) {
                 return [
@@ -72,8 +76,10 @@ class OlxSyncOrchestrator
                         'pending_update' => 0,
                         'pending_hide' => 0,
                         'pending_unhide' => 0,
-                        'pending_delete' => 0,
+                        'pending_delete' => count($prefetchedStockDetection['delete'] ?? []),
+                        'pending_delete_listings' => count($prefetchedStockDetection['delete_listings'] ?? []),
                         'frozen_invalid_create' => 0,
+                        'profile_listings' => (int) ($prefetchedStockDetection['profile_listings'] ?? 0),
                     ],
                 ];
             }
@@ -114,6 +120,10 @@ class OlxSyncOrchestrator
                     )
             );
 
+            if ($prefetchedStockDetection === null) {
+                $detection = $this->mergeProfileReconciliation($detection);
+            }
+
             $stats['scan'] = [
                 'scanned' => $detection['scanned'],
                 'unchanged' => $detection['unchanged'],
@@ -122,7 +132,9 @@ class OlxSyncOrchestrator
                 'pending_hide' => count($detection['hide'] ?? []),
                 'pending_unhide' => count($detection['unhide'] ?? []),
                 'pending_delete' => count($detection['delete'] ?? []),
+                'pending_delete_listings' => count($detection['delete_listings'] ?? []),
                 'frozen_invalid_create' => (int) ($detection['frozen_invalid_create'] ?? 0),
+                'profile_listings' => (int) ($detection['profile_listings'] ?? 0),
             ];
             $stats['pending'] = [
                 'create' => $detection['create'] ?? [],
@@ -130,6 +142,7 @@ class OlxSyncOrchestrator
                 'hide' => $detection['hide'] ?? [],
                 'unhide' => $detection['unhide'] ?? [],
                 'delete' => $detection['delete'] ?? [],
+                'delete_listings' => $detection['delete_listings'] ?? [],
             ];
             $this->heartbeat($job, $stats, ['phase' => 'export']);
 
@@ -183,15 +196,18 @@ class OlxSyncOrchestrator
         $this->client->authenticate();
 
         if (! isset($stats['pending']) || ! is_array($stats['pending'])) {
-            $detection = $stockOnly
-                ? $this->changeDetector->detectStock()
-                : $this->changeDetector->detect($fullSync);
+            $detection = $this->mergeProfileReconciliation(
+                $stockOnly
+                    ? $this->changeDetector->detectStock()
+                    : $this->changeDetector->detect($fullSync),
+            );
             $stats['pending'] = [
                 'create' => $detection['create'] ?? [],
                 'update' => $detection['update'] ?? [],
                 'hide' => $detection['hide'] ?? [],
                 'unhide' => $detection['unhide'] ?? [],
                 'delete' => $detection['delete'] ?? [],
+                'delete_listings' => $detection['delete_listings'] ?? [],
             ];
             $stats['scan'] = [
                 'scanned' => $detection['scanned'],
@@ -201,7 +217,9 @@ class OlxSyncOrchestrator
                 'pending_hide' => count($detection['hide'] ?? []),
                 'pending_unhide' => count($detection['unhide'] ?? []),
                 'pending_delete' => count($detection['delete'] ?? []),
+                'pending_delete_listings' => count($detection['delete_listings'] ?? []),
                 'frozen_invalid_create' => (int) ($detection['frozen_invalid_create'] ?? 0),
+                'profile_listings' => (int) ($detection['profile_listings'] ?? 0),
             ];
         }
 
@@ -275,6 +293,7 @@ class OlxSyncOrchestrator
             'hide' => 'hidden',
             'unhide' => 'unhidden',
             'delete' => 'deleted',
+            'delete_listings' => 'deleted',
             'update' => 'updated',
             'create' => 'created',
         ] as $setKey => $statKey) {
@@ -286,6 +305,21 @@ class OlxSyncOrchestrator
                 $leftover = count($stats['pending']['create'] ?? []);
                 $stats['actions']['skipped_quota'] += $leftover;
                 $stats['pending']['create'] = [];
+                continue;
+            }
+
+            if ($setKey === 'delete_listings') {
+                $processedThisWave = $this->processOrphanListingDeletes(
+                    $job,
+                    $stats,
+                    $waveSize,
+                    $processedThisWave,
+                );
+
+                if ($processedThisWave >= $waveSize && $this->hasPendingWork($stats, $createQuota, $stockOnly)) {
+                    return $this->dispatchContinuation($job, $stats, $fullSync, $maxCreatesPerRun, $stockOnly);
+                }
+
                 continue;
             }
 
@@ -451,6 +485,7 @@ class OlxSyncOrchestrator
                 'hide' => [],
                 'unhide' => [],
                 'delete' => [],
+                'delete_listings' => [],
             ],
             'skipped_validation_reasons' => [],
             'network_retries' => [],
@@ -460,7 +495,7 @@ class OlxSyncOrchestrator
 
     /**
      * @param  array<string, mixed>  $pending
-     * @return array{create: list<int>, update: list<int>, hide: list<int>, unhide: list<int>, delete: list<int>}
+     * @return array{create: list<int>, update: list<int>, hide: list<int>, unhide: list<int>, delete: list<int>, delete_listings: list<int>}
      */
     private function normalizePending(array $pending): array
     {
@@ -470,6 +505,7 @@ class OlxSyncOrchestrator
             'hide' => [],
             'unhide' => [],
             'delete' => [],
+            'delete_listings' => [],
         ];
 
         foreach ($normalized as $key => $_) {
@@ -508,13 +544,87 @@ class OlxSyncOrchestrator
      */
     private function stockDetectionHasWork(array $detection): bool
     {
-        foreach (['hide', 'unhide', 'delete'] as $key) {
+        foreach (['hide', 'unhide', 'delete', 'delete_listings'] as $key) {
             if (($detection[$key] ?? []) !== []) {
                 return true;
             }
         }
 
         return false;
+    }
+
+    /**
+     * @param  array<string, mixed>  $detection
+     * @return array<string, mixed>
+     */
+    private function mergeProfileReconciliation(array $detection): array
+    {
+        $plan = $this->profileReconciler->plan();
+        $productListingIds = [];
+
+        if (($plan['delete_product_ids'] ?? []) !== []) {
+            $productListingIds = Product::query()
+                ->whereIn('id', $plan['delete_product_ids'])
+                ->whereNotNull('olx_listing_id')
+                ->pluck('olx_listing_id')
+                ->map(fn ($id): int => (int) $id)
+                ->all();
+        }
+
+        $detection['delete'] = array_values(array_unique(array_map(
+            'intval',
+            array_merge($detection['delete'] ?? [], $plan['delete_product_ids'] ?? []),
+        )));
+        $detection['delete_listings'] = array_values(array_unique(array_map(
+            'intval',
+            array_diff($plan['delete_listing_ids'] ?? [], $productListingIds),
+        )));
+        $detection['profile_listings'] = (int) ($plan['remote_scanned'] ?? 0);
+
+        return $detection;
+    }
+
+    /**
+     * @param  array<string, mixed>  $stats
+     */
+    private function processOrphanListingDeletes(
+        ApiImportJob $job,
+        array &$stats,
+        int $waveSize,
+        int $processedThisWave,
+    ): int {
+        /** @var list<int> $listingIds */
+        $listingIds = array_values(array_map('intval', $stats['pending']['delete_listings'] ?? []));
+
+        foreach ($listingIds as $listingId) {
+            $stats['pending']['delete_listings'] = array_values(array_filter(
+                $stats['pending']['delete_listings'] ?? [],
+                fn ($pendingId): bool => (int) $pendingId !== $listingId,
+            ));
+
+            try {
+                $result = $this->listingExporter->deleteOrphanListing($listingId);
+
+                if ($result['action'] === 'delete') {
+                    $stats['actions']['deleted']++;
+                }
+            } catch (Throwable $e) {
+                $stats['actions']['errors'][] = [
+                    'listing_id' => $listingId,
+                    'action' => 'delete_listings',
+                    'message' => $e->getMessage(),
+                ];
+            }
+
+            $this->heartbeat($job, $stats);
+            $processedThisWave++;
+
+            if ($processedThisWave >= $waveSize) {
+                return $processedThisWave;
+            }
+        }
+
+        return $processedThisWave;
     }
 
     private function isMissingRequiredAttributeError(string $message): bool

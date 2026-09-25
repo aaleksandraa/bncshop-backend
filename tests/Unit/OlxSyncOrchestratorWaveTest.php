@@ -12,6 +12,7 @@ use App\Services\Olx\OlxApiClient;
 use App\Services\Olx\OlxChangeDetector;
 use App\Services\Olx\OlxDailyCreateLimiter;
 use App\Services\Olx\OlxListingExporter;
+use App\Services\Olx\OlxProfileReconciler;
 use App\Services\Olx\OlxSyncOrchestrator;
 use App\Services\Olx\OlxSyncSettings;
 use App\Services\Sync\SyncHealthChecker;
@@ -69,12 +70,11 @@ class OlxSyncOrchestratorWaveTest extends TestCase
 
         $this->app->instance(OlxSyncSettings::class, $settings);
 
-        $orchestrator = new OlxSyncOrchestrator(
+        $orchestrator = $this->makeOrchestrator(
             $settings,
             $client,
             $detector,
             $exporter,
-            app(OlxDailyCreateLimiter::class),
         );
 
         $stats = $orchestrator->run(false);
@@ -125,12 +125,11 @@ class OlxSyncOrchestratorWaveTest extends TestCase
 
         $this->app->instance(OlxSyncSettings::class, $settings);
 
-        $orchestrator = new OlxSyncOrchestrator(
+        $orchestrator = $this->makeOrchestrator(
             $settings,
             $client,
             $detector,
             $exporter,
-            app(OlxDailyCreateLimiter::class),
         );
 
         $orchestrator->run(false);
@@ -176,12 +175,11 @@ class OlxSyncOrchestratorWaveTest extends TestCase
 
         $this->app->instance(OlxSyncSettings::class, $settings);
 
-        $orchestrator = new OlxSyncOrchestrator(
+        $orchestrator = $this->makeOrchestrator(
             $settings,
             $client,
             $detector,
             $exporter,
-            app(OlxDailyCreateLimiter::class),
         );
 
         $stats = $orchestrator->run(false);
@@ -227,12 +225,11 @@ class OlxSyncOrchestratorWaveTest extends TestCase
 
         $this->app->instance(OlxSyncSettings::class, $settings);
 
-        $orchestrator = new OlxSyncOrchestrator(
+        $orchestrator = $this->makeOrchestrator(
             $settings,
             $client,
             $detector,
             $exporter,
-            app(OlxDailyCreateLimiter::class),
         );
 
         $stats = $orchestrator->run(false);
@@ -291,12 +288,11 @@ class OlxSyncOrchestratorWaveTest extends TestCase
 
         $this->app->instance(OlxSyncSettings::class, $settings);
 
-        $orchestrator = new OlxSyncOrchestrator(
+        $orchestrator = $this->makeOrchestrator(
             $settings,
             $client,
             $detector,
             $exporter,
-            app(OlxDailyCreateLimiter::class),
         );
 
         $stats = $orchestrator->run(false);
@@ -346,12 +342,11 @@ class OlxSyncOrchestratorWaveTest extends TestCase
 
         $this->app->instance(OlxSyncSettings::class, $settings);
 
-        $orchestrator = new OlxSyncOrchestrator(
+        $orchestrator = $this->makeOrchestrator(
             $settings,
             $client,
             $detector,
             $exporter,
-            app(OlxDailyCreateLimiter::class),
         );
 
         $stats = $orchestrator->run(false);
@@ -406,12 +401,11 @@ class OlxSyncOrchestratorWaveTest extends TestCase
 
         $this->app->instance(OlxSyncSettings::class, $settings);
 
-        $orchestrator = new OlxSyncOrchestrator(
+        $orchestrator = $this->makeOrchestrator(
             $settings,
             $client,
             $detector,
             $exporter,
-            app(OlxDailyCreateLimiter::class),
         );
 
         $stats = $orchestrator->run(false, null, null, null, true);
@@ -438,7 +432,7 @@ class OlxSyncOrchestratorWaveTest extends TestCase
         $settings->shouldReceive('hasRunningBulkSyncJob')->andReturn(false);
 
         $client = Mockery::mock(OlxApiClient::class);
-        $client->shouldReceive('authenticate')->never();
+        $client->shouldReceive('authenticate')->andReturn('token');
 
         $detector = Mockery::mock(OlxChangeDetector::class);
         $detector->shouldReceive('detect')->never();
@@ -457,12 +451,11 @@ class OlxSyncOrchestratorWaveTest extends TestCase
 
         $this->app->instance(OlxSyncSettings::class, $settings);
 
-        $orchestrator = new OlxSyncOrchestrator(
+        $orchestrator = $this->makeOrchestrator(
             $settings,
             $client,
             $detector,
             $exporter,
-            app(OlxDailyCreateLimiter::class),
         );
 
         $stats = $orchestrator->run(false, null, null, null, true);
@@ -472,6 +465,77 @@ class OlxSyncOrchestratorWaveTest extends TestCase
         $this->assertSame(2468, $stats['scan']['scanned']);
         $this->assertSame(0, ApiImportJob::query()->count());
         Queue::assertNotPushed(RunOlxSyncJob::class);
+    }
+
+    public function test_stock_run_deletes_orphan_olx_listings(): void
+    {
+        Queue::fake();
+        config(['bnc.olx_sync_wave_size' => 40]);
+
+        $source = $this->makeOlxSource();
+
+        $settings = Mockery::mock(OlxSyncSettings::class);
+        $settings->shouldReceive('isEnabled')->andReturn(true);
+        $settings->shouldReceive('resolveSource')->andReturn($source);
+        $settings->shouldReceive('hasRunningBulkSyncJob')->andReturn(false);
+        $settings->shouldReceive('all')->andReturn(['batch_size' => 20, 'daily_create_limit' => 350, 'max_creates_per_run' => 175]);
+
+        $client = Mockery::mock(OlxApiClient::class);
+        $client->shouldReceive('authenticate')->andReturn('token');
+
+        $detector = Mockery::mock(OlxChangeDetector::class);
+        $detector->shouldReceive('detect')->never();
+        $detector->shouldReceive('detectStock')->andReturn([
+            'create' => [],
+            'update' => [],
+            'hide' => [],
+            'unhide' => [],
+            'delete' => [],
+            'unchanged' => 10,
+            'scanned' => 10,
+        ]);
+
+        $exporter = Mockery::mock(OlxListingExporter::class);
+        $exporter->shouldReceive('deleteOrphanListing')->once()->with(55501)->andReturn(['action' => 'delete', 'listing_id' => 55501]);
+
+        $reconciler = Mockery::mock(OlxProfileReconciler::class);
+        $reconciler->shouldReceive('plan')->andReturn([
+            'delete_product_ids' => [],
+            'delete_listing_ids' => [55501],
+            'remote_scanned' => 11,
+        ]);
+
+        $orchestrator = $this->makeOrchestrator($settings, $client, $detector, $exporter, $reconciler);
+        $stats = $orchestrator->run(false, null, null, null, true);
+
+        $this->assertSame(1, $stats['actions']['deleted']);
+        $this->assertSame('completed', ApiImportJob::query()->latest('id')->first()?->status);
+    }
+
+    private function makeOrchestrator(
+        OlxSyncSettings $settings,
+        OlxApiClient $client,
+        OlxChangeDetector $detector,
+        OlxListingExporter $exporter,
+        ?OlxProfileReconciler $reconciler = null,
+    ): OlxSyncOrchestrator {
+        if ($reconciler === null) {
+            $reconciler = Mockery::mock(OlxProfileReconciler::class);
+            $reconciler->shouldReceive('plan')->andReturn([
+                'delete_product_ids' => [],
+                'delete_listing_ids' => [],
+                'remote_scanned' => 0,
+            ]);
+        }
+
+        return new OlxSyncOrchestrator(
+            $settings,
+            $client,
+            $detector,
+            $exporter,
+            app(OlxDailyCreateLimiter::class),
+            $reconciler,
+        );
     }
 
     public function test_health_checker_resumes_idle_olx_job_with_pending_work(): void

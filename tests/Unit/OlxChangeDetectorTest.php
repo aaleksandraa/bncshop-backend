@@ -94,6 +94,29 @@ class OlxChangeDetectorTest extends TestCase
         $this->assertSame([$product->id], $result['delete']);
     }
 
+    public function test_unpublished_unmanaged_listing_is_queued_for_delete(): void
+    {
+        $product = $this->makeProduct([
+            'is_public' => false,
+            'status' => 'inactive',
+            'olx_listing_id' => '888',
+            'olx_managed' => false,
+            'olx_listing_status' => 'active',
+        ]);
+
+        $scope = Mockery::mock(OlxExportScope::class);
+        $scope->shouldReceive('isLegacyProtected')->andReturn(true);
+        $scope->shouldReceive('isEligible')->andReturn(false);
+        $scope->shouldReceive('resolveCategoryMapping')->andReturn(null);
+
+        $mapper = Mockery::mock(OlxListingMapper::class);
+        $detector = new OlxChangeDetector($scope, $mapper, $this->resolverAllowingCreates());
+        $result = $detector->detectStock();
+
+        $this->assertSame([$product->id], $result['delete']);
+        $this->assertSame([], $result['hide']);
+    }
+
     public function test_detect_stock_hides_zero_stock_and_skips_creates(): void
     {
         $hide = $this->makeProduct([

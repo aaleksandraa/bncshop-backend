@@ -149,18 +149,18 @@ class OlxChangeDetector
 
         Product::query()
             ->whereNotNull('olx_listing_id')
-            ->where('olx_managed', true)
+            ->where('olx_listing_id', '!=', '')
             ->chunkById(100, function ($products) use (&$hide, &$unhide, &$delete, &$unchanged, &$scanned, $onProgress): void {
                 foreach ($products as $product) {
                     $scanned++;
 
-                    if ($this->scope->isLegacyProtected($product)) {
+                    if ($this->scope->isLegacyProtected($product) && $this->shouldKeepListing($product)) {
                         $unchanged++;
 
                         continue;
                     }
 
-                    if ($this->shouldDeleteListing($product)) {
+                    if ($this->shouldRemoveListing($product)) {
                         $delete[] = (int) $product->id;
 
                         continue;
@@ -199,16 +199,20 @@ class OlxChangeDetector
 
         Product::query()
             ->whereNotNull('olx_listing_id')
-            ->where('olx_managed', true)
+            ->where('olx_listing_id', '!=', '')
             ->chunkById(100, function ($products) use (&$delete, &$hide, &$scanned, $alreadyQueued): void {
                 foreach ($products as $product) {
                     $id = (int) $product->id;
 
-                    if (isset($alreadyQueued[$id]) || $this->scope->isLegacyProtected($product)) {
+                    if (isset($alreadyQueued[$id])) {
                         continue;
                     }
 
-                    if ($this->shouldDeleteListing($product)) {
+                    if ($this->scope->isLegacyProtected($product) && $this->shouldKeepListing($product)) {
+                        continue;
+                    }
+
+                    if ($this->shouldRemoveListing($product)) {
                         $scanned++;
                         $delete[] = $id;
 
@@ -223,10 +227,15 @@ class OlxChangeDetector
             });
     }
 
-    private function shouldDeleteListing(Product $product): bool
+    private function shouldKeepListing(Product $product): bool
     {
-        return ! $this->scope->isEligible($product)
-            || $this->scope->resolveCategoryMapping($product) === null;
+        return $this->scope->isEligible($product)
+            && $this->scope->resolveCategoryMapping($product) !== null;
+    }
+
+    private function shouldRemoveListing(Product $product): bool
+    {
+        return ! $this->shouldKeepListing($product);
     }
 
     /**

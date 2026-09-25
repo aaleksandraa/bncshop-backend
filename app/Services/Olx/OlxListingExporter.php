@@ -2,6 +2,7 @@
 
 namespace App\Services\Olx;
 
+use App\Models\OlxListingRegistry;
 use App\Models\Product;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -107,7 +108,9 @@ class OlxListingExporter
      */
     public function export(Product $product, string $action): array
     {
-        if ($this->scope->isLegacyProtected($product)) {
+        $legacyRemoval = $action === 'delete' && ! $this->shouldKeepOnProfile($product);
+
+        if ($this->scope->isLegacyProtected($product) && ! $legacyRemoval) {
             return ['action' => 'skipped_legacy', 'listing_id' => filled($product->olx_listing_id) ? (int) $product->olx_listing_id : null];
         }
 
@@ -242,7 +245,50 @@ class OlxListingExporter
             'olx_last_error' => null,
         ]);
 
+        $this->forgetRegistry($listingId);
+
         return ['action' => 'delete', 'listing_id' => $listingId > 0 ? $listingId : null];
+    }
+
+    /**
+     * @return array{action: string, listing_id: int|null}
+     */
+    public function deleteOrphanListing(int $listingId): array
+    {
+        if ($listingId <= 0) {
+            return ['action' => 'delete', 'listing_id' => null];
+        }
+
+        $this->client->deleteListing($listingId);
+
+        Product::query()
+            ->whereIn('olx_listing_id', [(string) $listingId, (string) ((int) $listingId)])
+            ->update([
+                'olx_listing_id' => null,
+                'olx_listing_status' => 'deleted',
+                'olx_export_hash' => null,
+                'olx_synced_at' => now(),
+                'olx_last_error' => null,
+            ]);
+
+        $this->forgetRegistry($listingId);
+
+        return ['action' => 'delete', 'listing_id' => $listingId];
+    }
+
+    private function shouldKeepOnProfile(Product $product): bool
+    {
+        return $this->scope->isEligible($product)
+            && $this->scope->resolveCategoryMapping($product) !== null;
+    }
+
+    private function forgetRegistry(int $listingId): void
+    {
+        if ($listingId <= 0) {
+            return;
+        }
+
+        OlxListingRegistry::query()->where('olx_listing_id', $listingId)->delete();
     }
 
     /**

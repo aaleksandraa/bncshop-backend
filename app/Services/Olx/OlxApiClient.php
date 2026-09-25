@@ -195,9 +195,80 @@ class OlxApiClient
         return $this->requestJson('POST', "/listings/{$listingId}/unhide");
     }
 
+    public function getUserHiddenListings(int $userId, int $page = 1, int $perPage = 100): array
+    {
+        $payload = $this->getJson("/users/{$userId}/listings/hidden", [
+            'page' => $page,
+            'per_page' => $perPage,
+        ]);
+
+        return is_array($payload) ? $payload : [];
+    }
+
+    /**
+     * Active + hidden listing IDs on the shop profile.
+     *
+     * @return list<int>
+     */
+    public function listShopListingIds(string $username): array
+    {
+        $ids = $this->paginateListingIds("/users/{$username}/listings");
+
+        $me = $this->me();
+        $userId = (int) (data_get($me, 'id') ?: data_get($me, 'data.id') ?: data_get($me, 'user.id') ?: 0);
+
+        if ($userId > 0) {
+            try {
+                $ids = array_merge($ids, $this->paginateListingIds("/users/{$userId}/listings/hidden"));
+            } catch (RuntimeException) {
+                // Hidden endpoint is optional; active ads are still reconciled.
+            }
+        }
+
+        return array_values(array_unique(array_map('intval', $ids)));
+    }
+
+    /**
+     * @return list<int>
+     */
+    private function paginateListingIds(string $path): array
+    {
+        $ids = [];
+        $page = 1;
+
+        do {
+            $response = $this->getJson($path, [
+                'page' => $page,
+                'per_page' => 100,
+            ]);
+            $items = is_array($response['data'] ?? null) ? $response['data'] : [];
+
+            foreach ($items as $item) {
+                $listingId = (int) (is_array($item) ? ($item['id'] ?? 0) : 0);
+
+                if ($listingId > 0) {
+                    $ids[] = $listingId;
+                }
+            }
+
+            $lastPage = (int) ($response['meta']['last_page'] ?? $page);
+            $page++;
+        } while ($page <= $lastPage && $items !== []);
+
+        return $ids;
+    }
+
     public function deleteListing(int $listingId): array
     {
-        return $this->requestJson('DELETE', "/listings/{$listingId}");
+        try {
+            return $this->requestJson('DELETE', "/listings/{$listingId}");
+        } catch (RuntimeException $e) {
+            if (str_contains($e->getMessage(), 'HTTP 404')) {
+                return [];
+            }
+
+            throw $e;
+        }
     }
 
     /**

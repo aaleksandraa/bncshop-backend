@@ -113,7 +113,7 @@ class OlxSyncSettingsPage extends Page implements HasForms
                             ->label('OLX export uključen'),
                         Toggle::make('auto_sync_enabled')
                             ->label('Automatski sync (scheduler)')
-                            ->helperText('Nove objave: u zadanim vremenima (limit 350/dan). Zaliha/status/brisanje: jednom na sat, i samo ako ima izmjena — prazni jobovi se ne upisuju.'),
+                            ->helperText('Nove objave: u zadanim vremenima (limit 350/dan). Zaliha: jednom na sat. Oglasi kojih više nema u shopu se brišu s OLX profila.'),
                         Repeater::make('sync_times')
                             ->label('Vremena sync-a (HH:MM)')
                             ->simple(TextInput::make('time')->placeholder('06:00')),
