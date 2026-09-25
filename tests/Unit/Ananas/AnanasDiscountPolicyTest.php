@@ -16,6 +16,7 @@ class AnanasDiscountPolicyTest extends TestCase
         parent::setUp();
 
         $this->policy = new AnanasDiscountPolicy;
+        config(['bnc.ananas_discount_currency' => 'BAM']);
         Carbon::setTestNow(Carbon::create(2026, 9, 24, 12, 0, 0, 'Europe/Sarajevo'));
     }
 
@@ -44,6 +45,35 @@ class AnanasDiscountPolicyTest extends TestCase
         $this->assertSame('SALE', $payload['discountType']);
         $this->assertSame('24/09/2026', $payload['dateFrom']);
         $this->assertSame('30/09/2026', $payload['dateTo']);
+    }
+
+    public function test_omitted_currency_defaults_to_bam(): void
+    {
+        $payload = $this->policy->assertValidScheduleItem([
+            'merchantInventoryId' => 2566378,
+            'discountPrice' => 900,
+            'dateFrom' => '24/09/2026',
+            'dateTo' => '30/09/2026',
+            'discountType' => 'SALE',
+            'regularPrice' => 1000,
+        ]);
+
+        $this->assertSame('BAM', $payload['discountPriceCurrency']);
+    }
+
+    public function test_km_alias_maps_to_bam(): void
+    {
+        $payload = $this->policy->assertValidScheduleItem([
+            'merchantInventoryId' => 2566378,
+            'discountPrice' => 900,
+            'discountPriceCurrency' => 'KM',
+            'dateFrom' => '24/09/2026',
+            'dateTo' => '30/09/2026',
+            'discountType' => 'SALE',
+            'regularPrice' => 1000,
+        ]);
+
+        $this->assertSame('BAM', $payload['discountPriceCurrency']);
     }
 
     public function test_sale_rejects_more_than_31_inclusive_days(): void
@@ -120,15 +150,15 @@ class AnanasDiscountPolicyTest extends TestCase
         ]);
     }
 
-    public function test_currency_must_be_rsd(): void
+    public function test_currency_must_be_allowed_iso(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('RSD');
+        $this->expectExceptionMessage('BAM, EUR, or RSD');
 
         $this->policy->assertValidScheduleItem([
             'merchantInventoryId' => 1,
             'discountPrice' => 800,
-            'discountPriceCurrency' => 'BAM',
+            'discountPriceCurrency' => 'USD',
             'dateFrom' => '24/09/2026',
             'dateTo' => '30/09/2026',
             'discountType' => 'SALE',

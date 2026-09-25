@@ -316,7 +316,7 @@ class AnanasApiClient
 
     /**
      * POST /payment/.../discounts — schedule bulk actions.
-     * Docs currency enum is RSD only. Body: { discounts: [...] }.
+     * Docs list RSD; this merchant's inventory is BAM (import basePrice). Body: { discounts: [...] }.
      *
      * @param  list<array<string, mixed>>  $discounts
      * @return array<string, mixed>

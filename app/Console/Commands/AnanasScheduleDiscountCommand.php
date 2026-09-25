@@ -3,7 +3,6 @@
 namespace App\Console\Commands;
 
 use App\Services\Ananas\AnanasCatalogWriteGuard;
-use App\Services\Ananas\AnanasDiscountPolicy;
 use App\Services\Ananas\AnanasDiscountService;
 use App\Services\Ananas\AnanasSyncSettings;
 use Illuminate\Console\Command;
@@ -16,6 +15,7 @@ class AnanasScheduleDiscountCommand extends Command
                             {--percent=10 : Percent off BNC regularPrice (min 5; ignored if --price or BNC sale applies)}
                             {--days=7 : Inclusive duration for SALE/SEASONAL (SALE max 31)}
                             {--price= : Absolute discountPrice (same numeric as import basePrice)}
+                            {--currency= : BAM|EUR|RSD (default BAM; merchant inventory currency, no FX)}
                             {--no-bnc-sale : Do not use BNC displayPrice even if the product is on sale}
                             {--limit=25 : Max inventories when --inventory is empty}
                             {--dry-run : Build payloads without POST}
@@ -67,6 +67,7 @@ class AnanasScheduleDiscountCommand extends Command
 
         $priceOption = $this->option('price');
         $absolute = is_string($priceOption) && trim($priceOption) !== '' ? (float) $priceOption : null;
+        $currencyOption = trim((string) $this->option('currency'));
 
         $result = $discountService->schedule(
             inventoryIds: $inventory,
@@ -77,6 +78,7 @@ class AnanasScheduleDiscountCommand extends Command
             useBncSale: ! $this->option('no-bnc-sale'),
             dryRun: $dryRun,
             allowProduction: $allowProduction,
+            currency: $currencyOption !== '' ? $currencyOption : null,
         );
 
         $this->info(sprintf(
@@ -84,7 +86,8 @@ class AnanasScheduleDiscountCommand extends Command
             $dryRun ? 'dry-run' : 'live',
             $settings->environment(),
         ));
-        $this->line('Currency field: '.AnanasDiscountPolicy::CURRENCY_RSD.' (API enum; numeric price matches import basePrice).');
+        $shownCurrency = $result['payloads'][0]['discountPriceCurrency'] ?? $settings->discountCurrency();
+        $this->line('Currency field: '.$shownCurrency.' (merchant inventory; numeric price matches import basePrice, no FX).');
         $this->line('Scheduled: '.$result['scheduled']);
         $this->line('Failed: '.$result['failed']);
 

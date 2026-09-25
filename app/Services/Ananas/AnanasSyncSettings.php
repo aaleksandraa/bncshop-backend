@@ -23,6 +23,7 @@ class AnanasSyncSettings
             'allow_catalog_writes' => false,
             'environment' => config('bnc.ananas_env', self::ENV_STAGE),
             'vat_rate' => 0,
+            'discount_currency' => AnanasDiscountPolicy::CURRENCY_BAM,
         ];
     }
 
@@ -59,6 +60,15 @@ class AnanasSyncSettings
         }
 
         return (bool) ($this->all()['allow_catalog_writes'] ?? false);
+    }
+
+    public function discountCurrency(): string
+    {
+        $stored = strtoupper(trim((string) ($this->storedSettings()['discount_currency'] ?? '')));
+
+        return app(AnanasDiscountPolicy::class)->normalizeCurrency(
+            $stored !== '' ? $stored : AnanasDiscountPolicy::CURRENCY_BAM,
+        );
     }
 
     public function environment(): string

@@ -5,6 +5,7 @@ namespace App\Filament\Pages;
 use App\Filament\Resources\AnanasCategoryMappingResource;
 use App\Services\Ananas\AnanasApiClient;
 use App\Services\Ananas\AnanasCatalogWriteGuard;
+use App\Services\Ananas\AnanasDiscountPolicy;
 use App\Services\Ananas\AnanasDiscountService;
 use App\Services\Ananas\AnanasEligibilityReporter;
 use App\Services\Ananas\AnanasLinkedProductSyncService;
@@ -144,6 +145,15 @@ class AnanasSyncSettingsPage extends Page implements HasForms
                             ])
                             ->default(0)
                             ->helperText('basePrice = PriceCalculator regularPrice (konačna prodajna cijena u KM). VAT polje na Ananasu ostaje 0.'),
+                        Select::make('discount_currency')
+                            ->label('Valuta akcije (discountPriceCurrency)')
+                            ->options([
+                                AnanasDiscountPolicy::CURRENCY_BAM => 'BAM — ista valuta kao import basePrice',
+                                AnanasDiscountPolicy::CURRENCY_EUR => 'EUR',
+                                AnanasDiscountPolicy::CURRENCY_RSD => 'RSD — samo ako merchant inventory stvarno drži dinare',
+                            ])
+                            ->default(AnanasDiscountPolicy::CURRENCY_BAM)
+                            ->helperText('Ananas QA2 je odbio RSD za BNC inventory. Broj se ne konvertuje — šalje se ista BAM cifra kao na importu.'),
                     ])
                     ->columns(2),
             ])

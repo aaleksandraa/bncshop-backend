@@ -14,6 +14,10 @@ class AnanasDiscountPolicy
 
     public const TYPE_CLEARANCE_SALE = 'CLEARANCE_SALE';
 
+    public const CURRENCY_BAM = 'BAM';
+
+    public const CURRENCY_EUR = 'EUR';
+
     public const CURRENCY_RSD = 'RSD';
 
     /** Docs: discount price can be reduced to 95% of regular (minimum 5% off). */
@@ -47,7 +51,9 @@ class AnanasDiscountPolicy
     {
         $inventoryId = (int) ($item['merchantInventoryId'] ?? 0);
         $type = strtoupper(trim((string) ($item['discountType'] ?? '')));
-        $currency = strtoupper(trim((string) ($item['discountPriceCurrency'] ?? self::CURRENCY_RSD)));
+        $currency = $this->normalizeCurrency(
+            isset($item['discountPriceCurrency']) ? (string) $item['discountPriceCurrency'] : $this->defaultCurrency(),
+        );
         $price = $this->normalizePrice($item['discountPrice'] ?? null);
         $dateFrom = $this->parseApiDate((string) ($item['dateFrom'] ?? ''), 'dateFrom');
         $dateToRaw = $item['dateTo'] ?? null;
@@ -64,10 +70,6 @@ class AnanasDiscountPolicy
 
         if (! in_array($type, self::types(), true)) {
             throw new InvalidArgumentException('discountType must be SALE, SEASONAL_SALE, or CLEARANCE_SALE.');
-        }
-
-        if ($currency !== self::CURRENCY_RSD) {
-            throw new InvalidArgumentException('Ananas discountPriceCurrency allows only RSD.');
         }
 
         if ($price <= 0) {
@@ -128,7 +130,7 @@ class AnanasDiscountPolicy
         $payload = [
             'merchantInventoryId' => $inventoryId,
             'discountPrice' => number_format($price, 2, '.', ''),
-            'discountPriceCurrency' => self::CURRENCY_RSD,
+            'discountPriceCurrency' => $currency,
             'dateFrom' => $dateFrom->format('d/m/Y'),
             'discountType' => $type,
         ];
@@ -181,6 +183,40 @@ class AnanasDiscountPolicy
     public function maxDiscountPrice(float $regularPrice): float
     {
         return round($regularPrice * self::MAX_DISCOUNT_PRICE_RATIO, 2);
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function allowedCurrencies(): array
+    {
+        return [self::CURRENCY_BAM, self::CURRENCY_EUR, self::CURRENCY_RSD];
+    }
+
+    /**
+     * Merchant inventory currency. Docs list RSD-only; QA2 rejected RSD for BNC
+     * (BAM import basePrice). Never convert amounts.
+     */
+    public function defaultCurrency(): string
+    {
+        return $this->normalizeCurrency((string) config('bnc.ananas_discount_currency', self::CURRENCY_BAM));
+    }
+
+    public function normalizeCurrency(?string $value): string
+    {
+        $currency = strtoupper(trim((string) $value));
+
+        if ($currency === '' || $currency === 'KM') {
+            $currency = self::CURRENCY_BAM;
+        }
+
+        if (! in_array($currency, self::allowedCurrencies(), true)) {
+            throw new InvalidArgumentException(
+                'discountPriceCurrency must be BAM, EUR, or RSD (merchant inventory currency; no FX).',
+            );
+        }
+
+        return $currency;
     }
 
     private function normalizePrice(mixed $value): float

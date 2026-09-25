@@ -16,6 +16,7 @@ class AnanasDiscountService
         private readonly AnanasCatalogWriteGuard $writeGuard,
         private readonly AnanasDiscountPolicy $policy,
         private readonly PriceCalculator $priceCalculator,
+        private readonly AnanasSyncSettings $settings,
     ) {}
 
     /**
@@ -37,9 +38,11 @@ class AnanasDiscountService
         bool $useBncSale = true,
         ?Carbon $from = null,
         ?Carbon $to = null,
+        ?string $currency = null,
     ): array {
         $ids = $this->normalizeInventoryIds($inventoryIds);
         $type = strtoupper(trim($type));
+        $currency = $this->policy->normalizeCurrency($currency ?? $this->settings->discountCurrency());
         $from = ($from ?? Carbon::now(config('app.timezone', 'Europe/Sarajevo')))->copy()->startOfDay();
 
         if ($type !== AnanasDiscountPolicy::TYPE_CLEARANCE_SALE) {
@@ -90,7 +93,7 @@ class AnanasDiscountService
             $candidate = [
                 'merchantInventoryId' => $inventoryId,
                 'discountPrice' => $discountPrice,
-                'discountPriceCurrency' => AnanasDiscountPolicy::CURRENCY_RSD,
+                'discountPriceCurrency' => $currency,
                 'dateFrom' => $this->policy->formatApiDate($from),
                 'discountType' => $type,
                 'regularPrice' => $regular,
@@ -146,6 +149,7 @@ class AnanasDiscountService
         bool $allowProduction = false,
         ?Carbon $from = null,
         ?Carbon $to = null,
+        ?string $currency = null,
     ): array {
         $built = $this->buildSchedule(
             inventoryIds: $inventoryIds,
@@ -156,6 +160,7 @@ class AnanasDiscountService
             useBncSale: $useBncSale,
             from: $from,
             to: $to,
+            currency: $currency,
         );
 
         if ($dryRun || $built['payloads'] === []) {
@@ -208,7 +213,7 @@ class AnanasDiscountService
                 'ananas_discount_id' => $success ? $discountId : null,
                 'discount_type' => $row['payload']['discountType'],
                 'discount_price' => $row['payload']['discountPrice'],
-                'currency' => AnanasDiscountPolicy::CURRENCY_RSD,
+                'currency' => $row['payload']['discountPriceCurrency'] ?? $this->policy->defaultCurrency(),
                 'date_from' => $this->policy->parseApiDate($row['payload']['dateFrom'], 'dateFrom'),
                 'date_to' => isset($row['payload']['dateTo'])
                     ? $this->policy->parseApiDate($row['payload']['dateTo'], 'dateTo')

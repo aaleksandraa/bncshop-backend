@@ -50,7 +50,7 @@ class AnanasDiscountServiceTest extends TestCase
         $this->assertGreaterThan(0, $regular);
         $this->assertEqualsWithDelta(round($regular * 0.9, 2), (float) $result['payloads'][0]['discountPrice'], 0.011);
         $this->assertLessThanOrEqual(round($regular * 0.95, 2), (float) $result['payloads'][0]['discountPrice']);
-        $this->assertSame('RSD', $result['payloads'][0]['discountPriceCurrency']);
+        $this->assertSame('BAM', $result['payloads'][0]['discountPriceCurrency']);
         $this->assertSame('SALE', $result['payloads'][0]['discountType']);
         $this->assertSame(2566378, $result['payloads'][0]['merchantInventoryId']);
         $this->assertSame($product->id, $result['results'][0]['product_id']);

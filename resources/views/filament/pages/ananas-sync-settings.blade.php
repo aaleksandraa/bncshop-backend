@@ -199,7 +199,7 @@
                             type="button"
                             color="warning"
                             wire:click="discountLive"
-                            wire:confirm="Šalje POST /discounts (SALE, currency RSD po API enumu). Nastaviti?"
+                            wire:confirm="Šalje POST /discounts (SALE, valuta merchant inventory — BAM, bez FX). Nastaviti?"
                             wire:loading.attr="disabled"
                         >
                             Akcija (live)
@@ -207,8 +207,8 @@
                     </div>
                     <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
                         Ananas: SALE ≤ 31 dan, cijena akcije ≤ 95% regularne, bez preklapanja.
-                        <code>discountPriceCurrency</code> smije biti samo <code>RSD</code> — broj je isti kao import <code>basePrice</code>.
-                        Ako BNC artikal već ima nižu display cijenu (≥5% off), koristi se ta.
+                        <code>discountPriceCurrency</code> mora biti valuta merchant inventoryja (za BNC: <code>BAM</code>, ista cifra kao import <code>basePrice</code>, bez FX).
+                        QA2 je odbio <code>RSD</code>. Ako BNC artikal već ima nižu display cijenu (≥5% off), koristi se ta.
                     </p>
                 </div>
             </div>
