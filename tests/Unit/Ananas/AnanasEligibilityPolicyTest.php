@@ -128,6 +128,17 @@ class AnanasEligibilityPolicyTest extends TestCase
         );
     }
 
+    public function test_bih_vat_17_is_allowed_without_changing_price(): void
+    {
+        config(['bnc.ananas_vat_rate' => 17]);
+
+        $this->policy = app(AnanasEligibilityPolicy::class);
+
+        $this->assertSame(17, $this->policy->resolvedVatRate());
+        $this->assertSame(17, $this->policy->normalizeVatRate(17));
+        $this->assertTrue($this->policy->evaluate($this->createExportReadyProduct())->eligible);
+    }
+
     public function test_assert_can_export_throws_for_refurbished_product(): void
     {
         $product = Product::factory()->create(['is_refurbished' => true]);

@@ -209,10 +209,11 @@ return [
     'ananas_production_svc_base_url' => env('ANANAS_PRODUCTION_SVC_BASE_URL', 'https://api.svc.ananas.rs'),
 
     /*
-    | Ananas payload VAT field (0, 10, or 20). BNC basePrice is the final BAM retail
-    | price from PriceCalculator (margin + 17% BiH VAT already included) — send vat=0.
+    | Ananas payload VAT tag (0, 10, 17, or 20). BNC basePrice is the final BAM retail
+    | from PriceCalculator (margin + 17% BiH VAT already in the number) — do not add VAT again.
+    | Docs list 0/10/20; Stage QA2 PUT bulk for this merchant required 17.
     */
-    'ananas_vat_rate' => ($rate = env('ANANAS_VAT_RATE')) !== null && $rate !== '' ? (int) $rate : 0,
+    'ananas_vat_rate' => ($rate = env('ANANAS_VAT_RATE')) !== null && $rate !== '' ? (int) $rate : 17,
 
     /*
     | Discount currency must match the merchant inventory (BAM for BNC; no FX).

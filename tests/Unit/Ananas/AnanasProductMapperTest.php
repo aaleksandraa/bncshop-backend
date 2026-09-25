@@ -51,6 +51,31 @@ class AnanasProductMapperTest extends TestCase
         $this->assertSame('ITShop', $payload['productType']);
     }
 
+    public function test_mapper_sends_vat_17_without_adding_vat_to_base_price(): void
+    {
+        config(['bnc.ananas_vat_rate' => 17]);
+
+        [$product, $mapping] = $this->createExportReadyProduct(regularPrice: 199.99);
+
+        $calculator = $this->createMock(PriceCalculator::class);
+        $calculator->method('calculate')->willReturn(new \App\Services\Pricing\PriceResult(
+            displayPrice: 199.99,
+            regularPrice: 199.99,
+            onSale: false,
+        ));
+
+        $mapper = new AnanasProductMapper(
+            app(AnanasEligibilityPolicy::class),
+            app(\App\Services\Ananas\AnanasPackageWeightResolver::class),
+            $calculator,
+        );
+
+        $payload = $mapper->map($product, $mapping);
+
+        $this->assertSame(199.99, $payload['basePrice']);
+        $this->assertSame(17, $payload['vat']);
+    }
+
     public function test_mapper_uses_absolute_https_image_urls_for_local_storage(): void
     {
         config(['bnc.media_origin' => 'https://images.bnc.ba']);

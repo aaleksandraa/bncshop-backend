@@ -31,6 +31,14 @@ class AnanasEligibilityPolicy
 
     public const INVALID_PRICE = 'INVALID_PRICE';
 
+    /**
+     * Docs list 0/10/20. Stage QA2 for this BiH merchant accepted only 17 on PUT bulk.
+     * The number is a tax-rate tag — it does not add VAT on top of BNC basePrice.
+     *
+     * @var list<int>
+     */
+    public const ALLOWED_VAT_RATES = [0, 10, 17, 20];
+
     public function __construct(
         private readonly AnanasExportScope $exportScope,
         private readonly AnanasPackageWeightResolver $packageWeightResolver,
@@ -141,7 +149,7 @@ class AnanasEligibilityPolicy
         return $this->normalizeVatRate($fromSettings);
     }
 
-    private function normalizeVatRate(mixed $value): ?int
+    public function normalizeVatRate(mixed $value): ?int
     {
         if ($value === null || $value === '') {
             return null;
@@ -149,7 +157,7 @@ class AnanasEligibilityPolicy
 
         $rate = (int) $value;
 
-        return in_array($rate, [0, 10, 20], true) ? $rate : null;
+        return in_array($rate, self::ALLOWED_VAT_RATES, true) ? $rate : null;
     }
 
     private function normalizeEan(?string $barcode): ?string

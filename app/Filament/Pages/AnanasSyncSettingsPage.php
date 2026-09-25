@@ -137,14 +137,15 @@ class AnanasSyncSettingsPage extends Page implements HasForms
                             ->label('Dozvoli catalog write API pozive')
                             ->helperText('Uključite prije live importa, probe i publish. Dry-run radi i bez ovoga. POST import ostaje blokiran dok je isključeno.'),
                         Select::make('vat_rate')
-                            ->label('Ananas VAT (0 / 10 / 20)')
+                            ->label('Ananas VAT (0 / 10 / 17 / 20)')
                             ->options([
-                                0 => '0 — finalna BAM cijena već uključuje naš VAT i maržu',
+                                0 => '0 — samo ako Ananas prihvata 0 (dokumentacija)',
                                 10 => '10',
+                                17 => '17 — BiH merchant (Stage QA2 PUT); cijena se NE uvećava',
                                 20 => '20',
                             ])
-                            ->default(0)
-                            ->helperText('basePrice = PriceCalculator regularPrice (konačna prodajna cijena u KM). VAT polje na Ananasu ostaje 0.'),
+                            ->default(17)
+                            ->helperText('basePrice = PriceCalculator regularPrice (konačna BAM/KM). Polje vat je oznaka stope, ne dodatak na cijenu. Stage je odbio vat=0: dozvoljeno je samo 17.'),
                         Select::make('discount_currency')
                             ->label('Valuta akcije (discountPriceCurrency)')
                             ->options([
@@ -172,7 +173,7 @@ class AnanasSyncSettingsPage extends Page implements HasForms
         unset($state['client_id'], $state['client_secret']);
 
         if (! array_key_exists('vat_rate', $state) || $state['vat_rate'] === '' || $state['vat_rate'] === null) {
-            $state['vat_rate'] = 0;
+            $state['vat_rate'] = 17;
         }
 
         $settings->save($state);

@@ -24,6 +24,7 @@ class AnanasLinkedProductSyncService
         bool $allowProduction = false,
         array $inventoryIds = [],
         bool $force = false,
+        ?int $vatRate = null,
     ): array {
         $limit = max(1, min($limit, 2000));
         $updated = 0;
@@ -61,7 +62,7 @@ class AnanasLinkedProductSyncService
                 continue;
             }
 
-            $item = $this->buildBulkUpdateItem($mapping, $product, $force);
+            $item = $this->buildBulkUpdateItem($mapping, $product, $force, $vatRate);
 
             if ($item === null) {
                 $skipped++;
@@ -86,6 +87,7 @@ class AnanasLinkedProductSyncService
                 'ean' => $mapping->ean,
                 'basePrice' => $item['basePrice'] ?? null,
                 'stockLevel' => $item['stockLevel'] ?? null,
+                'vat' => $item['vat'] ?? null,
             ];
         }, $payloads);
 
@@ -255,7 +257,7 @@ class AnanasLinkedProductSyncService
     /**
      * @return array<string, mixed>|null
      */
-    private function buildBulkUpdateItem(AnanasProductMapping $mapping, Product $product, bool $force = false): ?array
+    private function buildBulkUpdateItem(AnanasProductMapping $mapping, Product $product, bool $force = false, ?int $vatRate = null): ?array
     {
         $remoteId = $mapping->inventoryId();
 
@@ -270,7 +272,9 @@ class AnanasLinkedProductSyncService
         }
 
         $pricing = $this->priceCalculator->calculate($product);
-        $vat = $this->eligibilityPolicy->resolvedVatRate();
+        $vat = $vatRate !== null
+            ? $this->eligibilityPolicy->normalizeVatRate($vatRate)
+            : $this->eligibilityPolicy->resolvedVatRate();
 
         if ($vat === null || $pricing->regularPrice <= 0) {
             return null;
