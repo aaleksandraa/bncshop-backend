@@ -47,6 +47,12 @@ class AnanasPublishProductsCommand extends Command
 
         $inventory = $this->parseInventoryOption();
 
+        if (trim((string) $this->option('inventory')) !== '' && $inventory === []) {
+            $this->error('Invalid --inventory. Use numeric merchant inventory ids, e.g. 2567071,2567072');
+
+            return self::FAILURE;
+        }
+
         $result = $syncService->publishReadyLinked(
             limit: (int) $this->option('limit'),
             dryRun: $dryRun,

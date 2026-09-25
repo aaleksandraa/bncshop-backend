@@ -39,6 +39,7 @@ class AnanasDiscountService
         ?Carbon $from = null,
         ?Carbon $to = null,
         ?string $currency = null,
+        array $remoteBaseByInventory = [],
     ): array {
         $ids = $this->normalizeInventoryIds($inventoryIds);
         $type = strtoupper(trim($type));
@@ -79,21 +80,42 @@ class AnanasDiscountService
             }
 
             $pricing = $this->priceCalculator->calculate($product);
-            $regular = round($pricing->regularPrice, 2);
+            $bncRegular = round($pricing->regularPrice, 2);
+            $ananasBase = round((float) ($remoteBaseByInventory[$inventoryId] ?? 0), 2);
+            $regular = $ananasBase > 0 ? $ananasBase : $bncRegular;
 
             try {
                 $discountPrice = $this->resolveDiscountPrice(
                     regular: $regular,
                     display: round($pricing->displayPrice, 2),
-                    onSale: $pricing->onSale,
+                    onSale: $pricing->onSale && $ananasBase <= 0,
                     percentOff: $percentOff,
                     absolutePrice: $absolutePrice,
-                    useBncSale: $useBncSale,
+                    useBncSale: $useBncSale && $ananasBase <= 0,
                 );
             } catch (InvalidArgumentException $e) {
                 $skipped[] = 'Inventory '.$inventoryId.' (BNC '.$product->id.'): '.$e->getMessage();
 
                 continue;
+            }
+
+            if ($ananasBase > 0) {
+                $maxAllowed = $this->policy->maxDiscountPrice($ananasBase);
+                $bncOff = $this->percentOffAmount($bncRegular, $percentOff);
+
+                if ($absolutePrice !== null) {
+                    $discountPrice = round($absolutePrice, 2);
+                } elseif ($bncOff > 0 && $bncOff < $ananasBase && $bncOff <= $maxAllowed) {
+                    $discountPrice = $bncOff;
+                } else {
+                    $discountPrice = $this->percentOffAmount($ananasBase, $percentOff);
+                }
+
+                if ($discountPrice >= $ananasBase || $discountPrice > $maxAllowed) {
+                    $skipped[] = 'Inventory '.$inventoryId.' (BNC '.$product->id.'): discount '.$discountPrice.' is not below Ananas basePrice '.$ananasBase.'.';
+
+                    continue;
+                }
             }
 
             $candidate = [
@@ -157,8 +179,9 @@ class AnanasDiscountService
         ?Carbon $to = null,
         ?string $currency = null,
     ): array {
+        $ids = $this->normalizeInventoryIds($inventoryIds);
         $built = $this->buildSchedule(
-            inventoryIds: $inventoryIds,
+            inventoryIds: $ids,
             type: $type,
             percentOff: $percentOff,
             days: $days,
@@ -167,6 +190,7 @@ class AnanasDiscountService
             from: $from,
             to: $to,
             currency: $currency,
+            remoteBaseByInventory: $this->ananasBasePrices($ids),
         );
 
         if ($dryRun || $built['payloads'] === []) {
@@ -360,6 +384,70 @@ class AnanasDiscountService
         }
 
         return round($regular * (1 - ($percent / 100)), 2);
+    }
+
+    private function percentOffAmount(float $regular, ?int $percentOff): float
+    {
+        $percent = $percentOff ?? 10;
+
+        if ($regular <= 0 || $percent < 5) {
+            return 0.0;
+        }
+
+        return round($regular * (1 - ($percent / 100)), 2);
+    }
+
+    /**
+     * @param  list<int>  $inventoryIds
+     * @return array<int, float>
+     */
+    private function ananasBasePrices(array $inventoryIds): array
+    {
+        if ($inventoryIds === [] || ! $this->settings->hasCredentials()) {
+            return [];
+        }
+
+        $prices = [];
+
+        try {
+            $prices = $this->apiClient->getInventoryPrices($inventoryIds);
+        } catch (\Throwable $e) {
+            Log::warning('Ananas GET /prices failed for discount basePrice', [
+                'integration' => 'ananas',
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        try {
+            $page = $this->apiClient->getProducts(['page' => 0, 'size' => 200]);
+            foreach ($this->apiClient->normalizeListPayload($page) as $row) {
+                if (! is_array($row)) {
+                    continue;
+                }
+
+                $id = (int) ($row['id'] ?? 0);
+                if ($id <= 0 || ! in_array($id, $inventoryIds, true)) {
+                    continue;
+                }
+                if (($prices[$id] ?? 0) > 0) {
+                    continue;
+                }
+
+                $base = (float) ($row['basePrice'] ?? 0);
+                $new = (float) ($row['newBasePrice'] ?? 0);
+                $chosen = $base > 0 ? $base : $new;
+                if ($chosen > 0) {
+                    $prices[$id] = round($chosen, 2);
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::warning('Ananas GET /products failed for discount basePrice', [
+                'integration' => 'ananas',
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return $prices;
     }
 
     private function findLinkedMapping(int $inventoryId): ?AnanasProductMapping

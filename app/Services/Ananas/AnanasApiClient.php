@@ -340,6 +340,53 @@ class AnanasApiClient
     }
 
     /**
+     * GET /payment/.../prices — merchant catalog basePrice used to validate akcije.
+     *
+     * @param  list<int>  $inventoryIds
+     * @return array<int, float>
+     */
+    public function getInventoryPrices(array $inventoryIds, ?string $dateFrom = null): array
+    {
+        $ids = array_values(array_unique(array_filter(
+            array_map('intval', $inventoryIds),
+            static fn (int $id): bool => $id > 0,
+        )));
+
+        if ($ids === []) {
+            return [];
+        }
+
+        $query = [
+            'dateFrom' => $dateFrom ?: now(config('app.timezone', 'Europe/Sarajevo'))->format('d/m/Y'),
+            'merchantInventoryIds' => implode(',', $ids),
+        ];
+
+        $bases = [$this->settings->productBaseUrl(), $this->settings->svcBaseUrl()];
+        $lastError = null;
+
+        foreach (array_unique(array_filter($bases)) as $baseUrl) {
+            try {
+                $payload = $this->getJson(
+                    $baseUrl,
+                    '/payment/api/v1/merchant-integration/prices',
+                    $query,
+                    AnanasRateLimiter::CATEGORY_PRODUCTS,
+                );
+
+                return $this->normalizeInventoryPrices($payload);
+            } catch (\Throwable $e) {
+                $lastError = $e;
+            }
+        }
+
+        if ($lastError !== null) {
+            throw $lastError;
+        }
+
+        return [];
+    }
+
+    /**
      * GET /payment/.../discounts?dateFrom=&dateTo= (dd/MM/yyyy).
      *
      * @return list<array<string, mixed>>
@@ -751,6 +798,43 @@ class AnanasApiClient
         );
 
         return (string) $redacted;
+    }
+
+    /**
+     * @param  mixed  $payload
+     * @return array<int, float>
+     */
+    private function normalizeInventoryPrices(mixed $payload): array
+    {
+        if (! is_array($payload)) {
+            return [];
+        }
+
+        $rows = $payload;
+        if (! array_is_list($payload)) {
+            foreach (['content', 'data', 'prices'] as $key) {
+                if (isset($payload[$key]) && is_array($payload[$key])) {
+                    $rows = $payload[$key];
+                    break;
+                }
+            }
+        }
+
+        $prices = [];
+        foreach ($rows as $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+
+            $id = (int) ($row['merchantInventoryId'] ?? $row['id'] ?? 0);
+            $base = (float) ($row['basePrice'] ?? 0);
+
+            if ($id > 0 && $base > 0) {
+                $prices[$id] = round($base, 2);
+            }
+        }
+
+        return $prices;
     }
 
     private function truncateBody(string $body): string

@@ -9,6 +9,8 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Services\Ananas\AnanasDiscountService;
 use App\Services\Ananas\AnanasLinkedProductSyncService;
+use App\Services\Pricing\PriceCalculator;
+use App\Services\Pricing\PriceResult;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -88,6 +90,58 @@ class AnanasDiscountServiceTest extends TestCase
         $this->assertStringContainsString('already has a scheduled akcija', $result['skipped'][0]);
     }
 
+    public function test_discount_uses_ananas_base_price_when_bnc_ten_percent_is_not_lower(): void
+    {
+        config([
+            'bnc.ananas_env' => 'stage',
+            'bnc.ananas_client_id' => 'test-client-id',
+            'bnc.ananas_client_secret' => 'test-client-secret',
+            'bnc.ananas_stage_token_url' => 'https://api.qa2.ananastest.com/iam/api/v1/auth/token',
+            'bnc.ananas_stage_product_base_url' => 'https://api.qa2.ananastest.com',
+            'bnc.ananas_stage_svc_base_url' => 'https://api.svc.qa2.ananastest.com',
+        ]);
+
+        $this->createLinkedProduct(2567075, 2469.00);
+
+        $calculator = $this->createMock(PriceCalculator::class);
+        $calculator->method('calculate')->willReturn(new PriceResult(
+            displayPrice: 2469.00,
+            regularPrice: 2469.00,
+            onSale: false,
+        ));
+        $this->app->instance(PriceCalculator::class, $calculator);
+
+        Http::fake([
+            'api.qa2.ananastest.com/iam/api/v1/auth/token' => Http::response([
+                'access_token' => 'token-abc',
+                'expires_in' => 900,
+            ], 200),
+            '*merchant-integration/prices*' => Http::response([
+                [
+                    'merchantInventoryId' => 2567075,
+                    'basePrice' => 2000,
+                    'sellablePrice' => 2000,
+                ],
+            ], 200),
+            '*merchant-integration/products*' => Http::response([
+                'content' => [],
+                'totalElements' => 0,
+            ], 200),
+        ]);
+
+        $result = app(AnanasDiscountService::class)->schedule(
+            inventoryIds: [2567075],
+            percentOff: 10,
+            days: 7,
+            useBncSale: false,
+            dryRun: true,
+        );
+
+        $this->assertSame(1, $result['scheduled']);
+        $this->assertEqualsWithDelta(2000.0, (float) $result['results'][0]['regular_price'], 0.001);
+        $this->assertEqualsWithDelta(1800.0, (float) $result['payloads'][0]['discountPrice'], 0.001);
+    }
+
     public function test_live_schedule_surfaces_ananas_error_instead_of_preview(): void
     {
         config([
@@ -106,6 +160,8 @@ class AnanasDiscountServiceTest extends TestCase
                 'access_token' => 'token-abc',
                 'expires_in' => 900,
             ], 200),
+            '*merchant-integration/prices*' => Http::response([], 200),
+            '*merchant-integration/products*' => Http::response(['content' => []], 200),
             'api.qa2.ananastest.com/payment/api/v1/merchant-integration/discounts' => Http::response([
                 'scheduleResult' => [
                     [
@@ -152,6 +208,8 @@ class AnanasDiscountServiceTest extends TestCase
                 'access_token' => 'token-abc',
                 'expires_in' => 900,
             ], 200),
+            '*merchant-integration/prices*' => Http::response([], 200),
+            '*merchant-integration/products*' => Http::response(['content' => []], 200),
             'api.qa2.ananastest.com/payment/api/v1/merchant-integration/discounts' => Http::response([], 200),
         ]);
 
@@ -185,6 +243,8 @@ class AnanasDiscountServiceTest extends TestCase
                 'access_token' => 'token-abc',
                 'expires_in' => 900,
             ], 200),
+            '*merchant-integration/prices*' => Http::response([], 200),
+            '*merchant-integration/products*' => Http::response(['content' => []], 200),
             'api.qa2.ananastest.com/payment/api/v1/merchant-integration/discounts' => Http::response([
                 'scheduleResult' => [
                     [

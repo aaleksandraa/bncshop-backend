@@ -129,6 +129,8 @@ class AnanasLookupProductCommand extends Command
                 isset($row['productType']) ? (string) $row['productType'] : '—',
                 isset($row['status']) ? (string) $row['status'] : '—',
                 $categoryText !== '' ? $categoryText : '—',
+                $this->formatMoney($row['basePrice'] ?? null),
+                $this->formatMoney($row['newBasePrice'] ?? null),
             ];
         }
 
@@ -136,7 +138,20 @@ class AnanasLookupProductCommand extends Command
             return;
         }
 
-        $this->table(['id', 'ean', 'externalId', 'productType', 'status', 'categories'], $table);
+        $this->table(['id', 'ean', 'externalId', 'productType', 'status', 'categories', 'basePrice', 'newBasePrice'], $table);
+    }
+
+    private function formatMoney(mixed $value): string
+    {
+        if ($value === null || $value === '') {
+            return '—';
+        }
+
+        if (! is_numeric($value)) {
+            return (string) $value;
+        }
+
+        return number_format((float) $value, 2, '.', '');
     }
 
     /**

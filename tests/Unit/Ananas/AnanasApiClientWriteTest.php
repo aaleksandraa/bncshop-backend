@@ -223,4 +223,25 @@ class AnanasApiClientWriteTest extends TestCase
                 && $request->data() === [2566378, 2566379];
         });
     }
+
+    public function test_get_inventory_prices_indexes_base_price_by_id(): void
+    {
+        Http::fake([
+            'api.qa2.ananastest.com/iam/api/v1/auth/token' => Http::response([
+                'access_token' => 'token-abc',
+                'expires_in' => 900,
+            ], 200),
+            '*merchant-integration/prices*' => Http::response([
+                [
+                    'merchantInventoryId' => 2567075,
+                    'basePrice' => 2000,
+                    'sellablePrice' => 2000,
+                ],
+            ], 200),
+        ]);
+
+        $result = app(AnanasApiClient::class)->getInventoryPrices([2567075]);
+
+        $this->assertSame(2000.0, $result[2567075]);
+    }
 }

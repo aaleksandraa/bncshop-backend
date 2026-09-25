@@ -51,9 +51,16 @@ class AnanasScheduleDiscountCommand extends Command
             return self::FAILURE;
         }
 
+        $inventoryRaw = trim((string) $this->option('inventory'));
         $inventory = $discountService->normalizeInventoryIds(
-            array_map('intval', explode(',', (string) $this->option('inventory'))),
+            array_map('intval', explode(',', $inventoryRaw)),
         );
+
+        if ($inventoryRaw !== '' && $inventory === []) {
+            $this->error('Invalid --inventory. Use numeric merchant inventory ids, e.g. 2567071,2567072');
+
+            return self::FAILURE;
+        }
 
         if ($inventory === []) {
             $inventory = $discountService->actionableInventoryIds(limit: (int) $this->option('limit'));
@@ -87,7 +94,7 @@ class AnanasScheduleDiscountCommand extends Command
             $settings->environment(),
         ));
         $shownCurrency = $result['payloads'][0]['discountPriceCurrency'] ?? $settings->discountCurrency();
-        $this->line('Currency field: '.$shownCurrency.' (merchant inventory; numeric price matches import basePrice, no FX).');
+        $this->line('Currency field: '.$shownCurrency.' (merchant inventory). Regular column is Ananas catalog basePrice when known.');
         $this->line('Scheduled: '.$result['scheduled']);
         $this->line('Failed: '.$result['failed']);
 
