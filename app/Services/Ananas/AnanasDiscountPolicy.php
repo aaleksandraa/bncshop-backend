@@ -23,7 +23,7 @@ class AnanasDiscountPolicy
     /** Docs: discount price can be reduced to 95% of regular (minimum 5% off). */
     public const MAX_DISCOUNT_PRICE_RATIO = 0.95;
 
-    public const MAX_SALE_DAYS_INCLUSIVE = 31;
+    public const MAX_SALE_DAYS_INCLUSIVE = 30;
 
     public const MAX_SEASONAL_DAYS_INCLUSIVE = 60;
 

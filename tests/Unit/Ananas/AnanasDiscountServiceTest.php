@@ -3,6 +3,7 @@
 namespace Tests\Unit\Ananas;
 
 use App\Models\AnanasCategoryMapping;
+use App\Models\AnanasDiscountAction;
 use App\Models\AnanasProductMapping;
 use App\Models\Category;
 use App\Models\Product;
@@ -54,6 +55,37 @@ class AnanasDiscountServiceTest extends TestCase
         $this->assertSame('SALE', $result['payloads'][0]['discountType']);
         $this->assertSame(2566378, $result['payloads'][0]['merchantInventoryId']);
         $this->assertSame($product->id, $result['results'][0]['product_id']);
+    }
+
+    public function test_dry_run_skips_overlapping_scheduled_akcija(): void
+    {
+        $product = $this->createLinkedProduct(2566378, 199.00);
+        $mapping = AnanasProductMapping::query()->where('product_id', $product->id)->firstOrFail();
+
+        AnanasDiscountAction::query()->create([
+            'ananas_product_mapping_id' => $mapping->id,
+            'merchant_inventory_id' => 2566378,
+            'ananas_discount_id' => 'ce98b230-cbc5-42a9-bb49-98460b10275e',
+            'discount_type' => 'SALE',
+            'discount_price' => 179.10,
+            'currency' => 'BAM',
+            'date_from' => '2026-09-25',
+            'date_to' => '2026-10-01',
+            'local_status' => AnanasDiscountAction::STATUS_SCHEDULED,
+        ]);
+
+        $result = app(AnanasDiscountService::class)->schedule(
+            inventoryIds: [2566378],
+            percentOff: 10,
+            days: 7,
+            useBncSale: false,
+            dryRun: true,
+        );
+
+        $this->assertSame(0, $result['scheduled']);
+        $this->assertSame([], $result['payloads']);
+        $this->assertNotEmpty($result['skipped']);
+        $this->assertStringContainsString('already has a scheduled akcija', $result['skipped'][0]);
     }
 
     public function test_live_schedule_surfaces_ananas_error_instead_of_preview(): void

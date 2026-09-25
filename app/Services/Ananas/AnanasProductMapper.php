@@ -226,6 +226,9 @@ class AnanasProductMapper
     {
         $grouped = [];
 
+        // Flat Map<String, List<String>> of every filled spec — same shape on every
+        // SKU. Never nest under productType / Ananas category (they ulistavaju mixed
+        // batches and asked not to send attributes "po kategorijama").
         foreach ($product->attributeValues as $value) {
             if (! $value instanceof ProductAttributeValue) {
                 continue;

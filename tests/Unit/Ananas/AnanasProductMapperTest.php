@@ -116,6 +116,11 @@ class AnanasProductMapperTest extends TestCase
 
         $this->assertSame(['1.2 kg'], $payload['attributes']['Težina']);
         $this->assertSame(['Crna'], $payload['attributes']['Boja']);
+        $this->assertArrayNotHasKey($mapping->ananas_category, $payload['attributes']);
+        $this->assertArrayNotHasKey($mapping->ananas_product_type, $payload['attributes']);
+        foreach ($payload['attributes'] as $values) {
+            $this->assertTrue(array_is_list($values));
+        }
     }
 
     public function test_mapper_throws_when_product_not_eligible(): void

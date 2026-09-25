@@ -72,6 +72,12 @@ class AnanasDiscountService
                 continue;
             }
 
+            if ($this->hasOverlappingScheduledAction($inventoryId, $from, $to)) {
+                $skipped[] = 'Inventory '.$inventoryId.' (BNC '.$product->id.'): already has a scheduled akcija in this interval (Ananas: no overlap).';
+
+                continue;
+            }
+
             $pricing = $this->priceCalculator->calculate($product);
             $regular = round($pricing->regularPrice, 2);
 
@@ -366,6 +372,21 @@ class AnanasDiscountService
                     ->orWhere('ananas_product_id', (string) $inventoryId);
             })
             ->first();
+    }
+
+    private function hasOverlappingScheduledAction(int $inventoryId, Carbon $from, ?Carbon $to): bool
+    {
+        $end = ($to ?? $from)->toDateString();
+
+        return AnanasDiscountAction::query()
+            ->where('merchant_inventory_id', $inventoryId)
+            ->where('local_status', AnanasDiscountAction::STATUS_SCHEDULED)
+            ->whereDate('date_from', '<=', $end)
+            ->where(function ($query) use ($from): void {
+                $query->whereNull('date_to')
+                    ->orWhereDate('date_to', '>=', $from->toDateString());
+            })
+            ->exists();
     }
 
     /**

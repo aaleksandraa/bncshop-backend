@@ -231,8 +231,8 @@ return [
         explode(',', (string) env('ANANAS_PROBE_SEED_EANS', '9788644105886')),
     ))),
 
-    'ananas_import_batch_max_size' => (int) env('ANANAS_IMPORT_BATCH_MAX_SIZE', 100),
-    'ananas_import_scan_max' => (int) env('ANANAS_IMPORT_SCAN_MAX', 2000),
+    'ananas_import_batch_max_size' => (int) env('ANANAS_IMPORT_BATCH_MAX_SIZE', 2000),
+    'ananas_import_scan_max' => (int) env('ANANAS_IMPORT_SCAN_MAX', 20000),
 
     /*
     | Stage-validated BNC category_id → Ananas POST import "category" strings.

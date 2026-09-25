@@ -11,7 +11,7 @@ class AnanasListDiscountsCommand extends Command
 {
     protected $signature = 'bnc:ananas-list-discounts
                             {--from= : Start dd/MM/yyyy (default today)}
-                            {--to= : End dd/MM/yyyy (default +31 days)}';
+                            {--to= : End dd/MM/yyyy (default +30 days)}';
 
     protected $description = 'GET Ananas payment discounts for a date interval';
 
@@ -30,7 +30,7 @@ class AnanasListDiscountsCommand extends Command
             ? Carbon::now($tz)->startOfDay()
             : Carbon::createFromFormat('d/m/Y', $fromOption, $tz);
         $to = $toOption === ''
-            ? $from->copy()->addDays(31)
+            ? $from->copy()->addDays(30)
             : Carbon::createFromFormat('d/m/Y', $toOption, $tz);
 
         if ($from === false || $to === false) {

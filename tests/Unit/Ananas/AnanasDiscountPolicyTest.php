@@ -76,19 +76,33 @@ class AnanasDiscountPolicyTest extends TestCase
         $this->assertSame('BAM', $payload['discountPriceCurrency']);
     }
 
-    public function test_sale_rejects_more_than_31_inclusive_days(): void
+    public function test_sale_rejects_more_than_30_inclusive_days(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('31 days');
+        $this->expectExceptionMessage('30 days');
 
         $this->policy->assertValidScheduleItem([
             'merchantInventoryId' => 1,
             'discountPrice' => 900,
             'dateFrom' => '24/09/2026',
-            'dateTo' => '25/10/2026',
+            'dateTo' => '24/10/2026',
             'discountType' => 'SALE',
             'regularPrice' => 1000,
         ]);
+    }
+
+    public function test_sale_allows_30_inclusive_days(): void
+    {
+        $payload = $this->policy->assertValidScheduleItem([
+            'merchantInventoryId' => 1,
+            'discountPrice' => 900,
+            'dateFrom' => '24/09/2026',
+            'dateTo' => '23/10/2026',
+            'discountType' => 'SALE',
+            'regularPrice' => 1000,
+        ]);
+
+        $this->assertSame('23/10/2026', $payload['dateTo']);
     }
 
     public function test_discount_price_must_be_at_most_95_percent_of_regular(): void

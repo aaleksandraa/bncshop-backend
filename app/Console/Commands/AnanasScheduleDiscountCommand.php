@@ -13,7 +13,7 @@ class AnanasScheduleDiscountCommand extends Command
                             {--inventory= : Comma-separated merchant inventory ids (default: all LINKED READY_FOR_PUBLISH/PUBLISHED)}
                             {--type=SALE : SALE | SEASONAL_SALE | CLEARANCE_SALE}
                             {--percent=10 : Percent off BNC regularPrice (min 5; ignored if --price or BNC sale applies)}
-                            {--days=7 : Inclusive duration for SALE/SEASONAL (SALE max 31)}
+                            {--days=7 : Inclusive duration for SALE/SEASONAL (SALE max 30)}
                             {--price= : Absolute discountPrice (same numeric as import basePrice)}
                             {--currency= : BAM|EUR|RSD (default BAM; merchant inventory currency, no FX)}
                             {--no-bnc-sale : Do not use BNC displayPrice even if the product is on sale}

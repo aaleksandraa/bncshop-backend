@@ -15,7 +15,7 @@ class AnanasLookupProductCommand extends Command
                             {--product= : BNC product id (uses barcode + sku/externalId search)}
                             {--search= : Free-text search parameter on GET /products}
                             {--list : List merchant catalog page 0 (default when no ean/product/search)}
-                            {--size=20 : Page size for --list}';
+                            {--size=50 : Page size for --list}';
 
     protected $description = 'Diagnose merchant catalog visibility (GET products / basic-products, EAN variants)';
 

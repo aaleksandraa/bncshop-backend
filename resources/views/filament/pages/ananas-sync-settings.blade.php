@@ -123,12 +123,12 @@
                 <div>
                     <p class="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Katalog (Stage)</p>
                     <div class="mb-3 max-w-xs">
-                        <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">Limit po batchu (1–100)</label>
-                        <input
-                            type="number"
-                            min="1"
-                            max="100"
-                            wire:model="importLimit"
+                            <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">Limit po batchu (1–2000, produkcija 1000–2000)</label>
+                            <input
+                                type="number"
+                                min="1"
+                                max="2000"
+                                wire:model="importLimit"
                             class="block w-full rounded-lg border-gray-300 text-sm shadow-sm dark:border-gray-600 dark:bg-gray-900"
                         />
                     </div>
@@ -181,11 +181,11 @@
                             />
                         </div>
                         <div>
-                            <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">Trajanje dana (SALE max 31)</label>
+                            <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">Trajanje dana (SALE max 30)</label>
                             <input
                                 type="number"
                                 min="1"
-                                max="31"
+                                max="30"
                                 wire:model="discountDays"
                                 class="block w-full rounded-lg border-gray-300 text-sm shadow-sm dark:border-gray-600 dark:bg-gray-900"
                             />
@@ -206,7 +206,7 @@
                         </x-filament::button>
                     </div>
                     <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                        Ananas: SALE ≤ 31 dan, cijena akcije ≤ 95% regularne, bez preklapanja.
+                        Ananas: SALE ≤ 30 dana, cijena akcije ≤ 95% regularne, bez preklapanja.
                         <code>discountPriceCurrency</code> mora biti valuta merchant inventoryja (za BNC: <code>BAM</code>, ista cifra kao import <code>basePrice</code>, bez FX).
                         QA2 je odbio <code>RSD</code>. Ako BNC artikal već ima nižu display cijenu (≥5% off), koristi se ta.
                     </p>

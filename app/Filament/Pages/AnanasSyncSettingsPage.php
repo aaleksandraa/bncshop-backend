@@ -321,7 +321,7 @@ class AnanasSyncSettingsPage extends Page implements HasForms
     public function reconcileProducts(AnanasProductReconciliationService $reconciliationService): void
     {
         try {
-            $result = $reconciliationService->reconcileSubmittedMappings(limit: max(1, min($this->importLimit, 100)));
+            $result = $reconciliationService->reconcileSubmittedMappings(limit: max(1, min($this->importLimit, 2000)));
         } catch (\Throwable $e) {
             Notification::make()->title('Reconcile neuspješan')->body($e->getMessage())->danger()->send();
 
@@ -419,7 +419,7 @@ class AnanasSyncSettingsPage extends Page implements HasForms
 
     private function runImport(AnanasProductImportService $importService, bool $dryRun): void
     {
-        $limit = max(1, min($this->importLimit, (int) config('bnc.ananas_import_batch_max_size', 100)));
+        $limit = max(1, min($this->importLimit, (int) config('bnc.ananas_import_batch_max_size', 2000)));
 
         try {
             $result = $importService->importBatch(
@@ -470,7 +470,7 @@ class AnanasSyncSettingsPage extends Page implements HasForms
 
     private function runPublish(AnanasLinkedProductSyncService $syncService, bool $dryRun): void
     {
-        $limit = max(1, min($this->importLimit, 100));
+        $limit = max(1, min($this->importLimit, 2000));
 
         try {
             $result = $syncService->publishReadyLinked(
@@ -510,10 +510,10 @@ class AnanasSyncSettingsPage extends Page implements HasForms
     private function runDiscount(AnanasDiscountService $discountService, bool $dryRun): void
     {
         $percent = max(5, min(95, $this->discountPercent));
-        $days = max(1, min(31, $this->discountDays));
+        $days = max(1, min(30, $this->discountDays));
 
         try {
-            $inventory = $discountService->actionableInventoryIds(limit: max(1, min($this->importLimit, 100)));
+            $inventory = $discountService->actionableInventoryIds(limit: max(1, min($this->importLimit, 2000)));
             $result = $discountService->schedule(
                 inventoryIds: $inventory,
                 percentOff: $percent,
