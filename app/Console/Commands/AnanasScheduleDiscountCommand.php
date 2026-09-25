@@ -139,14 +139,18 @@ class AnanasScheduleDiscountCommand extends Command
             );
         }
 
-        $stillUnpublished = array_filter(
-            $result['results'],
-            static fn (array $row): bool => ($row['remote_status'] ?? '') === 'READY_FOR_PUBLISH',
-        );
+        $unpublishedError = false;
+        foreach ($result['results'] as $row) {
+            $err = strtolower((string) ($row['error'] ?? ''));
+            if ($err !== '' && (str_contains($err, 'not published') || str_contains($err, 'unpublished'))) {
+                $unpublishedError = true;
+                break;
+            }
+        }
 
-        if ($stillUnpublished !== [] && ($dryRun || ($result['failed'] ?? 0) > 0)) {
+        if ($unpublishedError) {
             $this->newLine();
-            $this->warn('GET still shows READY_FOR_PUBLISH. Publish is async — wait for Ananas email / status PUBLISHED before retrying akcija.');
+            $this->warn('Ananas rejected the akcija because the product is not published yet. Wait for status PUBLISHED, then retry.');
             $this->comment('  php artisan bnc:ananas-lookup-product');
         }
 

@@ -40,6 +40,7 @@ class AnanasDiscountService
         ?Carbon $to = null,
         ?string $currency = null,
         array $remoteBaseByInventory = [],
+        array $pendingNewBaseByInventory = [],
     ): array {
         $ids = $this->normalizeInventoryIds($inventoryIds);
         $type = strtoupper(trim($type));
@@ -81,7 +82,10 @@ class AnanasDiscountService
 
             if (array_key_exists($inventoryId, $remoteBaseByInventory)
                 && round((float) $remoteBaseByInventory[$inventoryId], 2) <= 0) {
-                $skipped[] = 'Inventory '.$inventoryId.' (BNC '.$product->id.'): Ananas catalog basePrice is 0. PUT price first (bnc:ananas-sync-linked --inventory='.$inventoryId.' --force --confirm), wait until GET basePrice > 0, then akcija.';
+                $pending = round((float) ($pendingNewBaseByInventory[$inventoryId] ?? 0), 2);
+                $skipped[] = $pending > 0
+                    ? 'Inventory '.$inventoryId.' (BNC '.$product->id.'): GET basePrice is still 0; newBasePrice '.number_format($pending, 2, '.', '').' applies after 00:01. Lookup until basePrice > 0, then akcija (Ananas validates discount against current basePrice, not newBasePrice).'
+                    : 'Inventory '.$inventoryId.' (BNC '.$product->id.'): Ananas catalog basePrice is 0. PUT price first (bnc:ananas-sync-linked --inventory='.$inventoryId.' --force --confirm), wait until GET basePrice > 0, then akcija.';
 
                 continue;
             }
@@ -187,6 +191,7 @@ class AnanasDiscountService
         ?string $currency = null,
     ): array {
         $ids = $this->normalizeInventoryIds($inventoryIds);
+        $catalog = $this->ananasCatalogPrices($ids);
         $built = $this->buildSchedule(
             inventoryIds: $ids,
             type: $type,
@@ -197,7 +202,8 @@ class AnanasDiscountService
             from: $from,
             to: $to,
             currency: $currency,
-            remoteBaseByInventory: $this->ananasBasePrices($ids),
+            remoteBaseByInventory: $catalog['current'],
+            pendingNewBaseByInventory: $catalog['pending'],
         );
 
         if ($dryRun || $built['payloads'] === []) {
@@ -405,19 +411,23 @@ class AnanasDiscountService
     }
 
     /**
+     * Current catalog basePrice for akcije. newBasePrice is tomorrow's price (00:01)
+     * and must not be used as the discount comparison base.
+     *
      * @param  list<int>  $inventoryIds
-     * @return array<int, float>
+     * @return array{current: array<int, float>, pending: array<int, float>}
      */
-    private function ananasBasePrices(array $inventoryIds): array
+    private function ananasCatalogPrices(array $inventoryIds): array
     {
         if ($inventoryIds === [] || ! $this->settings->hasCredentials()) {
-            return [];
+            return ['current' => [], 'pending' => []];
         }
 
-        $prices = [];
+        $current = [];
+        $pending = [];
 
         try {
-            $prices = $this->apiClient->getInventoryPrices($inventoryIds);
+            $current = $this->apiClient->getInventoryPrices($inventoryIds);
         } catch (\Throwable $e) {
             Log::warning('Ananas GET /prices failed for discount basePrice', [
                 'integration' => 'ananas',
@@ -436,14 +446,14 @@ class AnanasDiscountService
                 if ($id <= 0 || ! in_array($id, $inventoryIds, true)) {
                     continue;
                 }
-                if (($prices[$id] ?? 0) > 0) {
-                    continue;
-                }
 
-                $base = (float) ($row['basePrice'] ?? 0);
-                $new = (float) ($row['newBasePrice'] ?? 0);
-                $chosen = $base > 0 ? $base : $new;
-                $prices[$id] = round($chosen, 2);
+                $base = round((float) ($row['basePrice'] ?? 0), 2);
+                $new = round((float) ($row['newBasePrice'] ?? 0), 2);
+                $current[$id] = $base;
+
+                if ($base <= 0 && $new > 0) {
+                    $pending[$id] = $new;
+                }
             }
         } catch (\Throwable $e) {
             Log::warning('Ananas GET /products failed for discount basePrice', [
@@ -452,7 +462,7 @@ class AnanasDiscountService
             ]);
         }
 
-        return $prices;
+        return ['current' => $current, 'pending' => $pending];
     }
 
     private function findLinkedMapping(int $inventoryId): ?AnanasProductMapping

@@ -188,6 +188,58 @@ class AnanasDiscountServiceTest extends TestCase
         $this->assertStringContainsString('basePrice is 0', $result['skipped'][0]);
     }
 
+    public function test_dry_run_skips_when_current_base_is_zero_and_new_base_is_pending(): void
+    {
+        config([
+            'bnc.ananas_env' => 'stage',
+            'bnc.ananas_client_id' => 'test-client-id',
+            'bnc.ananas_client_secret' => 'test-client-secret',
+            'bnc.ananas_stage_token_url' => 'https://api.qa2.ananastest.com/iam/api/v1/auth/token',
+            'bnc.ananas_stage_product_base_url' => 'https://api.qa2.ananastest.com',
+            'bnc.ananas_stage_svc_base_url' => 'https://api.svc.qa2.ananastest.com',
+        ]);
+
+        $this->createLinkedProduct(2567071, 2519.00);
+
+        Http::fake([
+            'api.qa2.ananastest.com/iam/api/v1/auth/token' => Http::response([
+                'access_token' => 'token-abc',
+                'expires_in' => 900,
+            ], 200),
+            '*merchant-integration/prices*' => Http::response([
+                [
+                    'merchantInventoryId' => 2567071,
+                    'basePrice' => 2519,
+                ],
+            ], 200),
+            '*merchant-integration/products*' => Http::response([
+                'content' => [
+                    [
+                        'id' => 2567071,
+                        'ean' => '4711387783597',
+                        'basePrice' => 0,
+                        'newBasePrice' => 2519,
+                    ],
+                ],
+                'totalElements' => 1,
+            ], 200),
+        ]);
+
+        $result = app(AnanasDiscountService::class)->schedule(
+            inventoryIds: [2567071],
+            percentOff: 10,
+            days: 7,
+            useBncSale: false,
+            dryRun: true,
+        );
+
+        $this->assertSame(0, $result['scheduled']);
+        $this->assertSame([], $result['payloads']);
+        $this->assertNotEmpty($result['skipped']);
+        $this->assertStringContainsString('newBasePrice 2519.00', $result['skipped'][0]);
+        $this->assertStringContainsString('00:01', $result['skipped'][0]);
+    }
+
     public function test_live_schedule_surfaces_ananas_error_instead_of_preview(): void
     {
         config([
