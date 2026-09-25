@@ -77,9 +77,10 @@ class AnanasPublishProductsCommand extends Command
 
         if (! $dryRun && $result['published'] > 0) {
             $this->newLine();
-            $this->comment('Publish is asynchronous. Ananas emails when done. Then:');
+            $this->comment('Publish is asynchronous. Ananas emails when done. Then lookup and PUT regular prices if GET basePrice is 0:');
             $this->comment('  php artisan bnc:ananas-lookup-product');
-            $this->comment('  php artisan bnc:ananas-schedule-discount --percent=10 --days=7 --dry-run');
+            $this->comment('  php artisan bnc:ananas-sync-linked --force --vat=17 --dry-run');
+            $this->comment('Akcija (discounts API) nije dio importa — samo ako se posebno zatraži.');
         }
 
         return $result['errors'] === [] ? self::SUCCESS : self::FAILURE;

@@ -34,10 +34,13 @@ class AnanasEligibilityPolicy
     /**
      * Docs list 0/10/20. Stage QA2 for this BiH merchant accepted only 17 on PUT bulk.
      * The number is a tax-rate tag — it does not add VAT on top of BNC basePrice.
+     * vat=0 is remapped to 17 in resolvedVatRate() so import of ~2000 does not repeat the PUT rejection.
      *
      * @var list<int>
      */
     public const ALLOWED_VAT_RATES = [0, 10, 17, 20];
+
+    public const MERCHANT_VAT_RATE = 17;
 
     public function __construct(
         private readonly AnanasExportScope $exportScope,
@@ -140,13 +143,19 @@ class AnanasEligibilityPolicy
     {
         $fromConfig = config('bnc.ananas_vat_rate');
 
+        $rate = null;
+
         if ($fromConfig !== null && $fromConfig !== '') {
-            return $this->normalizeVatRate($fromConfig);
+            $rate = $this->normalizeVatRate($fromConfig);
+        } else {
+            $rate = $this->normalizeVatRate($this->settings->all()['vat_rate'] ?? null);
         }
 
-        $fromSettings = $this->settings->all()['vat_rate'] ?? null;
+        if ($rate === 0) {
+            return self::MERCHANT_VAT_RATE;
+        }
 
-        return $this->normalizeVatRate($fromSettings);
+        return $rate;
     }
 
     public function normalizeVatRate(mixed $value): ?int

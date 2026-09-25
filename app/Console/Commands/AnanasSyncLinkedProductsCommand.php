@@ -109,7 +109,7 @@ class AnanasSyncLinkedProductsCommand extends Command
                     ];
                 }, $result['items']),
             );
-            $this->comment('Ananas may apply a new basePrice after midnight (00:01). Lookup until GET basePrice > 0, then schedule akcija.');
+            $this->comment('Ananas may apply a new basePrice after midnight (00:01). Lookup until GET basePrice > 0 — that is the regular catalog price. Do not POST discounts unless an akcija is requested.');
         }
 
         return $result['errors'] === [] ? self::SUCCESS : self::FAILURE;

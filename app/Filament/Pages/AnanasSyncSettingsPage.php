@@ -137,15 +137,15 @@ class AnanasSyncSettingsPage extends Page implements HasForms
                             ->label('Dozvoli catalog write API pozive')
                             ->helperText('Uključite prije live importa, probe i publish. Dry-run radi i bez ovoga. POST import ostaje blokiran dok je isključeno.'),
                         Select::make('vat_rate')
-                            ->label('Ananas VAT (0 / 10 / 17 / 20)')
+                            ->label('Ananas VAT (PDV)')
                             ->options([
-                                0 => '0 — samo ako Ananas prihvata 0 (dokumentacija)',
+                                17 => '17 — BiH (Stage PUT); BNC cijena se NE uvećava',
                                 10 => '10',
-                                17 => '17 — BiH merchant (Stage QA2 PUT); cijena se NE uvećava',
                                 20 => '20',
+                                0 => '0 — dokumentacija; kod šalje 17 jer je Stage odbio 0',
                             ])
                             ->default(17)
-                            ->helperText('basePrice = PriceCalculator regularPrice (konačna BAM/KM). Polje vat je oznaka stope, ne dodatak na cijenu. Stage je odbio vat=0: dozvoljeno je samo 17.'),
+                            ->helperText('Import i PUT šalju regularPrice (redovna BAM/KM), ne akcijsku. Polje vat je oznaka stope. Stage je za ovaj nalog prihvatio samo 17; 0 u .env se mapira na 17.'),
                         Select::make('discount_currency')
                             ->label('Valuta akcije (discountPriceCurrency)')
                             ->options([

@@ -162,13 +162,13 @@
                         </x-filament::button>
                     </div>
                     <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                        Publish body je lista merchant inventory ID-eva (GET <code>id</code>: 2566378 / 2566379).
-                        Job je async — Ananas šalje email; GET status treba postati PUBLISHED.
+                        Import šalje <strong>redovnu</strong> BNC cijenu (<code>regularPrice</code>) i PDV tag 17 — bez akcijske cijene.
+                        Ako GET <code>basePrice</code> ostane 0, PUT linked sync s <code>vat=17</code>.
                     </p>
                 </div>
 
                 <div>
-                    <p class="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Akcija (discounts API)</p>
+                    <p class="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">Akcija (opciono — nije dio importa 1000–2000)</p>
                     <div class="mb-3 grid max-w-md grid-cols-2 gap-3">
                         <div>
                             <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">Popust % (min 5)</label>
@@ -206,9 +206,8 @@
                         </x-filament::button>
                     </div>
                     <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                        Ananas: SALE ≤ 30 dana, cijena akcije ≤ 95% regularne, bez preklapanja.
-                        <code>discountPriceCurrency</code> mora biti valuta merchant inventoryja (za BNC: <code>BAM</code>, ista cifra kao import <code>basePrice</code>, bez FX).
-                        QA2 je odbio <code>RSD</code>. Ako BNC artikal već ima nižu display cijenu (≥5% off), koristi se ta.
+                        Katalog ide sa regularnom cijenom. Akcija se šalje samo ako se izričito zatraži (SALE ≤ 30 dana, BAM, ≤ 95% regularne).
+                        QA2 je odbio <code>RSD</code>.
                     </p>
                 </div>
             </div>

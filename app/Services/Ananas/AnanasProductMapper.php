@@ -69,6 +69,7 @@ class AnanasProductMapper
             'gallery' => $images,
             'packageWeightValue' => $weight->resolvedWeightKg,
             'packageWeightUnit' => 'KG',
+            // Regular BNC sell price (VAT already in the number). Never displayPrice / akcija.
             'basePrice' => round($pricing->regularPrice, 2),
             'vat' => $this->eligibilityPolicy->resolvedVatRate(),
             'stockLevel' => max(0, (int) $product->available_stock),

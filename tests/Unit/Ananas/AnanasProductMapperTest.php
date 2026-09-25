@@ -46,7 +46,7 @@ class AnanasProductMapperTest extends TestCase
         $payload = $mapper->map($product, $mapping);
 
         $this->assertSame(199.99, $payload['basePrice']);
-        $this->assertSame(0, $payload['vat']);
+        $this->assertSame(17, $payload['vat']);
         $this->assertSame('KG', $payload['packageWeightUnit']);
         $this->assertSame('ITShop', $payload['productType']);
     }

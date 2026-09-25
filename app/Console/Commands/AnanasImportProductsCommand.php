@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Services\Ananas\AnanasCatalogWriteGuard;
+use App\Services\Ananas\AnanasEligibilityPolicy;
 use App\Services\Ananas\AnanasProductImportService;
 use App\Services\Ananas\AnanasSyncSettings;
 use Illuminate\Console\Command;
@@ -22,6 +23,7 @@ class AnanasImportProductsCommand extends Command
         AnanasProductImportService $importService,
         AnanasSyncSettings $settings,
         AnanasCatalogWriteGuard $writeGuard,
+        AnanasEligibilityPolicy $eligibilityPolicy,
     ): int {
         if (! $settings->hasCredentials()) {
             $this->error('Ananas credentials are not configured.');
@@ -52,6 +54,10 @@ class AnanasImportProductsCommand extends Command
             'Ananas import batch (%s, %s)',
             $settings->environment(),
             $dryRun ? 'dry-run' : 'live',
+        ));
+        $this->comment(sprintf(
+            'basePrice = BNC regularPrice (not akcija). VAT tag = %s (0 in .env is sent as 17).',
+            (string) ($eligibilityPolicy->resolvedVatRate() ?? '—'),
         ));
 
         try {

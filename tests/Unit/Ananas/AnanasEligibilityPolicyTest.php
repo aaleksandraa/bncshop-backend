@@ -139,6 +139,16 @@ class AnanasEligibilityPolicyTest extends TestCase
         $this->assertTrue($this->policy->evaluate($this->createExportReadyProduct())->eligible);
     }
 
+    public function test_vat_zero_in_config_is_sent_as_merchant_17(): void
+    {
+        config(['bnc.ananas_vat_rate' => 0]);
+
+        $this->policy = app(AnanasEligibilityPolicy::class);
+
+        $this->assertSame(17, $this->policy->resolvedVatRate());
+        $this->assertSame(0, $this->policy->normalizeVatRate(0));
+    }
+
     public function test_assert_can_export_throws_for_refurbished_product(): void
     {
         $product = Product::factory()->create(['is_refurbished' => true]);
