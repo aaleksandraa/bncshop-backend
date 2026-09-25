@@ -79,6 +79,13 @@ class AnanasDiscountService
                 continue;
             }
 
+            if (array_key_exists($inventoryId, $remoteBaseByInventory)
+                && round((float) $remoteBaseByInventory[$inventoryId], 2) <= 0) {
+                $skipped[] = 'Inventory '.$inventoryId.' (BNC '.$product->id.'): Ananas catalog basePrice is 0. PUT price first (bnc:ananas-sync-linked --inventory='.$inventoryId.' --force --confirm), wait until GET basePrice > 0, then akcija.';
+
+                continue;
+            }
+
             $pricing = $this->priceCalculator->calculate($product);
             $bncRegular = round($pricing->regularPrice, 2);
             $ananasBase = round((float) ($remoteBaseByInventory[$inventoryId] ?? 0), 2);
@@ -436,9 +443,7 @@ class AnanasDiscountService
                 $base = (float) ($row['basePrice'] ?? 0);
                 $new = (float) ($row['newBasePrice'] ?? 0);
                 $chosen = $base > 0 ? $base : $new;
-                if ($chosen > 0) {
-                    $prices[$id] = round($chosen, 2);
-                }
+                $prices[$id] = round($chosen, 2);
             }
         } catch (\Throwable $e) {
             Log::warning('Ananas GET /products failed for discount basePrice', [

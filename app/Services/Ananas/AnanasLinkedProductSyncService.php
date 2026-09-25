@@ -18,21 +18,35 @@ class AnanasLinkedProductSyncService
     /**
      * @return array{updated: int, skipped: int, errors: list<string>}
      */
-    public function syncLinkedStockAndPrice(int $limit = 25, bool $dryRun = false, bool $allowProduction = false): array
-    {
-        $limit = max(1, min($limit, 100));
+    public function syncLinkedStockAndPrice(
+        int $limit = 25,
+        bool $dryRun = false,
+        bool $allowProduction = false,
+        array $inventoryIds = [],
+        bool $force = false,
+    ): array {
+        $limit = max(1, min($limit, 2000));
         $updated = 0;
         $skipped = 0;
         $errors = [];
         $payloads = [];
+        $wanted = array_values(array_unique(array_filter(array_map('intval', $inventoryIds), static fn (int $id): bool => $id > 0)));
 
-        $mappings = AnanasProductMapping::query()
+        $query = AnanasProductMapping::query()
             ->where('local_status', AnanasProductMapping::LOCAL_LINKED)
             ->whereNotNull('ananas_product_id')
             ->orderByDesc('last_success_at')
             ->limit($limit)
-            ->with(['product.attributeValues.attributeDefinition'])
-            ->get();
+            ->with(['product.attributeValues.attributeDefinition']);
+
+        if ($wanted !== []) {
+            $query->where(function ($inner) use ($wanted): void {
+                $inner->whereIn('merchant_inventory_id', array_map('strval', $wanted))
+                    ->orWhereIn('ananas_product_id', array_map('strval', $wanted));
+            });
+        }
+
+        $mappings = $query->get();
 
         foreach ($mappings as $mapping) {
             if (! $mapping instanceof AnanasProductMapping) {
@@ -47,7 +61,7 @@ class AnanasLinkedProductSyncService
                 continue;
             }
 
-            $item = $this->buildBulkUpdateItem($mapping, $product);
+            $item = $this->buildBulkUpdateItem($mapping, $product, $force);
 
             if ($item === null) {
                 $skipped++;
@@ -59,14 +73,28 @@ class AnanasLinkedProductSyncService
         }
 
         if ($payloads === []) {
-            return compact('updated', 'skipped', 'errors');
+            return compact('updated', 'skipped', 'errors') + ['items' => []];
         }
+
+        $itemsPreview = array_map(static function (array $row): array {
+            $item = $row['item'];
+            $mapping = $row['mapping'];
+
+            return [
+                'id' => $item['id'] ?? null,
+                'product_id' => $mapping->product_id,
+                'ean' => $mapping->ean,
+                'basePrice' => $item['basePrice'] ?? null,
+                'stockLevel' => $item['stockLevel'] ?? null,
+            ];
+        }, $payloads);
 
         if ($dryRun) {
             return [
                 'updated' => count($payloads),
                 'skipped' => $skipped,
                 'errors' => [],
+                'items' => $itemsPreview,
             ];
         }
 
@@ -79,6 +107,7 @@ class AnanasLinkedProductSyncService
                 'updated' => 0,
                 'skipped' => $skipped,
                 'errors' => [$e->getMessage()],
+                'items' => $itemsPreview,
             ];
         }
 
@@ -108,7 +137,7 @@ class AnanasLinkedProductSyncService
             );
         }
 
-        return compact('updated', 'skipped', 'errors');
+        return compact('updated', 'skipped', 'errors') + ['items' => $itemsPreview];
     }
 
     /**
@@ -226,9 +255,9 @@ class AnanasLinkedProductSyncService
     /**
      * @return array<string, mixed>|null
      */
-    private function buildBulkUpdateItem(AnanasProductMapping $mapping, Product $product): ?array
+    private function buildBulkUpdateItem(AnanasProductMapping $mapping, Product $product, bool $force = false): ?array
     {
-        $remoteId = (int) $mapping->ananas_product_id;
+        $remoteId = $mapping->inventoryId();
 
         if ($remoteId <= 0) {
             return null;
@@ -252,7 +281,7 @@ class AnanasLinkedProductSyncService
         $stockHash = hash('sha256', (string) $stockLevel);
         $priceHash = hash('sha256', (string) $basePrice);
 
-        if ($mapping->stock_hash === $stockHash && $mapping->price_hash === $priceHash) {
+        if (! $force && $mapping->stock_hash === $stockHash && $mapping->price_hash === $priceHash) {
             return null;
         }
 

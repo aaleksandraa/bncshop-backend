@@ -11,6 +11,8 @@ class AnanasSyncLinkedProductsCommand extends Command
 {
     protected $signature = 'bnc:ananas-sync-linked
                             {--limit=25 : Max linked mappings to bulk-update}
+                            {--inventory= : Comma-separated merchant inventory ids}
+                            {--force : PUT even when local price/stock hashes match}
                             {--dry-run : Build update payloads without PUT}
                             {--confirm : Required for live PUT bulk update}
                             {--allow-production : Allow writes when ANANAS_ENV=production}';
@@ -44,10 +46,24 @@ class AnanasSyncLinkedProductsCommand extends Command
             return self::FAILURE;
         }
 
+        $inventoryRaw = trim((string) $this->option('inventory'));
+        $inventory = array_values(array_unique(array_filter(
+            array_map('intval', explode(',', $inventoryRaw)),
+            static fn (int $id): bool => $id > 0,
+        )));
+
+        if ($inventoryRaw !== '' && $inventory === []) {
+            $this->error('Invalid --inventory. Use numeric merchant inventory ids, e.g. 2567071,2567072');
+
+            return self::FAILURE;
+        }
+
         $result = $syncService->syncLinkedStockAndPrice(
             limit: (int) $this->option('limit'),
             dryRun: $dryRun,
             allowProduction: $allowProduction,
+            inventoryIds: $inventory,
+            force: (bool) $this->option('force'),
         );
 
         $this->info(sprintf(
@@ -59,6 +75,23 @@ class AnanasSyncLinkedProductsCommand extends Command
 
         foreach ($result['errors'] as $error) {
             $this->error($error);
+        }
+
+        if (($result['items'] ?? []) !== []) {
+            $this->newLine();
+            $this->table(
+                ['Inv ID', 'BNC', 'EAN', 'basePrice', 'stock'],
+                array_map(static function (array $row): array {
+                    return [
+                        (string) ($row['id'] ?? '—'),
+                        (string) ($row['product_id'] ?? '—'),
+                        (string) ($row['ean'] ?? '—'),
+                        isset($row['basePrice']) ? number_format((float) $row['basePrice'], 2, '.', '') : '—',
+                        (string) ($row['stockLevel'] ?? '—'),
+                    ];
+                }, $result['items']),
+            );
+            $this->comment('Ananas may apply a new basePrice after midnight (00:01). Lookup until GET basePrice > 0, then schedule akcija.');
         }
 
         return $result['errors'] === [] ? self::SUCCESS : self::FAILURE;
