@@ -50,7 +50,7 @@ class AnanasCategoryMappingResource extends Resource
             Forms\Components\TextInput::make('ananas_category')
                 ->label('Ananas category (free text)')
                 ->maxLength(255)
-                ->helperText('Tačan Ananas string (GET product-type ili GET products categories[]). Ne uključivati export dok naziv nije isti kao kod njih — „Laptopi“ nije isto što i „Gaming laptopi“.')
+                ->helperText('Tačan Ananas string (GET product-type ili GET products categories[]). Ne uključivati export dok naziv nije isti kao kod njih — Laptopi nije isto što i Gaming laptopi.'),
             Forms\Components\Select::make('category_validation_status')
                 ->label('Validacija kategorije')
                 ->options([
