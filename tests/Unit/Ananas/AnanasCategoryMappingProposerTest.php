@@ -3,7 +3,6 @@
 namespace Tests\Unit\Ananas;
 
 use App\Models\AnanasCategoryMapping;
-use App\Models\AnanasProductType;
 use App\Models\Category;
 use App\Models\Product;
 use App\Services\Ananas\AnanasCategoryMappingProposer;
@@ -14,11 +13,33 @@ class AnanasCategoryMappingProposerTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_exact_normalized_name_matches_and_skips_already_scoped_tree(): void
+    public function test_does_not_map_sporeti_to_sport_product_type(): void
     {
-        $laptops = Category::factory()->create(['name' => 'Laptopi', 'display_name' => 'Laptopi']);
-        $monitors = Category::factory()->create(['name' => 'Monitori', 'display_name' => 'Monitori']);
-        $phones = Category::factory()->create(['name' => 'Telefoni', 'display_name' => 'SMART mobilni telefoni']);
+        $parent = Category::factory()->create(['name' => 'Bijela tehnika']);
+        $sporeti = Category::factory()->create([
+            'name' => 'Šporeti',
+            'display_name' => 'Šporeti',
+            'parent_id' => $parent->id,
+        ]);
+        Product::factory()->create(['category_id' => $sporeti->id, 'is_public' => true, 'status' => 'active']);
+
+        $result = app(AnanasCategoryMappingProposer::class)->propose(minProducts: 1, minScore: 88);
+        $row = collect($result['suggestions'])->firstWhere('category_id', $sporeti->id)
+            ?? collect($result['unmatched'])->firstWhere('category_id', $sporeti->id);
+
+        $this->assertNotNull($row);
+        $this->assertNotSame('Sport', $row['ananas_category']);
+    }
+
+    public function test_monitors_match_itshop_leaf_and_skips_enabled_scope(): void
+    {
+        $it = Category::factory()->create(['name' => 'IT oprema']);
+        $laptops = Category::factory()->create(['name' => 'Laptopi', 'parent_id' => $it->id]);
+        $monitors = Category::factory()->create([
+            'name' => 'Monitori',
+            'display_name' => 'Monitori',
+            'parent_id' => $it->id,
+        ]);
 
         AnanasCategoryMapping::query()->create([
             'category_id' => $laptops->id,
@@ -29,40 +50,48 @@ class AnanasCategoryMappingProposerTest extends TestCase
             'category_validation_status' => AnanasCategoryMapping::VALIDATION_VALIDATED,
         ]);
 
-        AnanasProductType::query()->create(['name' => 'ITShop']);
-        AnanasProductType::query()->create(['name' => 'Monitori']);
-        AnanasProductType::query()->create(['name' => 'SMART mobilni telefoni']);
-
         Product::factory()->create(['category_id' => $monitors->id, 'is_public' => true, 'status' => 'active']);
-        Product::factory()->create(['category_id' => $phones->id, 'is_public' => true, 'status' => 'active']);
         Product::factory()->create(['category_id' => $laptops->id, 'is_public' => true, 'status' => 'active']);
 
-        $result = app(AnanasCategoryMappingProposer::class)->propose(minProducts: 1, minScore: 82);
-
+        $result = app(AnanasCategoryMappingProposer::class)->propose(minProducts: 1, minScore: 88);
         $ids = array_column($result['suggestions'], 'category_id');
+
         $this->assertContains($monitors->id, $ids);
         $this->assertNotContains($laptops->id, $ids);
 
         $monitor = collect($result['suggestions'])->firstWhere('category_id', $monitors->id);
         $this->assertSame('Monitori', $monitor['ananas_category']);
+        $this->assertSame('ITShop', $monitor['product_type']);
         $this->assertSame(100, $monitor['score']);
     }
 
-    public function test_apply_creates_disabled_mappings(): void
+    public function test_prune_removes_disabled_proposals_only(): void
     {
-        $monitors = Category::factory()->create(['name' => 'Monitori']);
-        AnanasProductType::query()->create(['name' => 'Monitori']);
-        Product::factory()->create(['category_id' => $monitors->id, 'is_public' => true, 'status' => 'active']);
+        $a = Category::factory()->create();
+        $b = Category::factory()->create();
 
-        $proposer = app(AnanasCategoryMappingProposer::class);
-        $proposed = $proposer->propose(minProducts: 1, minScore: 82);
-        $applied = $proposer->applySuggestions($proposed['suggestions'], enableExact: false);
+        $proposal = AnanasCategoryMapping::query()->create([
+            'category_id' => $a->id,
+            'ananas_product_type' => 'ITShop',
+            'ananas_category' => 'Sport',
+            'is_enabled' => false,
+            'include_descendants' => true,
+            'category_validation_status' => AnanasCategoryMapping::VALIDATION_UNKNOWN,
+            'category_validation_notes' => 'Predloženo iz GET product-type (score 83).',
+        ]);
+        AnanasCategoryMapping::query()->create([
+            'category_id' => $b->id,
+            'ananas_product_type' => 'ITShop',
+            'ananas_category' => 'Gaming laptopi',
+            'is_enabled' => true,
+            'include_descendants' => true,
+            'category_validation_status' => AnanasCategoryMapping::VALIDATION_VALIDATED,
+        ]);
 
-        $this->assertSame(1, $applied['created']);
-        $mapping = AnanasCategoryMapping::query()->where('category_id', $monitors->id)->first();
-        $this->assertNotNull($mapping);
-        $this->assertFalse($mapping->is_enabled);
-        $this->assertSame('Monitori', $mapping->ananas_category);
-        $this->assertSame('ITShop', $mapping->ananas_product_type);
+        $pruned = app(AnanasCategoryMappingProposer::class)->pruneUnvalidatedProposals();
+
+        $this->assertSame(1, $pruned['deleted']);
+        $this->assertFalse(AnanasCategoryMapping::query()->whereKey($proposal->id)->exists());
+        $this->assertTrue(AnanasCategoryMapping::query()->where('ananas_category', 'Gaming laptopi')->exists());
     }
 }

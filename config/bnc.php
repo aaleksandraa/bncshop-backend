@@ -226,7 +226,70 @@ return [
 
     // Suggested BNC→Ananas mappings use this productType (proven on Stage: ITShop + category string).
     'ananas_mapping_default_product_type' => env('ANANAS_MAPPING_DEFAULT_PRODUCT_TYPE', 'ITShop'),
-    'ananas_mapping_min_score' => (int) env('ANANAS_MAPPING_MIN_SCORE', 82),
+    'ananas_mapping_min_score' => (int) env('ANANAS_MAPPING_MIN_SCORE', 88),
+
+    /*
+    | GET /product-type returns these 10 templates — they are productType, NOT leaf category.
+    | Do not fuzzy-match "Šporeti" to "Sport".
+    */
+    'ananas_product_type_templates' => [
+        'Moda',
+        'BabyKidsToys',
+        'ITShop',
+        'Automotive',
+        'Super Market',
+        'KnjižaraOfficeSchool',
+        'BeautyHealth',
+        'Kuća i vrt',
+        'Sport',
+        'Aparati',
+    ],
+
+    /*
+    | Leaf category strings for import "category" (GET products categories[] / Ananas IT shop).
+    | Matched to BNC publicName; never use product-type template names as category.
+    */
+    'ananas_category_catalog' => [
+        'ITShop' => [
+            'Gaming laptopi',
+            'Laptopi',
+            'Laptop računari',
+            'Monitori',
+            'Slušalice',
+            'Miševi',
+            'Tastature',
+            'Televizori',
+            'SMART mobilni telefoni',
+            'Mobilni telefoni',
+            'Nosači za televizor',
+            'SSD',
+            'Desktop računari',
+            'IP kamere',
+            'Pametni satovi',
+            'Zaštitna stakla',
+            'Toneri',
+            'Tinte',
+            'Kućišta',
+            'Memorija',
+            'Hlađenje',
+            'Switch',
+            'Igrice',
+        ],
+        'Aparati' => [
+            'Šporeti',
+        ],
+        'KnjižaraOfficeSchool' => [
+            'Fax aparati',
+        ],
+    ],
+
+    'ananas_category_aliases' => [
+        'mobilni telefoni' => 'SMART mobilni telefoni',
+        'desktop' => 'Desktop računari',
+        'laptopi' => 'Laptop računari',
+        'tinte i kertridzi' => 'Tinte',
+        'pametni satovi' => 'Pametni satovi',
+    ],
 
     'ananas_onboarding_email' => env('ANANAS_ONBOARDING_EMAIL', 'onboarding@ananas.rs'),
 

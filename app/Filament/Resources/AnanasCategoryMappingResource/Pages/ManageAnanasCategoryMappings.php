@@ -47,7 +47,7 @@ class ManageAnanasCategoryMappings extends ManageRecords
                 ->color('gray')
                 ->requiresConfirmation()
                 ->modalHeading('Predloži BNC → Ananas mapiranja')
-                ->modalDescription('Uspoređuje BNC kategorije (koje još nisu pokrivene) sa GET product-type stringovima. Kreira isključena mapiranja — uključite ručno samo tačne nazive. productType ostaje ITShop.')
+                ->modalDescription('Uspoređuje BNC leaf kategorije sa katalogom Ananas category stringova (Monitori, Slušalice…), ne sa 10 product-type šablona. Kreira isključena mapiranja.')
                 ->action(function (AnanasCategoryMappingProposer $proposer): void {
                     try {
                         $result = $proposer->propose(minProducts: 1, minScore: (int) config('bnc.ananas_mapping_min_score', 82), refreshTypes: true);
