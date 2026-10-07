@@ -58,8 +58,8 @@ class PriceCalculatorSupplierPriceAdjustmentTest extends TestCase
 
         $result = app(PriceCalculator::class)->calculate($product->fresh(['supplierOffers.supplier', 'category']));
 
-        $this->assertSame(871.0, $result->regularPrice);
-        $this->assertSame(871.0, $result->displayPrice);
+        $this->assertSame(869.0, $result->regularPrice);
+        $this->assertSame(869.0, $result->displayPrice);
         $this->assertFalse($result->onSale);
         $this->assertSame(20.0, $result->appliedPriceAdjustment);
         $this->assertSame('Startech', $result->supplierName);
@@ -101,8 +101,8 @@ class PriceCalculatorSupplierPriceAdjustmentTest extends TestCase
 
         $result = app(PriceCalculator::class)->calculate($product->fresh(['supplierOffers.supplier', 'category']));
 
-        $this->assertSame(140.0, $result->regularPrice);
-        $this->assertSame(140.0, $result->displayPrice);
+        $this->assertSame(139.0, $result->regularPrice);
+        $this->assertSame(139.0, $result->displayPrice);
         $this->assertFalse($result->onSale);
         $this->assertSame(20.0, $result->appliedPriceAdjustment);
     }
@@ -147,7 +147,7 @@ class PriceCalculatorSupplierPriceAdjustmentTest extends TestCase
 
         $result = app(PriceCalculator::class)->calculate($product->fresh(['supplierOffers.supplier', 'category']));
 
-        $this->assertSame(851.0, $result->regularPrice);
+        $this->assertSame(849.0, $result->regularPrice);
         $this->assertNull($result->appliedPriceAdjustment);
     }
 
@@ -245,7 +245,7 @@ class PriceCalculatorSupplierPriceAdjustmentTest extends TestCase
 
         $result = app(PriceCalculator::class)->calculate($product->fresh(['supplierOffers.supplier', 'category']));
 
-        $this->assertSame(851.0, $result->regularPrice);
+        $this->assertSame(849.0, $result->regularPrice);
         $this->assertNull($result->appliedPriceAdjustment);
         $this->assertSame('Comtrade', $result->supplierName);
     }
@@ -284,8 +284,8 @@ class PriceCalculatorSupplierPriceAdjustmentTest extends TestCase
 
         $result = app(PriceCalculator::class)->calculate($product->fresh(['supplierOffers.supplier', 'category']));
 
-        $this->assertSame(129.0, $result->regularPrice);
-        $this->assertSame(129.0, $result->displayPrice);
+        $this->assertSame(119.0, $result->regularPrice);
+        $this->assertSame(119.0, $result->displayPrice);
         $this->assertFalse($result->onSale);
         $this->assertSame(20.0, $result->appliedPriceAdjustment);
     }

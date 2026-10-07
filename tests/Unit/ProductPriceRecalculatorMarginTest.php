@@ -69,8 +69,8 @@ class ProductPriceRecalculatorMarginTest extends TestCase
         $this->assertSame(2, $count);
         $this->assertSame(30.0, (float) $unlocked->fresh()->margin_percentage);
         $this->assertSame(40.0, (float) $locked->fresh()->margin_percentage);
-        $this->assertSame(1368.0, (float) $unlocked->fresh()->regular_price);
-        $this->assertSame(1473.0, (float) $locked->fresh()->regular_price);
+        $this->assertSame(1359.0, (float) $unlocked->fresh()->regular_price);
+        $this->assertSame(1469.0, (float) $locked->fresh()->regular_price);
     }
 
     public function test_recalculate_prices_command_fixes_a_single_product(): void
@@ -110,7 +110,7 @@ class ProductPriceRecalculatorMarginTest extends TestCase
 
         $fresh = $product->fresh();
 
-        $this->assertSame(787.0, (float) $fresh->regular_price);
+        $this->assertSame(779.0, (float) $fresh->regular_price);
         $this->assertSame(22.0, (float) $fresh->margin_percentage);
     }
 
@@ -165,7 +165,7 @@ class ProductPriceRecalculatorMarginTest extends TestCase
 
         $this->assertSame(1, $count);
         $this->assertSame(450.0, (float) $eline->fresh()->regular_price);
-        $this->assertSame(787.0, (float) $a1->fresh()->regular_price);
+        $this->assertSame(779.0, (float) $a1->fresh()->regular_price);
     }
 
     public function test_recalculate_prices_command_skips_eline_product(): void

@@ -57,9 +57,9 @@ class RecalculateAllProductPricesJobTest extends TestCase
 
         $fresh = $product->fresh();
 
-        $this->assertSame(787.0, (float) $fresh->regular_price);
-        $this->assertSame(787.0, (float) $fresh->calculated_price);
-        $this->assertSame(787.0, (float) $fresh->display_price);
+        $this->assertSame(779.0, (float) $fresh->regular_price);
+        $this->assertSame(779.0, (float) $fresh->calculated_price);
+        $this->assertSame(779.0, (float) $fresh->display_price);
     }
 
     public function test_start_dispatches_one_job_that_chains_remaining_chunks(): void
@@ -221,7 +221,7 @@ class RecalculateAllProductPricesJobTest extends TestCase
         ]);
 
         $this->assertSame(1, $count);
-        $this->assertSame(787.0, (float) $unlocked->fresh()->regular_price);
+        $this->assertSame(779.0, (float) $unlocked->fresh()->regular_price);
         $this->assertSame(100.0, (float) $locked->fresh()->regular_price);
         $this->assertSame(450.0, (float) $eline->fresh()->regular_price);
     }

@@ -55,12 +55,12 @@ class PriceCalculatorSupplierMarginTest extends TestCase
 
         $result = app(PriceCalculator::class)->calculate($product->fresh(['supplierOffers.supplier', 'category']));
 
-        $this->assertSame(851.0, $result->regularPrice);
+        $this->assertSame(849.0, $result->regularPrice);
         $this->assertSame(559.2, $result->wholesalePrice);
         $this->assertSame(30.0, $result->appliedMargin);
         $this->assertSame('rule', $result->marginSource);
         $this->assertSame('Comtrade', $result->supplierName);
-        $this->assertSame(851.0, $result->displayPrice);
+        $this->assertSame(849.0, $result->displayPrice);
     }
 
     public function test_fallback_price_includes_vat_when_api_price_missing(): void
@@ -96,8 +96,8 @@ class PriceCalculatorSupplierMarginTest extends TestCase
 
         $result = app(PriceCalculator::class)->calculate($product->fresh(['supplierOffers.supplier', 'category']));
 
-        $this->assertSame(140.0, $result->regularPrice);
-        $this->assertSame(140.0, $result->displayPrice);
+        $this->assertSame(139.0, $result->regularPrice);
+        $this->assertSame(139.0, $result->displayPrice);
     }
 
     public function test_display_price_uses_wholesale_margin_when_no_supplier_adjustment(): void
@@ -137,8 +137,8 @@ class PriceCalculatorSupplierMarginTest extends TestCase
 
         $result = app(PriceCalculator::class)->calculate($product->fresh(['supplierOffers.supplier', 'category']));
 
-        $this->assertSame(140.0, $result->regularPrice);
-        $this->assertSame(140.0, $result->displayPrice);
+        $this->assertSame(139.0, $result->regularPrice);
+        $this->assertSame(139.0, $result->displayPrice);
         $this->assertFalse($result->onSale);
     }
 
@@ -181,8 +181,8 @@ class PriceCalculatorSupplierMarginTest extends TestCase
 
         $result = app(PriceCalculator::class)->calculate($product->fresh(['supplierOffers.supplier', 'category']));
 
-        $this->assertSame(151.0, $result->regularPrice);
-        $this->assertSame(151.0, $result->displayPrice);
+        $this->assertSame(149.0, $result->regularPrice);
+        $this->assertSame(149.0, $result->displayPrice);
         $this->assertSame(40.0, $result->appliedMargin);
         $this->assertSame('product', $result->marginSource);
     }
@@ -224,8 +224,8 @@ class PriceCalculatorSupplierMarginTest extends TestCase
 
         $result = app(PriceCalculator::class)->calculate($product->fresh(['supplierOffers.supplier', 'category']));
 
-        $this->assertSame(3509.0, $result->regularPrice);
-        $this->assertSame(3509.0, $result->displayPrice);
+        $this->assertSame(3499.0, $result->regularPrice);
+        $this->assertSame(3499.0, $result->displayPrice);
         $this->assertSame(25.0, $result->appliedMargin);
         $this->assertSame('category', $result->marginSource);
     }
@@ -269,8 +269,8 @@ class PriceCalculatorSupplierMarginTest extends TestCase
         $result = $calculator->calculate($product->fresh(['supplierOffers.supplier', 'category']));
 
         $this->assertSame(1284.0, $calculator->roundSellPrice(899 * 1.22 * 1.17));
-        $this->assertSame(1284.0, $result->regularPrice);
-        $this->assertSame(1284.0, $result->displayPrice);
+        $this->assertSame(1279.0, $result->regularPrice);
+        $this->assertSame(1279.0, $result->displayPrice);
     }
 
     public function test_recalculate_writes_applied_margin_onto_unlocked_product(): void
@@ -308,8 +308,8 @@ class PriceCalculatorSupplierMarginTest extends TestCase
         app(PriceCalculator::class)->recalculateAndPersist($product->fresh(['supplierOffers.supplier', 'category']));
 
         $this->assertSame(22.0, (float) $product->fresh()->margin_percentage);
-        $this->assertSame(1284.0, (float) $product->fresh()->regular_price);
-        $this->assertSame(1284.0, (float) $product->fresh()->calculated_price);
+        $this->assertSame(1279.0, (float) $product->fresh()->regular_price);
+        $this->assertSame(1279.0, (float) $product->fresh()->calculated_price);
     }
 
     public function test_recalculate_does_not_overwrite_locked_product_margin(): void
@@ -350,8 +350,8 @@ class PriceCalculatorSupplierMarginTest extends TestCase
         app(PriceCalculator::class)->recalculateAndPersist($product->fresh(['supplierOffers.supplier', 'category']));
 
         $this->assertSame(40.0, (float) $product->fresh()->margin_percentage);
-        $this->assertSame(1473.0, (float) $product->fresh()->calculated_price);
-        $this->assertSame(1473.0, (float) $product->fresh()->regular_price);
+        $this->assertSame(1469.0, (float) $product->fresh()->calculated_price);
+        $this->assertSame(1469.0, (float) $product->fresh()->regular_price);
     }
 
     public function test_recalculate_keeps_locked_regular_price_but_stores_formula(): void
@@ -393,7 +393,21 @@ class PriceCalculatorSupplierMarginTest extends TestCase
         $fresh = $product->fresh();
 
         $this->assertSame(999.0, (float) $fresh->regular_price);
-        $this->assertSame(1284.0, (float) $fresh->calculated_price);
+        $this->assertSame(1279.0, (float) $fresh->calculated_price);
+    }
+
+    public function test_apply_over_100_charm_price_rounds_down_to_nine_of_previous_decade(): void
+    {
+        $calculator = app(PriceCalculator::class);
+
+        $this->assertSame(100.0, $calculator->applyOver100CharmPrice(100));
+        $this->assertSame(100.0, $calculator->applyOver100CharmPrice(99.5));
+        $this->assertSame(339.0, $calculator->applyOver100CharmPrice(341));
+        $this->assertSame(339.0, $calculator->applyOver100CharmPrice(347));
+        $this->assertSame(339.0, $calculator->applyOver100CharmPrice(349));
+        $this->assertSame(349.0, $calculator->applyOver100CharmPrice(350));
+        $this->assertSame(329.0, $calculator->applyOver100CharmPrice(339));
+        $this->assertSame(1279.0, $calculator->applyOver100CharmPrice(1284));
     }
 
     public function test_eline_products_keep_api_price_instead_of_wholesale_margin(): void

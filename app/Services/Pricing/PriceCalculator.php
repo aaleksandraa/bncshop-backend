@@ -216,7 +216,24 @@ class PriceCalculator
         $netPrice = $wholesalePrice * (1 + ($marginPercentage / 100));
         $vatRate = (float) config('bnc.vat_rate_percent', 17) / 100;
 
-        return $this->roundSellPrice(($netPrice * (1 + $vatRate)) + $adjustment);
+        return $this->applyOver100CharmPrice(
+            $this->roundSellPrice(($netPrice * (1 + $vatRate)) + $adjustment)
+        );
+    }
+
+    /**
+     * A1 sell prices above 100 KM end on 9 of the previous decade (340–349 → 339).
+     * Applied after rounding up to whole KM. At most 100 KM is unchanged.
+     */
+    public function applyOver100CharmPrice(float $price): float
+    {
+        $whole = $this->roundSellPrice($price);
+
+        if ($whole <= 100) {
+            return $whole;
+        }
+
+        return (float) ((int) floor($whole / 10) * 10 - 1);
     }
 
     /**
@@ -266,8 +283,12 @@ class PriceCalculator
         $offer = $this->supplierOfferSelector->select($product);
 
         if (! $offer || $offer->supplier_price === null || (float) $offer->supplier_price <= 0) {
+            $regularPrice = $apiPrice > 0
+                ? $this->applyOver100CharmPrice($apiPrice)
+                : $fallback;
+
             return [
-                'regular_price' => $fallback,
+                'regular_price' => $regularPrice,
                 'wholesale_price' => null,
                 'applied_margin' => null,
                 'margin_source' => null,
@@ -300,10 +321,14 @@ class PriceCalculator
             ]);
         }
 
-        $regularPrice = $fallback > 0 ? $fallback : $wholesalePrice;
-
         if ($appliedAdjustment !== null && $apiPrice > 0) {
-            $regularPrice = round($apiPrice + $adjustment, 2);
+            $regularPrice = $this->applyOver100CharmPrice($apiPrice + $adjustment);
+        } elseif ($apiPrice > 0) {
+            $regularPrice = $this->applyOver100CharmPrice($apiPrice);
+        } elseif ($fallback > 0) {
+            $regularPrice = $fallback;
+        } else {
+            $regularPrice = $this->applyOver100CharmPrice($wholesalePrice);
         }
 
         return array_merge($metadata, [
