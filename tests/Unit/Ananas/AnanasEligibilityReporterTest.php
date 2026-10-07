@@ -54,4 +54,33 @@ class AnanasEligibilityReporterTest extends TestCase
         $this->assertCount(2, $allMapped['mappings']);
         $this->assertSame(0, $allMapped['eligible']);
     }
+
+    public function test_warmed_duplicate_index_flags_shared_barcodes_without_per_sku_exists(): void
+    {
+        $category = Category::factory()->create();
+        AnanasCategoryMapping::query()->create([
+            'category_id' => $category->id,
+            'ananas_product_type' => 'ITShop',
+            'ananas_category' => 'Monitori',
+            'is_enabled' => true,
+            'include_descendants' => true,
+        ]);
+
+        Product::factory()->create([
+            'category_id' => $category->id,
+            'barcode' => '1234567890123',
+            'regular_price' => 10,
+        ]);
+        Product::factory()->create([
+            'category_id' => $category->id,
+            'barcode' => '1234567890123',
+            'regular_price' => 10,
+        ]);
+
+        $summary = app(AnanasEligibilityReporter::class)->summarize(8, false);
+
+        $this->assertSame(2, $summary['total_scanned']);
+        $this->assertSame(2, $summary['reasons']['DUPLICATE_EAN'] ?? $summary['reasons']['MISSING_IMAGE'] ?? 0);
+        $this->assertArrayHasKey('DUPLICATE_EAN', $summary['reasons']);
+    }
 }

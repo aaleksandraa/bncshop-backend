@@ -16,14 +16,31 @@ class AnanasEligibilityReportCommand extends Command
     public function handle(AnanasEligibilityReporter $reporter): int
     {
         $includeDisabled = (bool) $this->option('include-disabled');
-        $summary = $reporter->summarize((int) $this->option('samples'), $includeDisabled);
 
         $this->info($includeDisabled
             ? 'Ananas eligibility (sva mapiranja, i isključena — nije cijeli shop)'
             : 'Ananas eligibility (samo uključena mapiranja — nije cijeli shop)');
         $this->comment($includeDisabled
-            ? 'Provjera EAN / slike / težine / cijene / VAT. Ne šalje ništa na Ananas i ne uključuje export.'
-            : 'Za 49 novih prijedloga dodajte --include-disabled (inače se vide samo 199/231).');
+            ? 'Provjera EAN / slike / težine / cijene / VAT. Ne šalje ništa na Ananas. Ctrl+C je siguran.'
+            : 'Za nove prijedloge dodajte --include-disabled (inače se vide samo uključeni redovi).');
+
+        $bar = null;
+        $summary = $reporter->summarize(
+            (int) $this->option('samples'),
+            $includeDisabled,
+            function (int $scanned, int $estimated) use (&$bar): void {
+                if ($bar === null) {
+                    $bar = $this->output->createProgressBar(max(1, $estimated));
+                    $bar->setFormat(' %current%/%max% SKU [%bar%] %percent:3s%%');
+                    $bar->start();
+                }
+
+                $bar->setMaxSteps(max(1, $estimated));
+                $bar->setProgress(min($scanned, max(1, $estimated)));
+            },
+        );
+        $bar?->finish();
+        $this->newLine(2);
         $this->line('Scanned: '.$summary['total_scanned']);
         $this->line('Eligible: '.$summary['eligible']);
         $this->line('Not eligible: '.$summary['not_eligible']);

@@ -50,6 +50,9 @@ class AnanasEligibilityPolicy
         private readonly AnanasSyncSettings $settings,
     ) {}
 
+    /** @var array<string, true>|null normalized EAN → duplicate in active public catalog */
+    private ?array $duplicateNormalizedEans = null;
+
     public function evaluateHardExclusions(Product $product): AnanasEligibilityResult
     {
         if ((bool) $product->is_refurbished) {
@@ -245,8 +248,49 @@ class AnanasEligibilityPolicy
         return (bool) preg_match('/^(ean|ean-?13|ean\s*kod|barkod|barcode|gtin|gtin-?13)$/iu', $label);
     }
 
+    /**
+     * One catalog pass so eligibility reports do not run EXISTS per SKU.
+     */
+    public function warmDuplicateEanIndex(): void
+    {
+        $counts = [];
+
+        Product::query()
+            ->where('is_public', true)
+            ->where('status', 'active')
+            ->select(['id', 'barcode'])
+            ->orderBy('id')
+            ->chunkById(1000, function ($products) use (&$counts): void {
+                foreach ($products as $product) {
+                    if (! $product instanceof Product) {
+                        continue;
+                    }
+
+                    $ean = $this->normalizeEan($product->barcode);
+
+                    if ($ean === null || ! $this->isValidEan($ean)) {
+                        continue;
+                    }
+
+                    $counts[$ean] = ($counts[$ean] ?? 0) + 1;
+                }
+            });
+
+        $this->duplicateNormalizedEans = [];
+
+        foreach ($counts as $ean => $count) {
+            if ($count > 1) {
+                $this->duplicateNormalizedEans[$ean] = true;
+            }
+        }
+    }
+
     private function hasDuplicateEan(Product $product, string $ean): bool
     {
+        if ($this->duplicateNormalizedEans !== null) {
+            return isset($this->duplicateNormalizedEans[$ean]);
+        }
+
         $candidates = array_values(array_unique(array_filter([
             $ean,
             strlen($ean) === 13 && str_starts_with($ean, '0') ? substr($ean, 1) : null,

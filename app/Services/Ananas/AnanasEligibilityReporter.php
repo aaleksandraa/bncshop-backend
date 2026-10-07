@@ -25,7 +25,10 @@ class AnanasEligibilityReporter
      *     mappings: list<array<string, mixed>>
      * }
      */
-    public function summarize(int $samplePerReason = 8, bool $includeDisabled = false): array
+    /**
+     * @param  (callable(int $scanned, int $estimated): void)|null  $onProgress
+     */
+    public function summarize(int $samplePerReason = 8, bool $includeDisabled = false, ?callable $onProgress = null): array
     {
         $reasons = [];
         $eligible = 0;
@@ -35,10 +38,18 @@ class AnanasEligibilityReporter
         $samples = [];
         $mappingStats = [];
 
-        $this->exportScope->mappedProductQuery(enabledOnly: ! $includeDisabled)
-            ->with(['images', 'attributeValues.attributeDefinition', 'manufacturer'])
+        $this->eligibilityPolicy->warmDuplicateEanIndex();
+
+        $query = $this->exportScope->mappedProductQuery(enabledOnly: ! $includeDisabled);
+        $estimated = (int) (clone $query)->count();
+        if ($onProgress !== null) {
+            $onProgress(0, $estimated);
+        }
+
+        $query
+            ->with(['images', 'attributeValues.attributeDefinition'])
             ->orderBy('id')
-            ->chunkById(200, function ($products) use (
+            ->chunkById(500, function ($products) use (
                 &$reasons,
                 &$eligible,
                 &$notEligible,
@@ -48,6 +59,8 @@ class AnanasEligibilityReporter
                 &$mappingStats,
                 $samplePerReason,
                 $includeDisabled,
+                $onProgress,
+                $estimated,
             ): void {
                 foreach ($products as $product) {
                     if (! $product instanceof Product) {
@@ -99,6 +112,10 @@ class AnanasEligibilityReporter
                             'weight_raw' => mb_substr((string) ($weight->rawValue ?? ''), 0, 40),
                         ];
                     }
+                }
+
+                if ($onProgress !== null) {
+                    $onProgress($total, $estimated);
                 }
             });
 
