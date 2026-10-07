@@ -10,6 +10,7 @@ class AnanasWeightAuditCommand extends Command
 {
     protected $signature = 'bnc:ananas-weight-audit
                             {--product= : Inspect one product ID (e.g. 1)}
+                            {--all-attrs : With --product, list every spec (not only težina/weight)}
                             {--scan=0 : Limit products for parse-status summary (0 = entire active catalog)}';
 
     protected $description = 'Audit BNC weight attributes vs AnanasPackageWeightResolver (names, units, parse results)';
@@ -77,14 +78,16 @@ class AnanasWeightAuditCommand extends Command
         }
 
         $this->newLine();
-        $this->info("Product #{$productId} weight attributes:");
+        $this->line('import_source='.($product->import_source ?: '—').'  external_id='.($product->external_product_id ?: '—'));
+        $listAll = (bool) $this->option('all-attrs');
+        $this->info($listAll ? "Product #{$productId} all specs:" : "Product #{$productId} weight attributes:");
         $rows = [];
 
         foreach ($product->attributeValues as $value) {
             $definition = $value->attributeDefinition?->resolveCanonical();
             $label = $definition?->display_name ?: $definition?->name ?: $value->attribute_name_snapshot;
 
-            if (! preg_match('/težin|tezin|weight|masa|paket/i', (string) $label)) {
+            if (! $listAll && ! preg_match('/težin|tezin|weight|masa|paket|kg\b|\bg\b/i', (string) $label)) {
                 continue;
             }
 

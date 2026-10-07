@@ -28,6 +28,8 @@ class AnanasEligibilityPolicy
 
     public const MISSING_WEIGHT = 'MISSING_WEIGHT';
 
+    public const WEIGHT_UNPARSEABLE = 'WEIGHT_UNPARSEABLE';
+
     public const VAT_UNRESOLVED = 'VAT_UNRESOLVED';
 
     public const INVALID_PRICE = 'INVALID_PRICE';
@@ -114,7 +116,14 @@ class AnanasEligibilityPolicy
         $weight = $this->packageWeightResolver->resolve($product);
 
         if (! $weight->isOk()) {
-            return AnanasEligibilityResult::notEligible(self::MISSING_WEIGHT);
+            $weightCode = match ($weight->parseStatus) {
+                AnanasPackageWeightResult::STATUS_UNPARSEABLE,
+                AnanasPackageWeightResult::STATUS_UNITLESS_AMBIGUOUS,
+                AnanasPackageWeightResult::STATUS_ZERO_OR_NEGATIVE => self::WEIGHT_UNPARSEABLE,
+                default => self::MISSING_WEIGHT,
+            };
+
+            return AnanasEligibilityResult::notEligible($weightCode);
         }
 
         $regularPrice = $this->priceCalculator->calculate($product)->regularPrice;

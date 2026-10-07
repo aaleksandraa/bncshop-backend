@@ -87,4 +87,56 @@ class ProductImporterUpsertResultTest extends TestCase
         $this->assertSame('deactivated', $result->action);
         $this->assertFalse($result->product->is_public);
     }
+
+    public function test_stock_update_without_attributes_does_not_wipe_weight_specs(): void
+    {
+        $importer = app(ProductImporter::class);
+
+        $importer->upsertOne([
+            'productId' => '44444444-4444-4444-4444-444444444444',
+            'name' => 'ASRock board',
+            'slug' => 'asrock-board',
+            'isPublic' => true,
+            'stock' => 2,
+            'price' => 120,
+            'attributes' => [[
+                'attributeId' => 'aaaa1111-1111-1111-1111-111111111111',
+                'attributeName' => 'Bruto težina',
+                'value' => '0.5 kg',
+            ]],
+        ]);
+
+        $importer->upsertOne([
+            'productId' => '44444444-4444-4444-4444-444444444444',
+            'name' => 'ASRock board',
+            'slug' => 'asrock-board',
+            'isPublic' => true,
+            'stock' => 3,
+            'price' => 120,
+        ]);
+
+        $product = Product::query()->where('external_product_id', '44444444-4444-4444-4444-444444444444')->first();
+        $this->assertNotNull($product);
+        $this->assertSame('0.5 kg', $product->attributeValues()->first()?->raw_value);
+    }
+
+    public function test_nested_measurement_attribute_is_stored_as_value_plus_unit(): void
+    {
+        app(ProductImporter::class)->upsertOne([
+            'productId' => '55555555-5555-5555-5555-555555555555',
+            'name' => 'SSD',
+            'slug' => 'ssd-weight',
+            'isPublic' => true,
+            'stock' => 1,
+            'price' => 50,
+            'attributes' => [[
+                'attributeId' => 'bbbb2222-2222-2222-2222-222222222222',
+                'attributeName' => 'Težina',
+                'value' => ['value' => 184, 'unit' => 'g'],
+            ]],
+        ]);
+
+        $product = Product::query()->where('external_product_id', '55555555-5555-5555-5555-555555555555')->first();
+        $this->assertSame('184 g', $product?->attributeValues()->first()?->raw_value);
+    }
 }

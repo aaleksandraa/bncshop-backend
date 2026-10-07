@@ -58,7 +58,7 @@ class ProductImporter
 
         $product->save();
 
-        $attributesChanged = $this->syncAttributes($product, $payload['attributes'] ?? []);
+        $attributesChanged = $this->syncAttributes($product, $payload);
         $imagesChanged = $this->syncImages(
             $product,
             $payload['gallery'] ?? [],
@@ -257,14 +257,24 @@ class ProductImporter
     }
 
     /**
-     * @param  array<int, array<string, mixed>>  $attributes
+     * @param  array<string, mixed>  $payload
      */
-    private function syncAttributes(Product $product, array $attributes): bool
+    private function syncAttributes(Product $product, array $payload): bool
     {
         $changed = false;
+        $attributes = $payload['attributes'] ?? null;
+
+        if (! is_array($attributes) || $attributes === []) {
+            return $this->syncScalarWeightIfPresent($product, $payload);
+        }
+
         $seenDefinitionIds = [];
 
         foreach ($attributes as $attributePayload) {
+            if (! is_array($attributePayload)) {
+                continue;
+            }
+
             $externalAttributeId = (string) (
                 $attributePayload['attributeId']
                 ?? $attributePayload['attribute']
@@ -290,7 +300,12 @@ class ProductImporter
             $targetDefinitionId = $targetDefinition->id;
 
             $seenDefinitionIds[] = $targetDefinitionId;
-            $rawValue = (string) ($attributePayload['value'] ?? '');
+            $rawValue = $this->extractAttributeRawValue($attributePayload);
+
+            if ($rawValue === '') {
+                continue;
+            }
+
             $normalized = $this->attributeNormalizer->normalize($rawValue, $targetDefinition->internal_type);
 
             $existing = ProductAttributeValue::query()
@@ -331,7 +346,110 @@ class ProductImporter
             ->where('is_locked', false)
             ->delete();
 
-        return $changed || $deletedCount > 0;
+        $scalarChanged = $this->syncScalarWeightIfPresent($product, $payload);
+
+        return $changed || $deletedCount > 0 || $scalarChanged;
+    }
+
+    /**
+     * A1 has no dedicated weight column. Persist rare top-level fields if they appear.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    private function syncScalarWeightIfPresent(Product $product, array $payload): bool
+    {
+        $raw = $this->extractScalarWeight($payload);
+
+        if ($raw === null) {
+            return false;
+        }
+
+        $definition = AttributeDefinition::query()->firstOrCreate(
+            ['external_attribute_id' => 'bnc-a1-scalar-package-weight'],
+            [
+                'name' => 'Bruto težina',
+                'display_name' => 'Bruto težina',
+                'internal_type' => 'number',
+                'display_unit' => 'kg',
+                'is_public' => true,
+                'is_filter' => false,
+            ],
+        );
+
+        $target = $definition->resolveCanonical();
+        $normalized = $this->attributeNormalizer->normalize($raw, $target->internal_type);
+        $existing = ProductAttributeValue::query()
+            ->where('product_id', $product->id)
+            ->where('attribute_definition_id', $target->id)
+            ->first();
+
+        if ($existing?->is_locked) {
+            return false;
+        }
+
+        $changed = ! $existing
+            || $existing->raw_value !== $raw
+            || $existing->normalized_value !== $normalized['normalized_value'];
+
+        ProductAttributeValue::query()->updateOrCreate(
+            [
+                'product_id' => $product->id,
+                'attribute_definition_id' => $target->id,
+            ],
+            [
+                'attribute_name_snapshot' => 'Bruto težina',
+                'raw_value' => $raw,
+                'normalized_value' => $normalized['normalized_value'],
+                'normalized_type' => $normalized['normalized_type'],
+            ],
+        );
+
+        return $changed;
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private function extractScalarWeight(array $payload): ?string
+    {
+        foreach (['packageWeight', 'packageWeightValue', 'grossWeight', 'netWeight', 'weight', 'tezina', 'težina'] as $key) {
+            if (! array_key_exists($key, $payload) || $payload[$key] === null || $payload[$key] === '') {
+                continue;
+            }
+
+            $raw = $this->extractAttributeRawValue([$key => $payload[$key], 'value' => $payload[$key]]);
+
+            if ($raw !== '') {
+                return $raw;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private function extractAttributeRawValue(array $payload): string
+    {
+        $value = $payload['value']
+            ?? $payload['numericValue']
+            ?? $payload['numberValue']
+            ?? $payload['textValue']
+            ?? null;
+
+        if (is_array($value)) {
+            $amount = $value['value'] ?? $value['amount'] ?? $value['numeric'] ?? '';
+            $unit = $value['unit'] ?? $value['displayUnit'] ?? '';
+
+            return trim(trim((string) $amount).' '.trim((string) $unit));
+        }
+
+        if (is_bool($value)) {
+            return $value ? 'true' : 'false';
+        }
+
+        return trim((string) ($value ?? ''));
     }
 
     /**
