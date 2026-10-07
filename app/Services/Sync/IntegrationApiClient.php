@@ -159,6 +159,44 @@ class IntegrationApiClient
         throw $lastException ?? new RuntimeException('Failed to fetch products: retries exhausted');
     }
 
+    /**
+     * @return array<string, mixed>
+     */
+    public function getProductById(string $productId): array
+    {
+        $this->ensureAuthenticated();
+
+        $response = $this->authenticatedRequest()->get($this->integrationPath('products').'/'.$productId);
+
+        if ($response->status() === 404) {
+            throw new RuntimeException('A1 GET product-by-id returned 404 (list API only; no single-product endpoint).');
+        }
+
+        $this->assertSuccessful($response, 'Failed to fetch A1 product '.$productId);
+
+        $payload = $response->json();
+
+        if (! is_array($payload)) {
+            throw new RuntimeException('A1 product response was empty.');
+        }
+
+        if (isset($payload['productId'])) {
+            return $payload;
+        }
+
+        $data = $this->unwrapData($payload);
+
+        if (isset($data['productId']) && is_array($data)) {
+            return $data;
+        }
+
+        if (isset($data[0]) && is_array($data[0])) {
+            return $data[0];
+        }
+
+        throw new RuntimeException('A1 product response missing productId.');
+    }
+
     public function resolvedPageSize(?int $pageSize = null): int
     {
         return $this->resolvePageSize($pageSize);
