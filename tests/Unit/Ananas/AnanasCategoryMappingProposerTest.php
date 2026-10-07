@@ -63,6 +63,9 @@ class AnanasCategoryMappingProposerTest extends TestCase
         $this->assertSame('Monitori', $monitor['ananas_category']);
         $this->assertSame('ITShop', $monitor['product_type']);
         $this->assertSame(100, $monitor['score']);
+        $this->assertSame(1, $monitor['products']);
+        $this->assertStringContainsString('(1 proizvod)', $monitor['bnc_category']);
+        $this->assertStringNotContainsString('(0 proizvoda)', $monitor['bnc_category']);
     }
 
     public function test_prune_removes_disabled_proposals_only(): void

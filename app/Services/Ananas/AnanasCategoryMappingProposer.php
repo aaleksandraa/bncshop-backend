@@ -92,6 +92,8 @@ class AnanasCategoryMappingProposer
             $productType = $this->guessProductType($category);
             $match = $this->bestLeafMatch($category, $leafNames, $aliases, $templates);
 
+            $category->setAttribute('products_count', $products);
+
             $row = [
                 'category_id' => $id,
                 'bnc_category' => CategoryAdminSearch::formatOptionLabel($category),
