@@ -47,10 +47,10 @@ class ManageAnanasCategoryMappings extends ManageRecords
                 ->color('gray')
                 ->requiresConfirmation()
                 ->modalHeading('Predloži BNC → Ananas mapiranja')
-                ->modalDescription('Uspoređuje BNC leaf kategorije sa katalogom Ananas category stringova (Monitori, Slušalice…), ne sa 10 product-type šablona. Kreira isključena mapiranja.')
+                ->modalDescription('Upisuje isključena mapiranja iz leaf kataloga (Monitori, HDD, Ruteri…). Ne uključuje export. 199/231 ostaju. Šporeti se ne mapira na Sport.')
                 ->action(function (AnanasCategoryMappingProposer $proposer): void {
                     try {
-                        $result = $proposer->propose(minProducts: 1, minScore: (int) config('bnc.ananas_mapping_min_score', 82), refreshTypes: true);
+                        $result = $proposer->propose(minProducts: 1, minScore: (int) config('bnc.ananas_mapping_min_score', 88), refreshTypes: true);
                     } catch (\Throwable $e) {
                         Notification::make()
                             ->title('Prijedlog nije uspio')

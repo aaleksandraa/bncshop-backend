@@ -261,8 +261,10 @@ class AnanasCategoryMappingProposer
 
         $default = (string) config('bnc.ananas_mapping_default_product_type', 'ITShop');
 
-        if (str_contains($haystack, 'bijelatehnika') || str_contains($haystack, 'sporet')) {
-            return 'Aparati';
+        foreach (['bijelatehnika', 'sporet', 'usisivac', 'malikucanski', 'klima', 'frizider', 'vesmasin', 'mikrovaln'] as $needle) {
+            if (str_contains($haystack, $needle)) {
+                return 'Aparati';
+            }
         }
 
         return $default;

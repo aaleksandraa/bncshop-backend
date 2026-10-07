@@ -94,4 +94,57 @@ class AnanasCategoryMappingProposerTest extends TestCase
         $this->assertFalse(AnanasCategoryMapping::query()->whereKey($proposal->id)->exists());
         $this->assertTrue(AnanasCategoryMapping::query()->where('ananas_category', 'Gaming laptopi')->exists());
     }
+
+    public function test_hdd_speakers_and_routers_match_itshop_leaves(): void
+    {
+        $it = Category::factory()->create(['name' => 'IT oprema']);
+        $hdd = Category::factory()->create([
+            'name' => 'HDD',
+            'display_name' => 'HDD',
+            'parent_id' => $it->id,
+        ]);
+        $speakers = Category::factory()->create([
+            'name' => 'Zvučnici',
+            'display_name' => 'Zvučnici',
+            'parent_id' => $it->id,
+        ]);
+        $routers = Category::factory()->create([
+            'name' => 'Ruteri',
+            'display_name' => 'Ruteri',
+            'parent_id' => $it->id,
+        ]);
+
+        foreach ([$hdd, $speakers, $routers] as $category) {
+            Product::factory()->create(['category_id' => $category->id, 'is_public' => true, 'status' => 'active']);
+        }
+
+        $result = app(AnanasCategoryMappingProposer::class)->propose(minProducts: 1, minScore: 88);
+        $byId = collect($result['suggestions'])->keyBy('category_id');
+
+        $this->assertSame('HDD', $byId[$hdd->id]['ananas_category']);
+        $this->assertSame('ITShop', $byId[$hdd->id]['product_type']);
+        $this->assertSame(100, $byId[$hdd->id]['score']);
+        $this->assertSame('Zvučnici', $byId[$speakers->id]['ananas_category']);
+        $this->assertSame('Ruteri', $byId[$routers->id]['ananas_category']);
+    }
+
+    public function test_vacuums_match_aparati_not_kuca_i_vrt(): void
+    {
+        $parent = Category::factory()->create(['name' => 'Mali kućanski aparati']);
+        $vacuums = Category::factory()->create([
+            'name' => 'Usisivači',
+            'display_name' => 'Usisivači',
+            'parent_id' => $parent->id,
+        ]);
+        Product::factory()->create(['category_id' => $vacuums->id, 'is_public' => true, 'status' => 'active']);
+
+        $result = app(AnanasCategoryMappingProposer::class)->propose(minProducts: 1, minScore: 88);
+        $row = collect($result['suggestions'])->firstWhere('category_id', $vacuums->id);
+
+        $this->assertNotNull($row);
+        $this->assertSame('Usisivači', $row['ananas_category']);
+        $this->assertSame('Aparati', $row['product_type']);
+        $this->assertNotSame('Kuća i vrt', $row['ananas_category']);
+        $this->assertNotSame('Sport', $row['ananas_category']);
+    }
 }

@@ -86,9 +86,10 @@ class AnanasProposeCategoryMappingsCommand extends Command
 
         if (! $this->option('apply')) {
             $this->newLine();
-            $this->comment('Ako su ranije upisani krivi prijedlozi (Sport/Aparati):');
-            $this->comment('  php artisan bnc:ananas-propose-category-mappings --prune');
-            $this->comment('Zatim --apply, pa u Filamentu uključite samo tačne leaf stringove.');
+            $this->comment('Upis (isključeno, bez --enable-exact):');
+            $this->comment('  php artisan bnc:ananas-propose-category-mappings --apply');
+            $this->comment('Zatim Filament Ananas → Mapiranje kategorija: uključite samo 1:1 redove.');
+            $this->comment('199 Gaming laptopi i 231 Nosači ostaju. --prune briše samo isključene auto-prijedloge.');
 
             return self::SUCCESS;
         }
@@ -100,7 +101,8 @@ class AnanasProposeCategoryMappingsCommand extends Command
         );
 
         $this->info(sprintf('Kreirano: %d  preskočeno: %d', $applied['created'], $applied['skipped']));
-        $this->comment('Nova mapiranja su isključena. Provjerite Ananas category, pa uključite.');
+        $this->comment('Nova mapiranja su isključena. U Filamentu uključite samo tačne leaf stringove (Monitori, Slušalice…).');
+        $this->comment('Ne dirati 199/231. Ne koristiti --enable-exact dok Ananas ne potvrdi category string.');
 
         return self::SUCCESS;
     }
