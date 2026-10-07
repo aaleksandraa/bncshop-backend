@@ -106,6 +106,49 @@ class AnanasEligibilityPolicyTest extends TestCase
         );
     }
 
+    public function test_ean_with_spaces_and_dashes_is_eligible(): void
+    {
+        $product = $this->createExportReadyProduct(['barcode' => '4711-3877-83597']);
+
+        $this->assertTrue($this->policy->evaluate($product)->eligible);
+        $this->assertSame('4711387783597', $this->policy->resolveEan($product));
+    }
+
+    public function test_upc12_is_padded_to_ean13(): void
+    {
+        $product = $this->createExportReadyProduct(['barcode' => '736373267145']);
+
+        $this->assertTrue($this->policy->evaluate($product)->eligible);
+        $this->assertSame('0736373267145', $this->policy->resolveEan($product));
+    }
+
+    public function test_ean_from_spec_attribute_when_barcode_empty(): void
+    {
+        $product = $this->createExportReadyProduct(['barcode' => null]);
+
+        $definition = AttributeDefinition::query()->create([
+            'external_attribute_id' => (string) \Illuminate\Support\Str::uuid(),
+            'name' => 'EAN',
+            'display_name' => 'EAN',
+            'internal_type' => 'text',
+            'is_public' => true,
+        ]);
+
+        ProductAttributeValue::query()->create([
+            'product_id' => $product->id,
+            'attribute_definition_id' => $definition->id,
+            'attribute_name_snapshot' => 'EAN',
+            'raw_value' => '4711387783597',
+            'normalized_value' => '4711387783597',
+            'normalized_type' => 'text',
+        ]);
+
+        $product = $product->fresh(['images', 'attributeValues.attributeDefinition']);
+
+        $this->assertTrue($this->policy->evaluate($product)->eligible);
+        $this->assertSame('4711387783597', $this->policy->resolveEan($product));
+    }
+
     public function test_missing_weight_is_not_eligible(): void
     {
         $product = $this->createExportReadyProduct([], attachWeight: false);

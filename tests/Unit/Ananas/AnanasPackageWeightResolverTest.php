@@ -108,9 +108,25 @@ class AnanasPackageWeightResolverTest extends TestCase
         $this->assertSame(0.184, $result->resolvedWeightKg);
     }
 
-    public function test_unitless_number_on_untrusted_attribute_is_ambiguous(): void
+    public function test_unitless_number_on_tezina_laptopa_assumes_kg(): void
+    {
+        $result = $this->resolveWithRawValue('Težina laptopa', '1.8');
+
+        $this->assertTrue($result->isOk());
+        $this->assertSame(1.8, $result->resolvedWeightKg);
+    }
+
+    public function test_unitless_number_on_masa_proizvoda_assumes_kg(): void
     {
         $result = $this->resolveWithRawValue('Masa proizvoda', '184');
+
+        $this->assertTrue($result->isOk());
+        $this->assertSame(0.184, $result->resolvedWeightKg);
+    }
+
+    public function test_unitless_number_on_untrusted_attribute_is_ambiguous(): void
+    {
+        $result = $this->resolveWithRawValue('Paket', '184');
 
         $this->assertSame(AnanasPackageWeightResult::STATUS_UNITLESS_AMBIGUOUS, $result->parseStatus);
     }

@@ -3,6 +3,7 @@
 namespace App\Services\Ananas;
 
 use App\Models\Product;
+use App\Models\ProductAttributeValue;
 use App\Models\ProductImage;
 use App\Services\Pricing\PriceCalculator;
 use RuntimeException;
@@ -89,14 +90,14 @@ class AnanasEligibilityPolicy
             return $hard;
         }
 
-        $ean = $this->normalizeEan($product->barcode);
+        $ean = $this->resolveEan($product);
 
         if ($ean === null) {
-            return AnanasEligibilityResult::notEligible(self::MISSING_EAN);
-        }
+            $raw = trim((string) ($product->barcode ?? ''));
 
-        if (! $this->isValidEan($ean)) {
-            return AnanasEligibilityResult::notEligible(self::INVALID_EAN);
+            return AnanasEligibilityResult::notEligible(
+                $raw === '' ? self::MISSING_EAN : self::INVALID_EAN,
+            );
         }
 
         if ($this->hasDuplicateEan($product, $ean)) {
@@ -169,15 +170,61 @@ class AnanasEligibilityPolicy
         return in_array($rate, self::ALLOWED_VAT_RATES, true) ? $rate : null;
     }
 
-    private function normalizeEan(?string $barcode): ?string
+    /**
+     * EAN-8 / EAN-13 for Ananas. Accepts spaces/dashes, UPC-12 (padded), or EAN on a spec attribute.
+     */
+    public function resolveEan(Product $product): ?string
+    {
+        $fromBarcode = $this->normalizeEan($product->barcode);
+
+        if ($fromBarcode !== null && $this->isValidEan($fromBarcode)) {
+            return $fromBarcode;
+        }
+
+        $product->loadMissing(['attributeValues.attributeDefinition']);
+
+        foreach ($product->attributeValues as $value) {
+            if (! $value instanceof ProductAttributeValue) {
+                continue;
+            }
+
+            if (! $this->isEanAttribute($value)) {
+                continue;
+            }
+
+            $fromAttribute = $this->normalizeEan((string) $value->raw_value);
+
+            if ($fromAttribute !== null && $this->isValidEan($fromAttribute)) {
+                return $fromAttribute;
+            }
+        }
+
+        return null;
+    }
+
+    public function normalizeEan(?string $barcode): ?string
     {
         if ($barcode === null) {
             return null;
         }
 
-        $trimmed = trim($barcode);
+        $trimmed = trim(str_replace("\u{00A0}", ' ', $barcode));
 
-        return $trimmed === '' ? null : $trimmed;
+        if ($trimmed === '') {
+            return null;
+        }
+
+        if (preg_match('/^[\d\s\-]+$/', $trimmed) === 1) {
+            $digits = preg_replace('/\D+/', '', $trimmed) ?? '';
+
+            if (strlen($digits) === 12) {
+                $digits = '0'.$digits;
+            }
+
+            return $digits === '' ? null : $digits;
+        }
+
+        return $trimmed;
     }
 
     private function isValidEan(string $ean): bool
@@ -185,13 +232,31 @@ class AnanasEligibilityPolicy
         return (bool) preg_match('/^\d{8}$/', $ean) || (bool) preg_match('/^\d{13}$/', $ean);
     }
 
+    private function isEanAttribute(ProductAttributeValue $value): bool
+    {
+        $definition = $value->attributeDefinition;
+        $label = trim((string) (
+            $value->attribute_name_snapshot
+            ?: $definition?->display_name
+            ?: $definition?->name
+            ?: ''
+        ));
+
+        return (bool) preg_match('/^(ean|ean-?13|ean\s*kod|barkod|barcode|gtin|gtin-?13)$/iu', $label);
+    }
+
     private function hasDuplicateEan(Product $product, string $ean): bool
     {
+        $candidates = array_values(array_unique(array_filter([
+            $ean,
+            strlen($ean) === 13 && str_starts_with($ean, '0') ? substr($ean, 1) : null,
+        ])));
+
         return Product::query()
             ->where('is_public', true)
             ->where('status', 'active')
-            ->where('barcode', $ean)
             ->whereKeyNot($product->id)
+            ->whereIn('barcode', $candidates)
             ->exists();
     }
 

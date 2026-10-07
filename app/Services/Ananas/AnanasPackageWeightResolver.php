@@ -339,7 +339,10 @@ class AnanasPackageWeightResolver
             return false;
         }
 
-        return (bool) preg_match('/bruto\s+težin|neto\s+težin|težina\s+paket|^težina$/iu', $label);
+        return (bool) preg_match(
+            '/bruto\s+težin|neto\s+težin|težina\s+paket|^težina\b|^weight\b|\bmasa\b/iu',
+            $label,
+        );
     }
 
     private function finalizeKg(float $kg, string $sourceAttributeName, string $raw): AnanasPackageWeightResult

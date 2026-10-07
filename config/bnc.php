@@ -274,9 +274,14 @@ return [
         'Težina Paketa',
         'Težina pakovanja',
         'Bruto težina',
+        'Težina laptopa',
+        'Težina proizvoda',
         'Težina',
+        'Weight',
         'Neto težina pakovanja',
         'Neto težina',
+        'Masa proizvoda',
+        'Masa',
     ],
 
     /*

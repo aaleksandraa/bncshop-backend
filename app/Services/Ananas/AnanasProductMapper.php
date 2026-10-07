@@ -65,7 +65,7 @@ class AnanasProductMapper
             'name' => $this->sanitizeName((string) $product->name),
             'description' => $this->sanitizeDescription((string) ($product->description ?: $product->short_description ?: $product->name)),
             'coverImage' => $coverImage,
-            'ean' => trim((string) $product->barcode),
+            'ean' => $this->eligibilityPolicy->resolveEan($product) ?? trim((string) $product->barcode),
             'gallery' => $images,
             'packageWeightValue' => $weight->resolvedWeightKg,
             'packageWeightUnit' => 'KG',
