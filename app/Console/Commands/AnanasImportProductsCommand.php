@@ -25,11 +25,15 @@ class AnanasImportProductsCommand extends Command
         AnanasCatalogWriteGuard $writeGuard,
         AnanasEligibilityPolicy $eligibilityPolicy,
     ): int {
+        ini_set('memory_limit', '512M');
+
         if (! $settings->hasCredentials()) {
             $this->error('Ananas credentials are not configured.');
 
             return self::FAILURE;
         }
+
+        $this->comment('PHP memory_limit='.(string) ini_get('memory_limit'));
 
         $dryRun = (bool) $this->option('dry-run');
         $confirm = (bool) $this->option('confirm');

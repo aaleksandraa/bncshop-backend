@@ -55,7 +55,7 @@ class AnanasProductMappingService
             'last_error_at' => null,
         ])->save();
 
-        return $mapping->fresh() ?? $mapping;
+        return $mapping;
     }
 
     /**

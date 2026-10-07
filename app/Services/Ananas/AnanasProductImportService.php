@@ -35,8 +35,12 @@ class AnanasProductImportService
         bool $allowProduction = false,
         bool $dryRun = false,
     ): array {
+        $this->raiseMemoryLimit();
+        $this->eligibilityPolicy->warmDuplicateEanIndex();
+
         $limit = max(1, min($limit, (int) config('bnc.ananas_import_batch_max_size', 25)));
         $maxScan = max($limit, (int) config('bnc.ananas_import_scan_max', 2000));
+        $persistSkips = $productId !== null;
 
         $payloads = [];
         $productIds = [];
@@ -59,12 +63,14 @@ class AnanasProductImportService
                 $product,
                 $dryRun,
                 $productId !== null,
+                $persistSkips,
                 $payloads,
                 $productIds,
                 $skipped,
                 $skipReasons,
                 $errors,
             );
+            unset($product);
         }
 
         if ($payloads === []) {
@@ -85,32 +91,24 @@ class AnanasProductImportService
             $payloads,
         ));
 
-        $submittedProducts = Product::query()
-            ->with(['images', 'manufacturer', 'attributeValues.attributeDefinition'])
-            ->whereIn('id', $productIds)
-            ->get()
-            ->keyBy('id');
+        foreach ($productIds as $index => $id) {
+            $payload = $payloads[$index] ?? null;
 
-        foreach ($productIds as $id) {
-            $product = $submittedProducts->get($id);
-
-            if (! $product instanceof Product) {
+            if (! is_array($payload)) {
                 continue;
             }
 
-            $categoryMapping = $this->exportScope->resolveCategoryMapping($product);
+            $product = new Product;
+            $product->id = $id;
+            $product->exists = true;
 
-            if ($categoryMapping === null) {
-                continue;
-            }
-
-            $payload = $this->productMapper->map($product, $categoryMapping);
             $ean = trim((string) ($payload['ean'] ?? ''));
             $eanInMaster = $ean !== '' ? ($eanExistence[$ean] ?? null) : null;
             $this->mappingService->recordSubmission($product, $payload, $progressId, $eanInMaster);
+            unset($payloads[$index]);
         }
 
-        return $this->result(count($payloads), $skipped, $scanned, $progressId, $productIds, $errors, $skipReasons);
+        return $this->result(count($productIds), $skipped, $scanned, $progressId, $productIds, $errors, $skipReasons);
     }
 
     /**
@@ -137,7 +135,7 @@ class AnanasProductImportService
             ->whereDoesntHave('ananasProductMapping', function ($query): void {
                 $query->whereIn('local_status', AnanasProductMapping::inFlightStatuses());
             })
-            ->lazyById(100) as $product) {
+            ->lazyById(25) as $product) {
             yield $product;
         }
     }
@@ -152,6 +150,7 @@ class AnanasProductImportService
         Product $product,
         bool $dryRun,
         bool $allowReimport,
+        bool $persistSkips,
         array &$payloads,
         array &$productIds,
         int &$skipped,
@@ -174,7 +173,7 @@ class AnanasProductImportService
         $mapping = $this->exportScope->resolveCategoryMapping($product);
 
         if ($mapping === null) {
-            $this->recordSkip($product, AnanasEligibilityPolicy::CATEGORY_UNMAPPED, $dryRun, $skipped, $skipReasons);
+            $this->recordSkip($product, AnanasEligibilityPolicy::CATEGORY_UNMAPPED, $dryRun, $skipped, $skipReasons, persist: $persistSkips);
 
             return;
         }
@@ -188,6 +187,7 @@ class AnanasProductImportService
                 $dryRun,
                 $skipped,
                 $skipReasons,
+                persist: $persistSkips,
             );
 
             return;
@@ -276,5 +276,29 @@ class AnanasProductImportService
             'errors' => $errors,
             'skip_reasons' => $skipReasons,
         ];
+    }
+
+    private function raiseMemoryLimit(): void
+    {
+        $current = strtoupper(trim((string) ini_get('memory_limit')));
+
+        if ($current === '-1') {
+            return;
+        }
+
+        $bytes = 128 * 1024 * 1024;
+
+        if (preg_match('/^(\d+)\s*([KMG])B?$/', $current, $matches) === 1) {
+            $bytes = (int) $matches[1] * match ($matches[2]) {
+                'K' => 1024,
+                'M' => 1024 * 1024,
+                'G' => 1024 * 1024 * 1024,
+                default => 1,
+            };
+        }
+
+        if ($bytes < 512 * 1024 * 1024) {
+            ini_set('memory_limit', '512M');
+        }
     }
 }
