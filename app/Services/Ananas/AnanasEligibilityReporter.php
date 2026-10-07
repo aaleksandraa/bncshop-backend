@@ -2,6 +2,7 @@
 
 namespace App\Services\Ananas;
 
+use App\Models\AnanasCategoryMapping;
 use App\Models\Product;
 
 class AnanasEligibilityReporter
@@ -14,15 +15,17 @@ class AnanasEligibilityReporter
 
     /**
      * @return array{
+     *     scope: string,
      *     total_scanned: int,
      *     eligible: int,
      *     not_eligible: int,
      *     reasons: array<string, int>,
      *     barcode_shapes: array<string, int>,
-     *     samples: array<string, list<array<string, mixed>>>
+     *     samples: array<string, list<array<string, mixed>>>,
+     *     mappings: list<array<string, mixed>>
      * }
      */
-    public function summarize(int $samplePerReason = 8): array
+    public function summarize(int $samplePerReason = 8, bool $includeDisabled = false): array
     {
         $reasons = [];
         $eligible = 0;
@@ -30,8 +33,9 @@ class AnanasEligibilityReporter
         $total = 0;
         $barcodeShapes = [];
         $samples = [];
+        $mappingStats = [];
 
-        $this->exportScope->baseQuery()
+        $this->exportScope->mappedProductQuery(enabledOnly: ! $includeDisabled)
             ->with(['images', 'attributeValues.attributeDefinition', 'manufacturer'])
             ->orderBy('id')
             ->chunkById(200, function ($products) use (
@@ -41,7 +45,9 @@ class AnanasEligibilityReporter
                 &$total,
                 &$barcodeShapes,
                 &$samples,
+                &$mappingStats,
                 $samplePerReason,
+                $includeDisabled,
             ): void {
                 foreach ($products as $product) {
                     if (! $product instanceof Product) {
@@ -52,10 +58,22 @@ class AnanasEligibilityReporter
                     $shape = $this->barcodeShape($product->barcode);
                     $barcodeShapes[$shape] = ($barcodeShapes[$shape] ?? 0) + 1;
 
-                    $result = $this->eligibilityPolicy->evaluate($product);
+                    $result = $includeDisabled
+                        ? $this->eligibilityPolicy->evaluateProductData($product)
+                        : $this->eligibilityPolicy->evaluate($product);
+
+                    $mapping = $this->exportScope->resolveMappingForProduct($product, enabledOnly: ! $includeDisabled);
+                    $mappingKey = $mapping !== null ? (string) $mapping->id : 'none';
+
+                    if (! isset($mappingStats[$mappingKey])) {
+                        $mappingStats[$mappingKey] = $this->emptyMappingStat($mapping);
+                    }
+
+                    $mappingStats[$mappingKey]['scanned']++;
 
                     if ($result->eligible) {
                         $eligible++;
+                        $mappingStats[$mappingKey]['eligible']++;
 
                         continue;
                     }
@@ -63,6 +81,7 @@ class AnanasEligibilityReporter
                     $notEligible++;
                     $code = $result->reasonCode ?? 'NOT_ELIGIBLE';
                     $reasons[$code] = ($reasons[$code] ?? 0) + 1;
+                    $mappingStats[$mappingKey]['reasons'][$code] = ($mappingStats[$mappingKey]['reasons'][$code] ?? 0) + 1;
 
                     if (! isset($samples[$code])) {
                         $samples[$code] = [];
@@ -86,13 +105,47 @@ class AnanasEligibilityReporter
         ksort($reasons);
         ksort($barcodeShapes);
 
+        $mappings = array_values($mappingStats);
+        usort($mappings, static fn (array $a, array $b): int => $b['scanned'] <=> $a['scanned']);
+
+        foreach ($mappings as &$row) {
+            arsort($row['reasons']);
+            $top = array_key_first($row['reasons']);
+            $row['top_reason'] = $top ?? '—';
+            $row['top_reason_count'] = $top !== null ? (int) $row['reasons'][$top] : 0;
+        }
+        unset($row);
+
         return [
+            'scope' => $includeDisabled ? 'all_mapped' : 'enabled',
             'total_scanned' => $total,
             'eligible' => $eligible,
             'not_eligible' => $notEligible,
             'reasons' => $reasons,
             'barcode_shapes' => $barcodeShapes,
             'samples' => $samples,
+            'mappings' => $mappings,
+        ];
+    }
+
+    /**
+     * @return array{mapping_id: int|null, category_id: int|null, bnc_category: string, ananas_category: string, enabled: bool, scanned: int, eligible: int, reasons: array<string, int>, top_reason: string, top_reason_count: int}
+     */
+    private function emptyMappingStat(?AnanasCategoryMapping $mapping): array
+    {
+        $category = $mapping?->category;
+
+        return [
+            'mapping_id' => $mapping !== null ? (int) $mapping->id : null,
+            'category_id' => $mapping !== null ? (int) $mapping->category_id : null,
+            'bnc_category' => $category !== null ? (string) $category->publicName() : '—',
+            'ananas_category' => $mapping !== null ? (string) ($mapping->ananas_category ?: '—') : '—',
+            'enabled' => (bool) ($mapping?->is_enabled),
+            'scanned' => 0,
+            'eligible' => 0,
+            'reasons' => [],
+            'top_reason' => '—',
+            'top_reason_count' => 0,
         ];
     }
 

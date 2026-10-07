@@ -13,6 +13,9 @@ class AnanasExportScope
     /** @var Collection<int, AnanasCategoryMapping>|null */
     private ?Collection $enabledMappingsCache = null;
 
+    /** @var Collection<int, AnanasCategoryMapping>|null */
+    private ?Collection $allMappingsCache = null;
+
     /** @var array<int, int>|null */
     private ?array $scopedCategoryIdsCache = null;
 
@@ -28,6 +31,9 @@ class AnanasExportScope
     /** @var array<int, AnanasCategoryMapping>|null */
     private ?array $mappingByCategoryIdCache = null;
 
+    /** @var array<int, AnanasCategoryMapping>|null */
+    private ?array $mappingByCategoryIdAllCache = null;
+
     /**
      * @return Collection<int, AnanasCategoryMapping>
      */
@@ -41,6 +47,20 @@ class AnanasExportScope
         }
 
         return $this->enabledMappingsCache;
+    }
+
+    /**
+     * @return Collection<int, AnanasCategoryMapping>
+     */
+    public function allMappings(): Collection
+    {
+        if ($this->allMappingsCache === null) {
+            $this->allMappingsCache = AnanasCategoryMapping::query()
+                ->with('category')
+                ->get();
+        }
+
+        return $this->allMappingsCache;
     }
 
     /**
@@ -69,12 +89,39 @@ class AnanasExportScope
 
     public function baseQuery(): Builder
     {
-        $categoryIds = $this->scopedCategoryIds();
+        return $this->mappedProductQuery(enabledOnly: true);
+    }
+
+    public function mappedProductQuery(bool $enabledOnly = true): Builder
+    {
+        $categoryIds = $enabledOnly ? $this->scopedCategoryIds() : $this->mappedCategoryIds(enabledOnly: false);
 
         return Product::query()
             ->where('is_public', true)
             ->where('status', 'active')
             ->whereIn('category_id', $categoryIds === [] ? [-1] : $categoryIds);
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    public function mappedCategoryIds(bool $enabledOnly = true): array
+    {
+        if ($enabledOnly) {
+            return $this->scopedCategoryIds();
+        }
+
+        $ids = [];
+
+        foreach ($this->allMappings() as $mapping) {
+            $ids[] = (int) $mapping->category_id;
+
+            if ($mapping->include_descendants) {
+                $ids = array_merge($ids, $this->descendantCategoryIds((int) $mapping->category_id));
+            }
+        }
+
+        return array_values(array_unique(array_filter($ids)));
     }
 
     public function isInScopedCategory(Product $product): bool
@@ -120,9 +167,14 @@ class AnanasExportScope
 
     public function resolveCategoryMapping(Product $product): ?AnanasCategoryMapping
     {
+        return $this->resolveMappingForProduct($product, enabledOnly: true);
+    }
+
+    public function resolveMappingForProduct(Product $product, bool $enabledOnly = true): ?AnanasCategoryMapping
+    {
         $categoryId = $product->category_id !== null ? (int) $product->category_id : null;
         $parentMap = $this->parentByCategoryId();
-        $mappingByCategory = $this->mappingByCategoryId();
+        $mappingByCategory = $enabledOnly ? $this->mappingByCategoryId() : $this->mappingByCategoryIdAll();
 
         while ($categoryId !== null) {
             if (isset($mappingByCategory[$categoryId])) {
@@ -211,11 +263,13 @@ class AnanasExportScope
     public function flushCaches(): void
     {
         $this->enabledMappingsCache = null;
+        $this->allMappingsCache = null;
         $this->scopedCategoryIdsCache = null;
         $this->scopedCategoryIdSetCache = null;
         $this->parentByCategoryIdCache = null;
         $this->childrenByParentIdCache = null;
         $this->mappingByCategoryIdCache = null;
+        $this->mappingByCategoryIdAllCache = null;
     }
 
     /**
@@ -230,5 +284,19 @@ class AnanasExportScope
         }
 
         return $this->mappingByCategoryIdCache;
+    }
+
+    /**
+     * @return array<int, AnanasCategoryMapping>
+     */
+    private function mappingByCategoryIdAll(): array
+    {
+        if ($this->mappingByCategoryIdAllCache === null) {
+            $this->mappingByCategoryIdAllCache = $this->allMappings()
+                ->keyBy(fn (AnanasCategoryMapping $mapping): int => (int) $mapping->category_id)
+                ->all();
+        }
+
+        return $this->mappingByCategoryIdAllCache;
     }
 }
