@@ -224,6 +224,10 @@ return [
     // Required on Ananas import (Add). Used when product has no manufacturer.
     'ananas_default_brand' => env('ANANAS_DEFAULT_BRAND', 'BNC Shop'),
 
+    // Suggested BNC→Ananas mappings use this productType (proven on Stage: ITShop + category string).
+    'ananas_mapping_default_product_type' => env('ANANAS_MAPPING_DEFAULT_PRODUCT_TYPE', 'ITShop'),
+    'ananas_mapping_min_score' => (int) env('ANANAS_MAPPING_MIN_SCORE', 82),
+
     'ananas_onboarding_email' => env('ANANAS_ONBOARDING_EMAIL', 'onboarding@ananas.rs'),
 
     // Optional comma-separated EANs tried before catalog scan (e.g. ISBN from Ananas API docs / QA samples).

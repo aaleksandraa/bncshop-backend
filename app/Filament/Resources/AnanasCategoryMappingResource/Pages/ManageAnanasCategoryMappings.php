@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\AnanasCategoryMappingResource\Pages;
 
 use App\Filament\Resources\AnanasCategoryMappingResource;
+use App\Services\Ananas\AnanasCategoryMappingProposer;
 use App\Services\Ananas\AnanasValidatedMappingService;
 use Filament\Actions;
 use Filament\Notifications\Notification;
@@ -38,6 +39,37 @@ class ManageAnanasCategoryMappings extends ManageRecords
                     Notification::make()
                         ->title('Stage mapiranja primijenjena')
                         ->body($applied.' mapiranja spremno. Uvoz: Ananas → Postavke → Import dry-run.')
+                        ->success()
+                        ->send();
+                }),
+            Actions\Action::make('proposeFromProductTypes')
+                ->label('Predloži ostale kategorije')
+                ->color('gray')
+                ->requiresConfirmation()
+                ->modalHeading('Predloži BNC → Ananas mapiranja')
+                ->modalDescription('Uspoređuje BNC kategorije (koje još nisu pokrivene) sa GET product-type stringovima. Kreira isključena mapiranja — uključite ručno samo tačne nazive. productType ostaje ITShop.')
+                ->action(function (AnanasCategoryMappingProposer $proposer): void {
+                    try {
+                        $result = $proposer->propose(minProducts: 1, minScore: (int) config('bnc.ananas_mapping_min_score', 82), refreshTypes: true);
+                    } catch (\Throwable $e) {
+                        Notification::make()
+                            ->title('Prijedlog nije uspio')
+                            ->body($e->getMessage())
+                            ->danger()
+                            ->send();
+
+                        return;
+                    }
+
+                    $applied = $proposer->applySuggestions(
+                        $result['suggestions'],
+                        enableExact: false,
+                        productType: (string) config('bnc.ananas_mapping_default_product_type', 'ITShop'),
+                    );
+
+                    Notification::make()
+                        ->title('Prijedlozi upisani')
+                        ->body($applied['created'].' novih mapiranja (isključena). Bez poklapanja: '.count($result['unmatched']).'. Uključite samo tačne redove.')
                         ->success()
                         ->send();
                 }),

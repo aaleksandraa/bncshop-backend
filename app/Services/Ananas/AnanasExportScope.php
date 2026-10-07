@@ -83,7 +83,12 @@ class AnanasExportScope
             return false;
         }
 
-        return isset($this->scopedCategoryIdSet()[(int) $product->category_id]);
+        return $this->isScopedCategoryId((int) $product->category_id);
+    }
+
+    public function isScopedCategoryId(int $categoryId): bool
+    {
+        return isset($this->scopedCategoryIdSet()[$categoryId]);
     }
 
     /**

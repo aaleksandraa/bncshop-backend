@@ -110,7 +110,34 @@ class AnanasApiClient
             return [];
         }
 
-        return array_values(array_filter($payload, is_string(...)));
+        $names = [];
+        $walk = static function (mixed $node) use (&$walk, &$names): void {
+            if (is_string($node)) {
+                $trimmed = trim($node);
+                if ($trimmed !== '') {
+                    $names[] = $trimmed;
+                }
+
+                return;
+            }
+
+            if (! is_array($node)) {
+                return;
+            }
+
+            foreach (['name', 'productType', 'category', 'title', 'label'] as $key) {
+                if (isset($node[$key]) && is_string($node[$key]) && trim($node[$key]) !== '') {
+                    $names[] = trim($node[$key]);
+                }
+            }
+
+            foreach ($node as $child) {
+                $walk($child);
+            }
+        };
+        $walk($payload);
+
+        return array_values(array_unique($names));
     }
 
     /**

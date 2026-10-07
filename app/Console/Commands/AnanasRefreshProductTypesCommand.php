@@ -7,7 +7,8 @@ use Illuminate\Console\Command;
 
 class AnanasRefreshProductTypesCommand extends Command
 {
-    protected $signature = 'bnc:ananas-refresh-product-types';
+    protected $signature = 'bnc:ananas-refresh-product-types
+                            {--all : Print every cached type, not the first 10}';
 
     protected $description = 'Fetch Ananas product types from API and cache them locally';
 
@@ -23,12 +24,14 @@ class AnanasRefreshProductTypesCommand extends Command
 
         $this->info(sprintf('Cached %d Ananas product type(s).', count($types)));
 
-        foreach (array_slice($types, 0, 10) as $type) {
+        $print = (bool) $this->option('all') ? $types : array_slice($types, 0, 30);
+
+        foreach ($print as $type) {
             $this->line('- '.$type);
         }
 
-        if (count($types) > 10) {
-            $this->line('...');
+        if (! (bool) $this->option('all') && count($types) > 30) {
+            $this->line('... još '.(count($types) - 30).'. Pun ispis: --all');
         }
 
         return self::SUCCESS;
