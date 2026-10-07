@@ -334,6 +334,33 @@ return [
     'ananas_import_scan_max' => (int) env('ANANAS_IMPORT_SCAN_MAX', 20000),
 
     /*
+    | Enable these Ananas leaf strings for a 1000–2000 Stage import (1:1 BNC name, plus 199/231).
+    | Never enable Laptopi / Računari / Igrice / Fax / rezervni dijelovi via this list.
+    */
+    'ananas_stage_batch_enable_categories' => [
+        'Gaming laptopi',
+        'Nosači za televizor',
+        'Monitori',
+        'Miševi',
+        'Slušalice',
+        'Tastature',
+        'Televizori',
+        'IP kamere',
+        'Toneri',
+        'Tinte',
+    ],
+
+    'ananas_stage_batch_never_enable_categories' => [
+        'Laptopi',
+        'Laptop računari',
+        'Računari',
+        'Desktop računari',
+        'Igrice',
+        'Fax aparati',
+        'Rezervni dijelovi za telefone',
+    ],
+
+    /*
     | Stage-validated BNC category_id → Ananas POST import "category" strings.
     | Observed on QA2 GET /products (2026-09-24):
     |   id 2566378 EAN 4711387431504 → Gaming laptopi (BNC cat 199 Laptopi)
