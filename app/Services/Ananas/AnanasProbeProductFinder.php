@@ -39,7 +39,6 @@ class AnanasProbeProductFinder
         $firstEligibleId = null;
 
         $activePublicQuery
-            ->select(['id', 'category_id', 'barcode', 'is_public', 'status', 'is_refurbished', 'is_set', 'available_stock'])
             ->with(['images', 'attributeValues.attributeDefinition', 'manufacturer'])
             ->orderBy('id')
             ->limit($scanLimit)

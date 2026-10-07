@@ -33,7 +33,6 @@ class AnanasCatalogEligibilityReporter
         Product::query()
             ->where('is_public', true)
             ->where('status', 'active')
-            ->select(['id', 'category_id', 'barcode', 'name', 'is_public', 'status', 'is_refurbished', 'is_set', 'available_stock'])
             ->with(['images', 'attributeValues.attributeDefinition', 'manufacturer'])
             ->orderBy('id')
             ->chunkById(200, function ($products) use (
