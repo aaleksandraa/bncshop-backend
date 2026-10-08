@@ -72,6 +72,18 @@ class PartnerApiClientResource extends Resource
                             ->alphaDash()
                             ->unique(ignoreRecord: true)
                             ->helperText('Koristi se u URL-u: /api/integrations/{code}/products'),
+                        Forms\Components\Select::make('catalog_scope')
+                            ->label('Katalog')
+                            ->options([
+                                PartnerApiClient::CATALOG_NEW => 'Novi proizvodi',
+                                PartnerApiClient::CATALOG_USED => 'Polovni (eLine)',
+                            ])
+                            ->default(PartnerApiClient::CATALOG_NEW)
+                            ->required()
+                            ->in([PartnerApiClient::CATALOG_NEW, PartnerApiClient::CATALOG_USED])
+                            ->native(false)
+                            ->live()
+                            ->helperText('Novi: A1/ručni novi asortiman. Polovni: samo eLine refurbished artikli.'),
                         Forms\Components\Select::make('type')
                             ->label('Tip API-ja')
                             ->options([
@@ -88,16 +100,50 @@ class PartnerApiClientResource extends Resource
                             ->default(true),
                         Forms\Components\Placeholder::make('integration_url')
                             ->label('Integracijski endpoint')
-                            ->content(function (?Model $record): string {
+                            ->content(function (?Model $record, Forms\Get $get): string {
+                                $scope = $get('catalog_scope') ?? PartnerApiClient::CATALOG_NEW;
+
                                 if ($record instanceof PartnerApiClient) {
-                                    return $record->integrationProductsUrl();
+                                    return $scope === PartnerApiClient::CATALOG_USED
+                                        ? $record->integrationUsedProductsUrl()
+                                        : $record->integrationProductsUrl();
                                 }
 
-                                return rtrim((string) config('app.url'), '/').'/api/integrations/{code}/products';
+                                $base = rtrim((string) config('app.url'), '/').'/api/integrations/{code}';
+
+                                return $scope === PartnerApiClient::CATALOG_USED
+                                    ? $base.'/used-products'
+                                    : $base.'/products';
+                            }),
+                        Forms\Components\Placeholder::make('integration_removals_url')
+                            ->label('Feed uklanjanja (samo polovni)')
+                            ->content(function (?Model $record, Forms\Get $get): string {
+                                $scope = $get('catalog_scope') ?? PartnerApiClient::CATALOG_NEW;
+
+                                if ($scope !== PartnerApiClient::CATALOG_USED) {
+                                    return '— (nije primjenjivo za katalog novih proizvoda)';
+                                }
+
+                                if ($record instanceof PartnerApiClient) {
+                                    return $record->integrationUsedRemovalsUrl();
+                                }
+
+                                return rtrim((string) config('app.url'), '/').'/api/integrations/{code}/used-products/removals';
                             }),
                         Forms\Components\Placeholder::make('legacy_url')
                             ->label('Legacy endpoint')
-                            ->content(fn (): string => app(\App\Services\Integrations\PartnerExportSettings::class)->legacyEndpointUrl()),
+                            ->content(function (?Model $record, Forms\Get $get): string {
+                                $scope = $get('catalog_scope') ?? PartnerApiClient::CATALOG_NEW;
+                                $settings = app(\App\Services\Integrations\PartnerExportSettings::class);
+
+                                if ($scope === PartnerApiClient::CATALOG_USED) {
+                                    return $record instanceof PartnerApiClient
+                                        ? $record->legacyUsedProductsUrl()
+                                        : $settings->usedProductsLegacyEndpointUrl();
+                                }
+
+                                return $settings->legacyEndpointUrl();
+                            }),
                         Forms\Components\Placeholder::make('api_key_hint_display')
                             ->label('Aktivni API ključ')
                             ->content(function (?Model $record): string {
@@ -186,6 +232,10 @@ class PartnerApiClientResource extends Resource
                     ->label('Kod')
                     ->badge()
                     ->searchable(),
+                Tables\Columns\TextColumn::make('catalog_scope')
+                    ->label('Katalog')
+                    ->badge()
+                    ->formatStateUsing(fn (?string $state): string => $state === PartnerApiClient::CATALOG_USED ? 'Polovni' : 'Novi'),
                 Tables\Columns\TextColumn::make('type')
                     ->label('Tip')
                     ->badge()

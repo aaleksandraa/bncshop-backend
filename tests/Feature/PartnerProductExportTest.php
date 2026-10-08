@@ -168,6 +168,28 @@ class PartnerProductExportTest extends TestCase
         $this->assertStringContainsString('no-store', (string) $response->headers->get('Cache-Control'));
     }
 
+    public function test_used_catalog_client_cannot_access_new_products_endpoint(): void
+    {
+        $usedClient = PartnerApiClient::query()->create([
+            'name' => 'Used only',
+            'code' => 'used-only',
+            'type' => PartnerApiClient::TYPE_BASIC,
+            'catalog_scope' => PartnerApiClient::CATALOG_USED,
+            'enabled' => true,
+        ]);
+        $usedKey = $usedClient->rotateApiKey();
+
+        Product::factory()->create([
+            'is_public' => true,
+            'status' => 'active',
+        ]);
+
+        $this->withHeader('X-API-Key', $usedKey)
+            ->getJson('/api/v1/partner/products')
+            ->assertForbidden()
+            ->assertJsonPath('errors.0', 'Ovaj API ključ nije ovlašten za katalog novih proizvoda.');
+    }
+
     public function test_exports_public_active_products_with_expected_fields(): void
     {
         $product = Product::factory()->create([

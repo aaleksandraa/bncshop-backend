@@ -295,3 +295,81 @@ Ključ u query stringu (`?api_key=`) takođe vraća `401`.
 Za novi ključ, promjenu tipa (osnovni ↔ puni), IP allowlist ili probleme sa sync-om javite se BNC timu.
 
 **Ne šaljite API ključ e-mailom u čistom tekstu ako nije neophodno.** Ako morate, pošaljite ga odvojenim kanalom od ostatka poruke.
+
+---
+
+## 14. Polovni eLine katalog (odvojen API)
+
+API iz §2–§12 služi **novim** proizvodima (A1 / ručni novi asortiman). **Polovni artikli iz eLine ERP-a** imaju **poseban** endpoint i **poseban** API ključ (katalog „Polovni“ u BNC adminu). Ključ za nove proizvode ne radi na polovnom URL-u i obrnuto.
+
+BNC mora uključiti „API za polovne“ u **Partner API postavkama** prije nego endpoint postane dostupan.
+
+### 14.1 Endpointi
+
+**Preporučeni:**
+
+```
+GET https://api.bnc.ba/api/integrations/{kod}/used-products
+GET https://api.bnc.ba/api/integrations/{kod}/used-products/removals
+```
+
+**Legacy:**
+
+```
+GET https://api.bnc.ba/api/v1/partner/used-products
+GET https://api.bnc.ba/api/v1/partner/used-products/removals
+```
+
+Autentifikacija, paginacija i omotnica odgovora isti su kao za novi katalog (§3–§6). Query parametri: `ModifiedAfter` / `updated_since`, `Page` / `page`, `PageSize` / `per_page`.
+
+### 14.2 Šta se šalje
+
+Samo **javni, aktivni, polovni** artikli iz eLine-a (`import_source = eline`, refurbished). Uključuje i artikle sa **`zaliha = 0`** (partner mora skinuti ponudu; na BNC shopu takvi polovni artikli mogu biti skriveni sa listinga).
+
+Ne šalju se: novi A1 artikli, eLine mapiran kao „novo“, ručni polovni izvan eLine-a.
+
+### 14.3 Dodatna polja (osnovni i puni)
+
+Uz polja iz §7.1 / §7.2:
+
+| Polje | Vrijednost | Opis |
+|---|---|---|
+| `izvor` | `"eline"` | Izvor podataka |
+| `stanje_artikla` | `"polovan"` | Stanje artikla |
+| `dostupnost` | `"u_radnji"` ili `"nema"` | `"u_radnji"` kad je `zaliha > 0`, inače `"nema"` (rezervacija u radnji) |
+
+`sifra` je eLine šifra artikla. eLine feed obično **nema slike**; puni tip može vratiti prazan niz `slike` dok se slike ne dodaju u BNC adminu.
+
+Podaci se osvježavaju prema eLine sync rasporedu (tipično 2× dnevno), ne prema vašem polling intervalu.
+
+### 14.4 Feed uklanjanja
+
+`GET .../used-products/removals` **mora** imati `ModifiedAfter` (ili `updated_since`). Bez datuma → HTTP `422`.
+
+Vraća polovne eLine artikle koji su **izmijenjeni nakon** tog datuma, a više **nisu** javni i aktivni:
+
+```json
+{
+  "id": 991,
+  "sifra": "EL-12345",
+  "uklonjen_at": "2026-08-01T14:00:00+02:00",
+  "razlog": "nije_javan"
+}
+```
+
+`razlog`: `neaktivan` (status ≠ active) ili `nije_javan` (npr. skinut sa shopa). Ignorišite `id` koji nikad niste uvezli.
+
+### 14.5 Preporučeni sync (polovni)
+
+1. Prvi put: sve stranice `used-products` bez `ModifiedAfter`.
+2. Sačuvajte UTC vrijeme početka.
+3. Redovno: `ModifiedAfter` na **i** `used-products` **i** `used-products/removals`.
+4. Mapirajte po `id`. Gasite artikle iz feeda uklanjanja.
+
+### 14.6 Greške specifične za polovni API
+
+| HTTP | Poruka (primjer) |
+|---|---|
+| `403` | Partner export API za polovne proizvode je isključen. |
+| `403` | Ovaj API ključ nije ovlašten za polovni katalog. |
+| `403` | Ovaj API ključ nije ovlašten za katalog novih proizvoda. (pogrešan URL za tip ključa) |

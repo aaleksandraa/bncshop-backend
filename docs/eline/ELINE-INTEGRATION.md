@@ -133,6 +133,10 @@ U kategorijskom sidebaru dostupni checkbox filteri:
 
 Badge se prikazuje na kartici proizvoda i na stranici proizvoda.
 
+## Partner export (polovni katalog)
+
+Polovni eLine artikli mogu se izvoziti eksternim partnerima preko **odvojenog** Partner API-ja (`/api/integrations/{kod}/used-products`). To nije isti endpoint ni ključ kao katalog **novih** proizvoda. U adminu: **Partner API postavke** → uključi polovne; **Partner API ključevi** → katalog „Polovni (eLine)“. Detalji: [`partner-api-upustvo.md`](../partner-api/partner-api-upustvo.md) §14.
+
 ## Napomene
 
 - eLine feed **nema slike** — slike se dodaju ručno u admin panelu

@@ -53,11 +53,14 @@ class PartnerExportSettingsPage extends Page implements HasForms
     {
         $this->form->fill([
             'enabled' => $settings->all()['enabled'] ?? false,
+            'used_enabled' => $settings->isUsedExportEnabled(),
             'require_https' => $settings->requireHttps(),
             'require_ip_allowlist' => $settings->requiresIpAllowlist(),
             'max_failed_auth_per_minute' => $settings->maxFailedAuthPerMinute(),
             'log_access' => $settings->shouldLogAccess(),
             'legacy_endpoint_url' => $settings->legacyEndpointUrl(),
+            'used_products_legacy_url' => $settings->usedProductsLegacyEndpointUrl(),
+            'used_removals_legacy_url' => $settings->usedRemovalsLegacyEndpointUrl(),
         ]);
     }
 
@@ -74,6 +77,20 @@ class PartnerExportSettingsPage extends Page implements HasForms
                         Placeholder::make('legacy_endpoint_url')
                             ->label('Legacy endpoint')
                             ->content(fn (): string => app(PartnerExportSettings::class)->legacyEndpointUrl()),
+                    ])
+                    ->columns(2),
+                Section::make('Polovni eLine katalog')
+                    ->description('Odvojeno od API-ja za nove proizvode. Partner ključevi sa katalogom „Polovni“ koriste ove endpointe.')
+                    ->schema([
+                        Toggle::make('used_enabled')
+                            ->label('Uključi API za polovne proizvode')
+                            ->helperText('Kada je isključeno, svi zahtjevi na /used-products vraćaju HTTP 403. Ne utiče na katalog novih proizvoda.'),
+                        Placeholder::make('used_products_legacy_url')
+                            ->label('Legacy katalog polovnih')
+                            ->content(fn (): string => app(PartnerExportSettings::class)->usedProductsLegacyEndpointUrl()),
+                        Placeholder::make('used_removals_legacy_url')
+                            ->label('Legacy feed uklanjanja')
+                            ->content(fn (): string => app(PartnerExportSettings::class)->usedRemovalsLegacyEndpointUrl()),
                     ])
                     ->columns(2),
                 Section::make('Sigurnost')
@@ -105,6 +122,7 @@ class PartnerExportSettingsPage extends Page implements HasForms
 
         $settings->save([
             'enabled' => (bool) ($state['enabled'] ?? false),
+            'used_enabled' => (bool) ($state['used_enabled'] ?? false),
             'require_https' => (bool) ($state['require_https'] ?? true),
             'require_ip_allowlist' => (bool) ($state['require_ip_allowlist'] ?? true),
             'max_failed_auth_per_minute' => (int) ($state['max_failed_auth_per_minute'] ?? 10),

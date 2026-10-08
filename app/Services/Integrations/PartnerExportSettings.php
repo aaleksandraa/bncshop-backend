@@ -21,6 +21,21 @@ class PartnerExportSettings
         return (bool) ($this->all()['enabled'] ?? false);
     }
 
+    public function isUsedExportEnabled(): bool
+    {
+        return (bool) ($this->all()['used_enabled'] ?? false);
+    }
+
+    public function usedProductsLegacyEndpointUrl(): string
+    {
+        return rtrim((string) config('app.url'), '/').'/api/v1/partner/used-products';
+    }
+
+    public function usedRemovalsLegacyEndpointUrl(): string
+    {
+        return rtrim((string) config('app.url'), '/').'/api/v1/partner/used-products/removals';
+    }
+
     public function legacyEndpointUrl(): string
     {
         return rtrim((string) config('app.url'), '/').'/api/v1/partner/products';
@@ -69,6 +84,7 @@ class PartnerExportSettings
     {
         return [
             'enabled' => false,
+            'used_enabled' => false,
             'require_https' => ! app()->environment('local', 'testing'),
             'require_ip_allowlist' => ! app()->environment('local', 'testing'),
             'max_failed_auth_per_minute' => 10,

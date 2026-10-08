@@ -26,6 +26,7 @@ use App\Http\Controllers\Api\V1\MetaProductViewController;
 use App\Http\Controllers\Api\V1\OrderController;
 use App\Http\Controllers\Api\V1\PageController;
 use App\Http\Controllers\Api\V1\PartnerProductExportController;
+use App\Http\Controllers\Api\V1\PartnerUsedProductExportController;
 use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\RedirectController;
 use App\Http\Controllers\Api\V1\SearchController;
@@ -42,6 +43,13 @@ Route::middleware(['partner.export.secure', 'partner.export', 'partner.export.he
     ->prefix('integrations')
     ->group(function (): void {
         Route::get('/{targetSystemCode}/products', [PartnerProductExportController::class, 'index']);
+    });
+
+Route::middleware(['partner.export.used.secure', 'partner.export', 'partner.export.headers'])
+    ->prefix('integrations')
+    ->group(function (): void {
+        Route::get('/{targetSystemCode}/used-products/removals', [PartnerUsedProductExportController::class, 'removals']);
+        Route::get('/{targetSystemCode}/used-products', [PartnerUsedProductExportController::class, 'index']);
     });
 
 Route::prefix('v1')->group(function (): void {
@@ -199,5 +207,10 @@ Route::prefix('v1')->group(function (): void {
 
     Route::middleware(['partner.export.secure', 'partner.export', 'partner.export.headers'])->prefix('partner')->group(function (): void {
         Route::get('/products', [PartnerProductExportController::class, 'index']);
+    });
+
+    Route::middleware(['partner.export.used.secure', 'partner.export', 'partner.export.headers'])->prefix('partner')->group(function (): void {
+        Route::get('/used-products/removals', [PartnerUsedProductExportController::class, 'removals']);
+        Route::get('/used-products', [PartnerUsedProductExportController::class, 'index']);
     });
 });

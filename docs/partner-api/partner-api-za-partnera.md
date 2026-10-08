@@ -193,3 +193,24 @@ Koristite `ModifiedAfter` nakon prvog synca da ostanete daleko ispod dnevnog lim
 7. Dalje syncove radite sa `ModifiedAfter`.
 
 Za novi ključ, promjenu tipa ili IP adresu servera javite se BNC timu.
+
+---
+
+## Polovni eLine katalog (odvojen ključ)
+
+Gore opisani endpoint (`/products`) služi **novim** proizvodima. **Polovni artikli iz eLine-a** imaju poseban API i **poseban** ključ koji vam BNC izda sa katalogom „Polovni“.
+
+| Endpoint | Namjena |
+|---|---|
+| `GET /api/integrations/{kod}/used-products` | Aktivni polovni eLine artikli |
+| `GET /api/integrations/{kod}/used-products/removals` | Artikli uklonjeni od zadnjeg synca |
+
+Legacy: `/api/v1/partner/used-products` i `.../removals`.
+
+Ista autentifikacija i paginacija kao za novi katalog. Dodatna polja: `izvor` (`eline`), `stanje_artikla` (`polovan`), `dostupnost` (`u_radnji` / `nema`). `zaliha = 0` se šalje — skinite artikal kod sebe.
+
+Feed uklanjanja **zahtijeva** `ModifiedAfter`. Polja: `id`, `sifra`, `uklonjen_at`, `razlog`.
+
+Ključ za nove proizvode ne radi na `used-products` URL-u i obrnuto. BNC mora uključiti polovni API u admin postavkama prije nego postane aktivan.
+
+Detaljno uputstvo: [`partner-api-upustvo.md`](partner-api-upustvo.md) §14.

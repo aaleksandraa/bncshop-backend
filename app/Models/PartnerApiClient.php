@@ -13,10 +13,15 @@ class PartnerApiClient extends Model
 
     public const TYPE_FULL = 'full';
 
+    public const CATALOG_NEW = 'new';
+
+    public const CATALOG_USED = 'used';
+
     protected $fillable = [
         'name',
         'code',
         'type',
+        'catalog_scope',
         'enabled',
         'api_key_hash',
         'api_key_hint',
@@ -132,6 +137,47 @@ class PartnerApiClient extends Model
         return $this->type === self::TYPE_FULL;
     }
 
+    public function isUsedCatalog(): bool
+    {
+        return $this->catalog_scope === self::CATALOG_USED;
+    }
+
+    public function isNewCatalog(): bool
+    {
+        return $this->catalog_scope !== self::CATALOG_USED;
+    }
+
+    public function integrationUsedProductsUrl(): string
+    {
+        return rtrim((string) config('app.url'), '/').'/api/integrations/'.$this->code.'/used-products';
+    }
+
+    public function integrationUsedRemovalsUrl(): string
+    {
+        return rtrim((string) config('app.url'), '/').'/api/integrations/'.$this->code.'/used-products/removals';
+    }
+
+    public function legacyUsedProductsUrl(): string
+    {
+        return rtrim((string) config('app.url'), '/').'/api/v1/partner/used-products';
+    }
+
+    public function legacyUsedRemovalsUrl(): string
+    {
+        return rtrim((string) config('app.url'), '/').'/api/v1/partner/used-products/removals';
+    }
+
+    public static function normalizeCatalogScope(mixed $scope): string
+    {
+        $value = strtolower(trim((string) $scope));
+
+        if ($value === self::CATALOG_USED || str_starts_with($value, 'polov')) {
+            return self::CATALOG_USED;
+        }
+
+        return self::CATALOG_NEW;
+    }
+
     public static function normalizeType(mixed $type): string
     {
         $value = strtolower(trim((string) $type));
@@ -157,6 +203,10 @@ class PartnerApiClient extends Model
 
         if (array_key_exists('type', $data)) {
             $data['type'] = self::normalizeType($data['type']);
+        }
+
+        if (array_key_exists('catalog_scope', $data)) {
+            $data['catalog_scope'] = self::normalizeCatalogScope($data['catalog_scope']);
         }
 
         if (filled($data['code'] ?? null)) {

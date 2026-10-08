@@ -47,6 +47,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'seller' => \App\Http\Middleware\EnsureSeller::class,
             'auth.optional' => \App\Http\Middleware\AuthenticateOptionalSanctum::class,
             'partner.export.secure' => \App\Http\Middleware\SecurePartnerExport::class,
+            'partner.export.used.secure' => \App\Http\Middleware\SecurePartnerUsedExport::class,
             'partner.export' => \App\Http\Middleware\AuthenticatePartnerExport::class,
             'partner.export.headers' => \App\Http\Middleware\AddPartnerExportResponseHeaders::class,
             'b2b.customer' => \App\Http\Middleware\EnsureB2bCustomer::class,
