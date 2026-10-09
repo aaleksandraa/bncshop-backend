@@ -202,6 +202,16 @@ class AnanasEligibilityPolicyTest extends TestCase
         $this->policy->assertCanExport($product);
     }
 
+    public function test_zero_available_stock_is_not_eligible_for_import(): void
+    {
+        $product = $this->createExportReadyProduct(['available_stock' => 0]);
+
+        $result = $this->policy->evaluateProductData($product);
+
+        $this->assertFalse($result->eligible);
+        $this->assertSame(AnanasEligibilityPolicy::ZERO_STOCK, $result->reasonCode);
+    }
+
     public function test_assert_can_export_allows_eligible_product(): void
     {
         $this->policy->assertCanExport($this->createExportReadyProduct());

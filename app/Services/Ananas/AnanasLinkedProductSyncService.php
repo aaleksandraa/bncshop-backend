@@ -128,6 +128,17 @@ class AnanasLinkedProductSyncService
                 continue;
             }
 
+            if ((int) $product->available_stock <= 0) {
+                $skipped++;
+                $errors[] = sprintf(
+                    'BNC #%d (merchant %d): BNC stock is 0 — skip PUT (will not send zero qty).',
+                    $product->id,
+                    $inventoryId,
+                );
+
+                continue;
+            }
+
             $mapping = $this->mappingService->findOrCreate($product);
             $mapping->fill([
                 'ean' => $ean !== '' ? $ean : $mapping->ean,
@@ -144,10 +155,6 @@ class AnanasLinkedProductSyncService
                 $errors[] = sprintf('BNC #%d (merchant %d): cannot build stock PUT (price/VAT).', $product->id, $inventoryId);
 
                 continue;
-            }
-
-            if ((int) ($item['stockLevel'] ?? 0) <= 0) {
-                $errors[] = sprintf('BNC #%d (merchant %d): BNC available_stock is also 0 — PUT will keep zero.', $product->id, $inventoryId);
             }
 
             $payloads[] = ['mapping' => $mapping->fresh() ?? $mapping, 'item' => $item];

@@ -50,14 +50,20 @@ class AnanasLinkedProductSyncServiceTest extends TestCase
                             'stockLevel' => 0,
                             'basePrice' => 2519,
                         ],
-                        [
-                            'id' => 2567072,
-                            'ean' => '4711387783627',
-                            'stockLevel' => 12,
-                            'basePrice' => 3705,
-                        ],
+                    [
+                        'id' => 2567072,
+                        'ean' => '4711387783627',
+                        'stockLevel' => 12,
+                        'basePrice' => 3705,
                     ],
-                    'totalElements' => 2,
+                    [
+                        'id' => 2568459,
+                        'ean' => '5291485009731',
+                        'stockLevel' => 0,
+                        'basePrice' => 57,
+                    ],
+                    ],
+                    'totalElements' => 3,
                 ], 200);
             }
 
@@ -66,6 +72,7 @@ class AnanasLinkedProductSyncServiceTest extends TestCase
 
         $zero = $this->createProductWithWeight('4711387783597', 8, 2519);
         $this->createProductWithWeight('4711387783627', 4, 3705);
+        $this->createProductWithWeight('5291485009731', 0, 57);
 
         $result = app(AnanasLinkedProductSyncService::class)->syncLinkedStockAndPrice(
             limit: 25,
@@ -75,6 +82,9 @@ class AnanasLinkedProductSyncServiceTest extends TestCase
         );
 
         $this->assertSame(1, $result['updated']);
+        $this->assertSame(1, $result['skipped']);
+        $this->assertNotEmpty($result['errors']);
+        $this->assertStringContainsString('will not send zero qty', $result['errors'][0]);
         $this->assertSame(2567071, (int) $result['items'][0]['id']);
         $this->assertSame($zero->id, (int) $result['items'][0]['product_id']);
         $this->assertSame(8, (int) $result['items'][0]['stockLevel']);

@@ -34,6 +34,8 @@ class AnanasEligibilityPolicy
 
     public const INVALID_PRICE = 'INVALID_PRICE';
 
+    public const ZERO_STOCK = 'ZERO_STOCK';
+
     /**
      * Docs list 0/10/20. Stage QA2 for this BiH merchant accepted only 17 on PUT bulk.
      * The number is a tax-rate tag — it does not add VAT on top of BNC basePrice.
@@ -130,6 +132,10 @@ class AnanasEligibilityPolicy
 
         if ($regularPrice <= 0) {
             return AnanasEligibilityResult::notEligible(self::INVALID_PRICE);
+        }
+
+        if ((int) $product->available_stock <= 0) {
+            return AnanasEligibilityResult::notEligible(self::ZERO_STOCK);
         }
 
         if ($this->resolvedVatRate() === null) {
