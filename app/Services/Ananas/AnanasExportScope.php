@@ -176,7 +176,15 @@ class AnanasExportScope
         $parentMap = $this->parentByCategoryId();
         $mappingByCategory = $enabledOnly ? $this->mappingByCategoryId() : $this->mappingByCategoryIdAll();
 
+        $seen = [];
+
         while ($categoryId !== null) {
+            if (isset($seen[$categoryId])) {
+                break;
+            }
+
+            $seen[$categoryId] = true;
+
             if (isset($mappingByCategory[$categoryId])) {
                 return $mappingByCategory[$categoryId];
             }
@@ -194,12 +202,20 @@ class AnanasExportScope
     {
         $childrenByParent = $this->childrenByParentId();
         $ids = [];
+        $seen = [$categoryId => true];
         $queue = [$categoryId];
 
         while ($queue !== []) {
             $current = array_shift($queue);
 
             foreach ($childrenByParent[$current] ?? [] as $childId) {
+                $childId = (int) $childId;
+
+                if (isset($seen[$childId])) {
+                    continue;
+                }
+
+                $seen[$childId] = true;
                 $ids[] = $childId;
                 $queue[] = $childId;
             }

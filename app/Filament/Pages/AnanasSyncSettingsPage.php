@@ -50,8 +50,12 @@ class AnanasSyncSettingsPage extends Page implements HasForms
     /** @var array<string, mixed> */
     public array $eligibilitySummary = [];
 
+    public bool $eligibilityLoaded = false;
+
     /** @var list<array<string, mixed>> */
     public array $mappingRows = [];
+
+    public ?string $pageLoadError = null;
 
     /** @var array<string, mixed>|null */
     public ?array $lastCatalogAction = null;
@@ -75,21 +79,43 @@ class AnanasSyncSettingsPage extends Page implements HasForms
 
     public function mount(
         AnanasSyncSettings $settings,
-        AnanasEligibilityReporter $reporter,
         AnanasValidatedMappingService $mappingService,
     ): void {
-        $this->status = $settings->status();
-        $settings->resolveSource();
-        $this->eligibilitySummary = $reporter->summarize();
-        $this->mappingRows = $mappingService->summaryRows();
+        $this->eligibilitySummary = [
+            'eligible' => 0,
+            'total_scanned' => 0,
+            'reasons' => [],
+        ];
 
-        $all = $settings->all();
-        $credentials = $settings->credentials();
-        $all['client_id'] = $credentials['client_id'];
-        $all['client_secret'] = '';
-        $all['environment'] = $settings->environment();
+        try {
+            $this->status = $settings->status();
+            $settings->resolveSource();
+            $this->status = $settings->status();
+        } catch (\Throwable $e) {
+            report($e);
+            $this->pageLoadError = $e->getMessage();
+        }
 
-        $this->form->fill($all);
+        try {
+            $this->mappingRows = $mappingService->summaryRows();
+        } catch (\Throwable $e) {
+            report($e);
+            $this->mappingRows = [];
+            $this->pageLoadError = $e->getMessage();
+        }
+
+        try {
+            $all = $settings->all();
+            $credentials = $settings->credentials();
+            $all['client_id'] = $credentials['client_id'];
+            $all['client_secret'] = '';
+            $all['environment'] = $settings->environment();
+
+            $this->form->fill($all);
+        } catch (\Throwable $e) {
+            report($e);
+            $this->pageLoadError = $e->getMessage();
+        }
     }
 
     public function form(Form $form): Form
@@ -226,7 +252,15 @@ class AnanasSyncSettingsPage extends Page implements HasForms
 
     public function runEligibilityReport(AnanasEligibilityReporter $reporter): void
     {
-        $this->eligibilitySummary = $reporter->summarize();
+        try {
+            $this->eligibilitySummary = $reporter->summarize();
+            $this->eligibilityLoaded = true;
+        } catch (\Throwable $e) {
+            report($e);
+            Notification::make()->title('Eligibility izvještaj neuspješan')->body($e->getMessage())->danger()->send();
+
+            return;
+        }
 
         Notification::make()
             ->title('Eligibility izvještaj osvježen')

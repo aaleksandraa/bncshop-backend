@@ -1,4 +1,11 @@
 <x-filament-panels::page>
+    @if (filled($pageLoadError))
+        <div class="mb-6 rounded-lg border border-danger-300 bg-danger-50 p-4 dark:border-danger-600 dark:bg-danger-950">
+            <p class="text-sm font-semibold text-danger-800 dark:text-danger-200">Dio stranice nije učitan</p>
+            <p class="mt-1 text-sm text-danger-700 dark:text-danger-300">{{ $pageLoadError }}</p>
+        </div>
+    @endif
+
     @if (empty($status['has_credentials']))
         <div class="mb-6 rounded-lg border border-warning-300 bg-warning-50 p-4 dark:border-warning-600 dark:bg-warning-950">
             <p class="text-sm font-semibold text-warning-800 dark:text-warning-200">Ananas credentials nisu postavljeni</p>
@@ -27,9 +34,14 @@
         </x-filament::section>
         <x-filament::section>
             <p class="text-sm text-gray-500 dark:text-gray-400">Eligibility (scoped)</p>
-            <p class="text-base font-semibold">
-                {{ $eligibilitySummary['eligible'] ?? 0 }} / {{ $eligibilitySummary['total_scanned'] ?? 0 }} eligible
-            </p>
+            @if ($eligibilityLoaded)
+                <p class="text-base font-semibold">
+                    {{ $eligibilitySummary['eligible'] ?? 0 }} / {{ $eligibilitySummary['total_scanned'] ?? 0 }} eligible
+                </p>
+            @else
+                <p class="text-base font-semibold">Nije učitano</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400">Pregled kataloga se pokreće tek na „Osvježi eligibility izvještaj“.</p>
+            @endif
         </x-filament::section>
     </div>
 
