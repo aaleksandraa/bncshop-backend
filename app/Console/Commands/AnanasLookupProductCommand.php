@@ -131,6 +131,7 @@ class AnanasLookupProductCommand extends Command
                 $categoryText !== '' ? $categoryText : '—',
                 $this->formatMoney($row['basePrice'] ?? null),
                 $this->formatMoney($row['newBasePrice'] ?? null),
+                $this->formatStock($row),
             ];
         }
 
@@ -138,7 +139,21 @@ class AnanasLookupProductCommand extends Command
             return;
         }
 
-        $this->table(['id', 'ean', 'externalId', 'productType', 'status', 'categories', 'basePrice', 'newBasePrice'], $table);
+        $this->table(['id', 'ean', 'externalId', 'productType', 'status', 'categories', 'basePrice', 'newBasePrice', 'stock'], $table);
+    }
+
+    /**
+     * @param  array<string, mixed>  $row
+     */
+    private function formatStock(array $row): string
+    {
+        foreach (['stockLevel', 'quantity', 'stock'] as $key) {
+            if (array_key_exists($key, $row) && $row[$key] !== null && $row[$key] !== '') {
+                return (string) $row[$key];
+            }
+        }
+
+        return '—';
     }
 
     private function formatMoney(mixed $value): string

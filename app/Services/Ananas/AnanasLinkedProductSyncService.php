@@ -13,10 +13,11 @@ class AnanasLinkedProductSyncService
         private readonly AnanasPackageWeightResolver $packageWeightResolver,
         private readonly AnanasEligibilityPolicy $eligibilityPolicy,
         private readonly PriceCalculator $priceCalculator,
+        private readonly AnanasProductMappingService $mappingService,
     ) {}
 
     /**
-     * @return array{updated: int, skipped: int, errors: list<string>}
+     * @return array{updated: int, skipped: int, errors: list<string>, items?: list<array<string, mixed>>}
      */
     public function syncLinkedStockAndPrice(
         int $limit = 25,
@@ -25,11 +26,20 @@ class AnanasLinkedProductSyncService
         array $inventoryIds = [],
         bool $force = false,
         ?int $vatRate = null,
+        bool $zeroStock = false,
     ): array {
         $limit = max(1, min($limit, 2000));
-        $updated = 0;
+
+        if ($zeroStock) {
+            return $this->syncMerchantMissingStock(
+                limit: $limit,
+                dryRun: $dryRun,
+                allowProduction: $allowProduction,
+                vatRate: $vatRate,
+            );
+        }
+
         $skipped = 0;
-        $errors = [];
         $payloads = [];
         $wanted = array_values(array_unique(array_filter(array_map('intval', $inventoryIds), static fn (int $id): bool => $id > 0)));
 
@@ -73,73 +83,77 @@ class AnanasLinkedProductSyncService
             $payloads[] = ['mapping' => $mapping, 'item' => $item];
         }
 
-        if ($payloads === []) {
-            return compact('updated', 'skipped', 'errors') + ['items' => []];
-        }
+        return $this->dispatchBulk($payloads, $dryRun, $allowProduction, $skipped);
+    }
 
-        $itemsPreview = array_map(static function (array $row): array {
-            $item = $row['item'];
-            $mapping = $row['mapping'];
+    /**
+     * PUT stock/price for merchant-list SKUs whose stockLevel is missing or 0 (Ananas "edit in bulk").
+     *
+     * @return array{updated: int, skipped: int, errors: list<string>, items: list<array<string, mixed>>}
+     */
+    public function syncMerchantMissingStock(
+        int $limit = 25,
+        bool $dryRun = false,
+        bool $allowProduction = false,
+        ?int $vatRate = null,
+    ): array {
+        $limit = max(1, min($limit, 2000));
+        $skipped = 0;
+        $errors = [];
+        $payloads = [];
 
-            return [
-                'id' => $item['id'] ?? null,
-                'product_id' => $mapping->product_id,
-                'ean' => $mapping->ean,
-                'basePrice' => $item['basePrice'] ?? null,
-                'stockLevel' => $item['stockLevel'] ?? null,
-                'vat' => $item['vat'] ?? null,
-            ];
-        }, $payloads);
+        foreach ($this->listMerchantProducts() as $remote) {
+            if (count($payloads) >= $limit) {
+                break;
+            }
 
-        if ($dryRun) {
-            return [
-                'updated' => count($payloads),
-                'skipped' => $skipped,
-                'errors' => [],
-                'items' => $itemsPreview,
-            ];
-        }
+            if (! is_array($remote) || ! $this->merchantStockIsMissing($remote)) {
+                continue;
+            }
 
-        $items = array_map(static fn (array $row): array => $row['item'], $payloads);
+            $inventoryId = (int) ($remote['id'] ?? 0);
+            $ean = trim((string) ($remote['ean'] ?? ''));
+            $externalId = trim((string) ($remote['externalId'] ?? ''));
 
-        try {
-            $responses = $this->apiClient->updateProductsBulk($items, $allowProduction);
-        } catch (\Throwable $e) {
-            return [
-                'updated' => 0,
-                'skipped' => $skipped,
-                'errors' => [$e->getMessage()],
-                'items' => $itemsPreview,
-            ];
-        }
+            $product = $this->findBncProduct($ean, $externalId);
 
-        foreach ($payloads as $index => $row) {
-            /** @var AnanasProductMapping $mapping */
-            $mapping = $row['mapping'];
-            $response = $responses[$index] ?? null;
-            $status = is_array($response) ? (string) ($response['status'] ?? '') : '';
-
-            if (strtoupper($status) === 'SUCCESS') {
-                $updated++;
-                $item = $row['item'];
-                $mapping->update([
-                    'stock_hash' => hash('sha256', (string) ($item['stockLevel'] ?? 0)),
-                    'price_hash' => hash('sha256', (string) ($item['basePrice'] ?? 0)),
-                    'last_success_at' => now(),
-                ]);
+            if ($product === null) {
+                $skipped++;
+                $errors[] = sprintf(
+                    'Merchant %d EAN %s: no matching BNC product.',
+                    $inventoryId,
+                    $ean !== '' ? $ean : '—',
+                );
 
                 continue;
             }
 
-            $errors[] = sprintf(
-                'Mapping %d product %s: %s',
-                $mapping->id,
-                $mapping->ananas_product_id,
-                is_array($response) ? implode('; ', $response['errors'] ?? ['FAIL']) : 'unknown',
-            );
+            $mapping = $this->mappingService->findOrCreate($product);
+            $mapping->fill([
+                'ean' => $ean !== '' ? $ean : $mapping->ean,
+                'ananas_product_id' => $inventoryId > 0 ? (string) $inventoryId : $mapping->ananas_product_id,
+                'merchant_inventory_id' => $inventoryId > 0 ? (string) $inventoryId : $mapping->merchant_inventory_id,
+            ]);
+            $mapping->save();
+            $product->loadMissing(['attributeValues.attributeDefinition']);
+
+            $item = $this->buildBulkUpdateItem($mapping, $product, force: true, vatRate: $vatRate, requireWeight: false);
+
+            if ($item === null) {
+                $skipped++;
+                $errors[] = sprintf('BNC #%d (merchant %d): cannot build stock PUT (price/VAT).', $product->id, $inventoryId);
+
+                continue;
+            }
+
+            if ((int) ($item['stockLevel'] ?? 0) <= 0) {
+                $errors[] = sprintf('BNC #%d (merchant %d): BNC available_stock is also 0 — PUT will keep zero.', $product->id, $inventoryId);
+            }
+
+            $payloads[] = ['mapping' => $mapping->fresh() ?? $mapping, 'item' => $item];
         }
 
-        return compact('updated', 'skipped', 'errors') + ['items' => $itemsPreview];
+        return $this->dispatchBulk($payloads, $dryRun, $allowProduction, $skipped, $errors);
     }
 
     /**
@@ -255,10 +269,174 @@ class AnanasLinkedProductSyncService
     }
 
     /**
+     * @param  list<array{mapping: AnanasProductMapping, item: array<string, mixed>}>  $payloads
+     * @param  list<string>  $errors
+     * @return array{updated: int, skipped: int, errors: list<string>, items: list<array<string, mixed>>}
+     */
+    private function dispatchBulk(
+        array $payloads,
+        bool $dryRun,
+        bool $allowProduction,
+        int $skipped,
+        array $errors = [],
+    ): array {
+        $itemsPreview = array_map(static function (array $row): array {
+            $item = $row['item'];
+            $mapping = $row['mapping'];
+
+            return [
+                'id' => $item['id'] ?? null,
+                'product_id' => $mapping->product_id,
+                'ean' => $mapping->ean,
+                'basePrice' => $item['basePrice'] ?? null,
+                'stockLevel' => $item['stockLevel'] ?? null,
+                'vat' => $item['vat'] ?? null,
+            ];
+        }, $payloads);
+
+        if ($payloads === []) {
+            return [
+                'updated' => 0,
+                'skipped' => $skipped,
+                'errors' => $errors,
+                'items' => [],
+            ];
+        }
+
+        if ($dryRun) {
+            return [
+                'updated' => count($payloads),
+                'skipped' => $skipped,
+                'errors' => $errors,
+                'items' => $itemsPreview,
+            ];
+        }
+
+        $items = array_map(static fn (array $row): array => $row['item'], $payloads);
+
+        try {
+            $responses = $this->apiClient->updateProductsBulk($items, $allowProduction);
+        } catch (\Throwable $e) {
+            $errors[] = $e->getMessage();
+
+            return [
+                'updated' => 0,
+                'skipped' => $skipped,
+                'errors' => $errors,
+                'items' => $itemsPreview,
+            ];
+        }
+
+        $updated = 0;
+
+        foreach ($payloads as $index => $row) {
+            /** @var AnanasProductMapping $mapping */
+            $mapping = $row['mapping'];
+            $response = $responses[$index] ?? null;
+            $status = is_array($response) ? (string) ($response['status'] ?? '') : '';
+
+            if (strtoupper($status) === 'SUCCESS') {
+                $updated++;
+                $item = $row['item'];
+                $mapping->update([
+                    'local_status' => AnanasProductMapping::LOCAL_LINKED,
+                    'stock_hash' => hash('sha256', (string) ($item['stockLevel'] ?? 0)),
+                    'price_hash' => hash('sha256', (string) ($item['basePrice'] ?? 0)),
+                    'last_success_at' => now(),
+                ]);
+
+                continue;
+            }
+
+            $errors[] = sprintf(
+                'Mapping %d product %s: %s',
+                $mapping->id,
+                $mapping->ananas_product_id,
+                is_array($response) ? implode('; ', $response['errors'] ?? ['FAIL']) : 'unknown',
+            );
+        }
+
+        return compact('updated', 'skipped', 'errors') + ['items' => $itemsPreview];
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function listMerchantProducts(): array
+    {
+        $all = [];
+
+        for ($page = 0; $page < 20; $page++) {
+            $payload = $this->apiClient->getProducts(['page' => $page, 'size' => 50]);
+            $items = $this->apiClient->normalizeListPayload(is_array($payload) ? $payload : []);
+
+            if ($items === []) {
+                break;
+            }
+
+            foreach ($items as $item) {
+                if (is_array($item)) {
+                    $all[] = $item;
+                }
+            }
+
+            $total = is_array($payload) && isset($payload['totalElements'])
+                ? (int) $payload['totalElements']
+                : count($all);
+
+            if (count($all) >= $total) {
+                break;
+            }
+        }
+
+        return $all;
+    }
+
+    /**
+     * @param  array<string, mixed>  $row
+     */
+    private function merchantStockIsMissing(array $row): bool
+    {
+        foreach (['stockLevel', 'quantity', 'stock'] as $key) {
+            if (! array_key_exists($key, $row) || $row[$key] === null || $row[$key] === '') {
+                continue;
+            }
+
+            return (int) $row[$key] <= 0;
+        }
+
+        return true;
+    }
+
+    private function findBncProduct(string $ean, string $externalId): ?Product
+    {
+        if ($externalId !== '' && ctype_digit($externalId)) {
+            $byId = Product::query()->find((int) $externalId);
+
+            if ($byId instanceof Product) {
+                return $byId;
+            }
+        }
+
+        $candidates = AnanasEanLookup::candidateQueryValues($ean);
+
+        if ($candidates === []) {
+            return null;
+        }
+
+        return Product::query()->whereIn('barcode', $candidates)->first();
+    }
+
+    /**
      * @return array<string, mixed>|null
      */
-    private function buildBulkUpdateItem(AnanasProductMapping $mapping, Product $product, bool $force = false, ?int $vatRate = null): ?array
-    {
+    private function buildBulkUpdateItem(
+        AnanasProductMapping $mapping,
+        Product $product,
+        bool $force = false,
+        ?int $vatRate = null,
+        bool $requireWeight = true,
+    ): ?array {
         $remoteId = $mapping->inventoryId();
 
         if ($remoteId <= 0) {
@@ -267,7 +445,7 @@ class AnanasLinkedProductSyncService
 
         $weight = $this->packageWeightResolver->resolve($product);
 
-        if (! $weight->isOk()) {
+        if ($requireWeight && ! $weight->isOk()) {
             return null;
         }
 
@@ -289,15 +467,20 @@ class AnanasLinkedProductSyncService
             return null;
         }
 
-        return [
+        $item = [
             'id' => $remoteId,
             'stockLevel' => $stockLevel,
             'basePrice' => $basePrice,
             'vat' => $vat,
-            'packageWeightValue' => $weight->resolvedWeightKg,
-            'packageWeightUnit' => 'KG',
             'sku' => filled($product->sku) ? (string) $product->sku : ('BNC-'.$product->id),
             'serviceable' => true,
         ];
+
+        if ($weight->isOk()) {
+            $item['packageWeightValue'] = $weight->resolvedWeightKg;
+            $item['packageWeightUnit'] = 'KG';
+        }
+
+        return $item;
     }
 }

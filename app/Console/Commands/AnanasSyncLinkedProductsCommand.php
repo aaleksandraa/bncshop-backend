@@ -15,6 +15,7 @@ class AnanasSyncLinkedProductsCommand extends Command
                             {--inventory= : Comma-separated merchant inventory ids}
                             {--force : PUT even when local price/stock hashes match}
                             {--vat= : Ananas VAT tag 0/10/17/20 (does not add VAT onto BNC basePrice)}
+                            {--zero-stock : PUT stock for merchant SKUs whose stockLevel is missing or 0}
                             {--dry-run : Build update payloads without PUT}
                             {--confirm : Required for live PUT bulk update}
                             {--allow-production : Allow writes when ANANAS_ENV=production}';
@@ -79,8 +80,9 @@ class AnanasSyncLinkedProductsCommand extends Command
             dryRun: $dryRun,
             allowProduction: $allowProduction,
             inventoryIds: $inventory,
-            force: (bool) $this->option('force'),
+            force: (bool) $this->option('force') || (bool) $this->option('zero-stock'),
             vatRate: $vatRate,
+            zeroStock: (bool) $this->option('zero-stock'),
         );
 
         $this->info(sprintf(
