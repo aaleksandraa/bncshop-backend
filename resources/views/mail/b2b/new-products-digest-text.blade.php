@@ -8,7 +8,7 @@ Poštovani {{ $customerName }},
 
 @foreach ($products as $product)
 • {!! $product['name'] !!}@if ($product['sku']) ({!! $product['sku'] !!})@endif
-  Cijena: {!! $product['price'] !!} KM
+  B2B cijena: {!! $product['price'] !!} KM
   Pogledajte: {!! $product['url'] !!}
 
 @endforeach

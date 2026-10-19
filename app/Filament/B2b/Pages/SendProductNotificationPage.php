@@ -97,7 +97,7 @@ class SendProductNotificationPage extends Page implements HasForms
                                 '<div class="rounded-lg bg-gray-50 px-3 py-2 text-sm text-gray-700 dark:bg-white/5 dark:text-gray-200">'
                                 .e($predefinedIntro)
                                 .'<br><br>• [naziv proizvoda] (šifra)<br>'
-                                .'&nbsp;&nbsp;Cijena: [cijena] KM<br>'
+                                .'&nbsp;&nbsp;B2B cijena: [cijena] KM<br>'
                                 .'&nbsp;&nbsp;Pogledajte: https://bncshop.ba/b2b/proizvod/[slug]<br>'
                                 .'<br>Pregled cijelog kataloga: [link]'
                                 .'</div>'

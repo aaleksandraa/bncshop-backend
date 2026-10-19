@@ -68,7 +68,7 @@ class B2bProductResource extends Resource
             ...static::b2bProductAttributeFields(),
             Forms\Components\Section::make('Cijena i zalihe')->schema([
                 Forms\Components\TextInput::make('regular_price')
-                    ->label('Redovna cijena (KM)')
+                    ->label('B2B cijena (KM)')
                     ->required()
                     ->numeric()
                     ->minValue(0),
@@ -125,7 +125,7 @@ class B2bProductResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('name')->label('Naziv')->searchable()->sortable(),
                 Tables\Columns\TextColumn::make('category.name')->label('Kategorija')->sortable(),
-                Tables\Columns\TextColumn::make('regular_price')->label('Cijena')->money('BAM'),
+                Tables\Columns\TextColumn::make('regular_price')->label('B2B cijena')->money('BAM'),
                 Tables\Columns\TextColumn::make('sale_price')->label('Sniženje')->money('BAM')->placeholder('—'),
                 Tables\Columns\TextColumn::make('stock_quantity')->label('Zaliha')->sortable(),
                 Tables\Columns\IconColumn::make('is_active')->label('Aktivan')->boolean(),

@@ -72,7 +72,7 @@ class B2bOrderResource extends Resource
                 ->schema([
                     Forms\Components\TextInput::make('product_name')->disabled(),
                     Forms\Components\TextInput::make('quantity')->disabled(),
-                    Forms\Components\TextInput::make('unit_final_price')->label('Cijena')->disabled(),
+                    Forms\Components\TextInput::make('unit_final_price')->label('B2B cijena')->disabled(),
                     Forms\Components\TextInput::make('line_total')->label('Ukupno')->disabled(),
                 ])
                 ->columns(4)
