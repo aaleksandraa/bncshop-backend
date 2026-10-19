@@ -77,12 +77,43 @@ class B2bManualProductNotificationService
     {
         $days = max((int) config('b2b.product_notification.new_product_days', 30), 1);
 
-        return B2bProduct::query()
+        return $this->activeProductIdsCreatedBetween(now()->subDays($days), limit: 50)['ids'];
+    }
+
+    /**
+     * Active products created in [$from, $until). An open end includes everything since $from.
+     *
+     * @return array{ids: list<int>, total: int, returned: int, truncated: bool}
+     */
+    public function activeProductIdsCreatedBetween(
+        \DateTimeInterface $from,
+        ?\DateTimeInterface $until = null,
+        int $limit = 200,
+    ): array {
+        $limit = max(1, min($limit, 200));
+
+        $query = B2bProduct::query()
             ->where('is_active', true)
-            ->where('created_at', '>=', now()->subDays($days))
+            ->where('created_at', '>=', $from);
+
+        if ($until !== null) {
+            $query->where('created_at', '<', $until);
+        }
+
+        $total = (clone $query)->count();
+
+        $ids = $query
             ->orderByDesc('created_at')
-            ->limit(50)
+            ->limit($limit)
             ->pluck('id')
+            ->map(fn ($id): int => (int) $id)
             ->all();
+
+        return [
+            'ids' => array_values($ids),
+            'total' => $total,
+            'returned' => count($ids),
+            'truncated' => $total > count($ids),
+        ];
     }
 }

@@ -4,6 +4,9 @@ namespace App\Filament\B2b\Pages;
 
 use App\Models\B2bProduct;
 use App\Services\B2b\B2bManualProductNotificationService;
+use Carbon\Carbon;
+use Filament\Forms\Components\Actions;
+use Filament\Forms\Components\Actions\Action;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
@@ -11,6 +14,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\HtmlString;
@@ -65,11 +69,46 @@ class SendProductNotificationPage extends Page implements HasForms
         return $form
             ->schema([
                 Section::make('Proizvodi')
-                    ->description('Odaberite jedan ili više aktivnih proizvoda koje želite uključiti u obavijest.')
+                    ->description('Prečice zamjenjuju trenutni odabir. Brisanje skida proizvode samo iz ove obavijesti, ne iz kataloga.')
                     ->schema([
+                        Actions::make([
+                            Action::make('selectAddedToday')
+                                ->label('Dodani danas')
+                                ->color('gray')
+                                ->action(fn () => $this->selectAddedToday()),
+                            Action::make('selectAddedYesterday')
+                                ->label('Dodani jučer')
+                                ->color('gray')
+                                ->action(fn () => $this->selectAddedYesterday()),
+                            Action::make('selectAddedThisWeek')
+                                ->label('Ove sedmice')
+                                ->color('gray')
+                                ->action(fn () => $this->selectAddedThisWeek()),
+                            Action::make('selectAddedLast7Days')
+                                ->label('Posljednjih 7 dana')
+                                ->color('gray')
+                                ->action(fn () => $this->selectAddedInLastDays(7)),
+                            Action::make('selectAddedLast30Days')
+                                ->label('Posljednjih 30 dana')
+                                ->color('gray')
+                                ->action(fn () => $this->selectAddedInLastDays(30)),
+                            Action::make('selectAddedThisMonth')
+                                ->label('Ovaj mjesec')
+                                ->color('gray')
+                                ->action(fn () => $this->selectAddedThisMonth()),
+                            Action::make('clearSelectedProducts')
+                                ->label('Obriši sve označene')
+                                ->color('danger')
+                                ->requiresConfirmation()
+                                ->modalHeading('Ukloniti sve označene proizvode?')
+                                ->modalDescription('Proizvodi ostaju u katalogu. Uklanja se samo odabir za ovu obavijest.')
+                                ->modalSubmitActionLabel('Obriši označene')
+                                ->action(fn () => $this->clearSelectedProducts()),
+                        ]),
                         Select::make('product_ids')
                             ->label('Proizvodi')
                             ->multiple()
+                            ->live()
                             ->required()
                             ->rules(['array', 'min:1'])
                             ->searchable()
@@ -81,7 +120,14 @@ class SendProductNotificationPage extends Page implements HasForms
                                 ->orderBy('name')
                                 ->pluck('name', 'id')
                                 ->all())
-                            ->helperText('Po defaultu su označeni proizvodi dodani u posljednjih '.config('b2b.product_notification.new_product_days', 30).' dana.'),
+                            ->helperText('Po defaultu su označeni proizvodi dodani u posljednjih '.config('b2b.product_notification.new_product_days', 30).' dana. Pojedinačan proizvod skidate klikom na ×.'),
+                        Placeholder::make('selected_product_count')
+                            ->label('Trenutno u obavijesti')
+                            ->content(function (Get $get): string {
+                                $count = count($get('product_ids') ?? []);
+
+                                return $count === 1 ? '1 proizvod' : $count.' proizvoda';
+                            }),
                     ]),
                 Section::make('Tekst obavijesti')
                     ->description('Dodatni tekst se prikazuje ispred predefinisanog dijela emaila.')
@@ -132,6 +178,92 @@ class SendProductNotificationPage extends Page implements HasForms
             ->title("Obavijest je poslana u queue za {$recipientCount} kupaca.")
             ->success()
             ->send();
+    }
+
+    public function selectAddedToday(): void
+    {
+        $this->replaceSelection(now()->startOfDay(), null, 'dodani danas');
+    }
+
+    public function selectAddedYesterday(): void
+    {
+        $this->replaceSelection(
+            now()->subDay()->startOfDay(),
+            now()->startOfDay(),
+            'dodani jučer',
+        );
+    }
+
+    public function selectAddedThisWeek(): void
+    {
+        $this->replaceSelection(now()->startOfWeek(Carbon::MONDAY), null, 'dodani ove sedmice');
+    }
+
+    public function selectAddedThisMonth(): void
+    {
+        $this->replaceSelection(now()->startOfMonth(), null, 'dodani ovaj mjesec');
+    }
+
+    public function selectAddedInLastDays(int $days): void
+    {
+        if (! in_array($days, [7, 30], true)) {
+            return;
+        }
+
+        $this->replaceSelection(now()->subDays($days), null, "dodani u posljednjih {$days} dana");
+    }
+
+    public function clearSelectedProducts(): void
+    {
+        $this->applyProductSelection([]);
+
+        Notification::make()
+            ->title('Označeni proizvodi su uklonjeni iz obavijesti.')
+            ->body('Katalog nije mijenjan.')
+            ->success()
+            ->send();
+    }
+
+    private function replaceSelection(
+        \DateTimeInterface $from,
+        ?\DateTimeInterface $until,
+        string $label,
+    ): void {
+        $result = app(B2bManualProductNotificationService::class)
+            ->activeProductIdsCreatedBetween($from, $until);
+
+        $this->applyProductSelection($result['ids']);
+
+        if ($result['total'] === 0) {
+            Notification::make()
+                ->title('Nema aktivnih proizvoda ('.$label.').')
+                ->warning()
+                ->send();
+
+            return;
+        }
+
+        $message = 'Označeno '.$result['returned'].' proizvoda ('.$label.').';
+
+        if ($result['truncated']) {
+            $message .= ' Ukupno ih je '.$result['total'].'; u odabir staju prvih '.$result['returned'].'.';
+        }
+
+        Notification::make()
+            ->title($message)
+            ->success()
+            ->send();
+    }
+
+    /**
+     * @param  array<int, int>  $ids
+     */
+    private function applyProductSelection(array $ids): void
+    {
+        $this->form->fill([
+            'product_ids' => array_values(array_map(static fn ($id): int => (int) $id, $ids)),
+            'custom_intro' => $this->data['custom_intro'] ?? null,
+        ]);
     }
 
     /**

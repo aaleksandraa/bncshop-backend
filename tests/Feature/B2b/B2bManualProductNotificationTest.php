@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\B2b;
 
+use App\Filament\B2b\Pages\SendProductNotificationPage;
 use App\Jobs\SendB2bManualProductNotificationJob;
 use App\Mail\B2b\B2bNewProductsDigestMail;
 use App\Models\B2bCategory;
@@ -9,10 +10,15 @@ use App\Models\B2bCustomer;
 use App\Models\B2bProduct;
 use App\Models\User;
 use App\Services\B2b\B2bManualProductNotificationService;
+use Carbon\Carbon;
+use Database\Seeders\RolesAndPermissionsSeeder;
+use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
+use Livewire\Livewire;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class B2bManualProductNotificationTest extends TestCase
@@ -162,5 +168,73 @@ class B2bManualProductNotificationTest extends TestCase
         $this->expectExceptionMessage('Odaberite barem jedan aktivan proizvod.');
 
         app(B2bManualProductNotificationService::class)->send([$inactiveProduct->id]);
+    }
+
+    public function test_selection_windows_include_only_matching_active_products(): void
+    {
+        Carbon::setTestNow('2026-10-20 15:00:00');
+
+        $today = $this->createProduct(['name' => 'Danas']);
+        $yesterday = $this->createProduct(['name' => 'Jucer']);
+        $older = $this->createProduct(['name' => 'Stariji']);
+        $inactiveToday = $this->createProduct(['name' => 'Neaktivan', 'is_active' => false]);
+
+        $yesterday->forceFill(['created_at' => now()->subDay()->setTime(11, 0)])->save();
+        $older->forceFill(['created_at' => now()->subDays(10)])->save();
+        $inactiveToday->forceFill(['created_at' => now()])->save();
+
+        $service = app(B2bManualProductNotificationService::class);
+
+        $this->assertSame(
+            [$today->id],
+            $service->activeProductIdsCreatedBetween(now()->startOfDay())['ids'],
+        );
+        $this->assertSame(
+            [$yesterday->id],
+            $service->activeProductIdsCreatedBetween(now()->subDay()->startOfDay(), now()->startOfDay())['ids'],
+        );
+        $this->assertEqualsCanonicalizing(
+            [$today->id, $yesterday->id],
+            $service->activeProductIdsCreatedBetween(now()->startOfWeek(Carbon::MONDAY))['ids'],
+        );
+        $this->assertNotContains(
+            $older->id,
+            $service->activeProductIdsCreatedBetween(now()->subDays(7))['ids'],
+        );
+
+        Carbon::setTestNow();
+    }
+
+    public function test_notification_page_shortcuts_replace_and_clear_selection(): void
+    {
+        Carbon::setTestNow('2026-10-20 15:00:00');
+        $this->seed(RolesAndPermissionsSeeder::class);
+
+        $admin = User::createAccount([
+            'name' => 'B2B Admin',
+            'email' => 'b2b-notify-admin@test.test',
+            'password' => Hash::make('password123'),
+        ]);
+        $admin->assignRole(Role::findByName('B2B Admin'));
+
+        $today = $this->createProduct(['name' => 'Danas']);
+        $older = $this->createProduct(['name' => 'Stariji']);
+        $older->forceFill(['created_at' => now()->subDays(10)])->save();
+
+        Livewire::actingAs($admin);
+        Filament::setCurrentPanel(Filament::getPanel('b2b-admin'));
+        Filament::bootCurrentPanel();
+
+        Livewire::test(SendProductNotificationPage::class)
+            ->call('selectAddedToday')
+            ->assertSet('data.product_ids', [$today->id])
+            ->call('clearSelectedProducts')
+            ->assertSet('data.product_ids', [])
+            ->assertSet('data.custom_intro', (string) config('b2b.product_notification.default_custom_intro'));
+
+        $this->assertDatabaseHas('b2b_products', ['id' => $today->id]);
+        $this->assertDatabaseHas('b2b_products', ['id' => $older->id]);
+
+        Carbon::setTestNow();
     }
 }
