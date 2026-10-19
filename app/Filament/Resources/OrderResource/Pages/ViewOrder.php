@@ -162,8 +162,12 @@ class ViewOrder extends ViewRecord
                         && $orderService->canCancel($record))
                     ->form([
                         Forms\Components\Textarea::make('note')
-                            ->label('Razlog otkazivanja (opcionalno)')
-                            ->rows(2),
+                            ->label('Razlog otkazivanja')
+                            ->required()
+                            ->minLength(3)
+                            ->maxLength(1000)
+                            ->rows(3)
+                            ->helperText('Obavezno napišite zašto se narudžba otkazuje.'),
                     ])
                     ->action(function (Order $record, array $data): void {
                         if (OrderResource::applyCancel($record, $data['note'] ?? null)) {

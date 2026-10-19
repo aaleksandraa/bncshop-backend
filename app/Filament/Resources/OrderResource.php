@@ -75,10 +75,17 @@ class OrderResource extends Resource
             Forms\Components\Select::make('status')
                 ->label('Novi status')
                 ->options($options)
+                ->live()
                 ->required(),
             Forms\Components\Textarea::make('note')
-                ->label('Napomena')
-                ->rows(2),
+                ->label(fn (Get $get): string => $get('status') === 'otkazano' ? 'Razlog otkazivanja' : 'Napomena')
+                ->rows(3)
+                ->required(fn (Get $get): bool => $get('status') === 'otkazano')
+                ->minLength(fn (Get $get): ?int => $get('status') === 'otkazano' ? 3 : null)
+                ->maxLength(1000)
+                ->helperText(fn (Get $get): ?string => $get('status') === 'otkazano'
+                    ? 'Obavezno napišite zašto se narudžba otkazuje.'
+                    : null),
             Forms\Components\Toggle::make('restore_stock_on_return')
                 ->label('Vrati zalihu (vraćeno)')
                 ->visible(fn (Get $get): bool => $get('status') === 'vraćeno'),
@@ -360,6 +367,10 @@ class OrderResource extends Resource
                             ->label('Napomene kupca')
                             ->columnSpanFull()
                             ->visible(fn (Order $record): bool => filled($record->notes)),
+                        Infolists\Components\TextEntry::make('cancellation_reason')
+                            ->label('Razlog otkazivanja')
+                            ->columnSpanFull()
+                            ->visible(fn (Order $record): bool => filled($record->cancellation_reason)),
                     ])
                     ->columns(3),
                 Infolists\Components\Section::make('Stavke narudžbe')
@@ -465,6 +476,13 @@ class OrderResource extends Resource
                     ->badge()
                     ->formatStateUsing(fn (string $state): string => static::orderStatusOptions()[$state] ?? $state)
                     ->color(fn (string $state): string => static::orderStatusColor($state)),
+                Tables\Columns\TextColumn::make('cancellation_reason')
+                    ->label('Razlog otkazivanja')
+                    ->wrap()
+                    ->limit(80)
+                    ->searchable()
+                    ->placeholder('')
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('first_name')
                     ->label('Kupac')
                     ->formatStateUsing(fn (Order $record): string => trim("{$record->first_name} {$record->last_name}"))

@@ -25,6 +25,7 @@ class Order extends Model
         'jib',
         'pdv_number',
         'notes',
+        'cancellation_reason',
         'subtotal',
         'discount_total',
         'shipping_fee',

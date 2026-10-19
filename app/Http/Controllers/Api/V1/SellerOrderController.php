@@ -127,6 +127,7 @@ class SellerOrderController extends Controller
             'can_mark_ready_for_pickup' => $this->orderService->canMarkReadyForPickup($order),
             'can_mark_picked_up' => $this->orderService->canMarkPickedUp($order),
             'can_cancel' => $this->orderService->canCancel($order),
+            'cancellation_reason' => $order->cancellation_reason,
         ];
     }
 

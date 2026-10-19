@@ -126,12 +126,22 @@ class OrderService
             throw new RuntimeException("Status transition from {$order->status} to {$newStatus} is not allowed.");
         }
 
+        if ($newStatus === 'otkazano') {
+            $note = $this->requireCancellationReason($note);
+        }
+
         return DB::transaction(function () use ($order, $newStatus, $changedBy, $note, $restoreStockOnReturn): Order {
             $oldStatus = $this->normalizeStatus($order->status);
 
             $this->applyStockEffects($order, $oldStatus, $newStatus, $restoreStockOnReturn);
 
-            $order->update(['status' => $newStatus]);
+            $updates = ['status' => $newStatus];
+
+            if ($newStatus === 'otkazano') {
+                $updates['cancellation_reason'] = $note;
+            }
+
+            $order->update($updates);
 
             OrderStatusHistory::query()->create([
                 'order_id' => $order->id,
@@ -216,7 +226,18 @@ class OrderService
             throw new RuntimeException('Narudžba se ne može otkazati u trenutnom statusu.');
         }
 
-        return $this->transition($order, 'otkazano', $changedBy, $note);
+        return $this->transition($order, 'otkazano', $changedBy, $this->requireCancellationReason($note));
+    }
+
+    private function requireCancellationReason(?string $note): string
+    {
+        $reason = trim((string) $note);
+
+        if ($reason === '') {
+            throw new RuntimeException('Razlog otkazivanja je obavezan.');
+        }
+
+        return $reason;
     }
 
     private function handleLoyaltyEffects(Order $order, string $oldStatus, string $newStatus): void

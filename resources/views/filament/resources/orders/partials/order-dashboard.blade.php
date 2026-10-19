@@ -333,6 +333,27 @@
         color: rgb(253 230 138);
     }
 
+    .order-cancel-reason {
+        border-radius: 0.75rem;
+        border: 1px solid rgb(252 165 165);
+        background: rgb(254 242 242);
+        padding: 0.875rem 1.25rem;
+        color: rgb(127 29 29);
+        font-size: 0.875rem;
+        line-height: 1.5;
+    }
+
+    .order-cancel-reason p {
+        margin: 0.35rem 0 0;
+        white-space: pre-wrap;
+    }
+
+    .dark .order-cancel-reason {
+        border-color: rgb(153 27 27);
+        background: rgb(69 10 10);
+        color: rgb(254 202 202);
+    }
+
     .order-table {
         width: 100%;
         border-collapse: collapse;
@@ -511,6 +532,13 @@
     @if($isPickup)
         <div class="order-pickup-banner">
             <strong>Preuzimanje u poslovnici</strong> — kupac preuzima narudžbu u radnji, ne šalje se kurirskom službom.
+        </div>
+    @endif
+
+    @if(filled($order->cancellation_reason))
+        <div class="order-cancel-reason">
+            <strong>Razlog otkazivanja</strong>
+            <p>{{ $order->cancellation_reason }}</p>
         </div>
     @endif
 
@@ -698,7 +726,13 @@
                                     <strong>{{ OrderStatus::label((string) $history->new_status) }}</strong>
                                 </td>
                                 <td>{{ $history->changedByUser?->name ?? 'Sistem' }}</td>
-                                <td>{{ $history->note ?: '—' }}</td>
+                                <td>
+                                    @if($history->new_status === 'otkazano' && filled($history->note))
+                                        <strong>Razlog otkazivanja:</strong> {{ $history->note }}
+                                    @else
+                                        {{ $history->note ?: '—' }}
+                                    @endif
+                                </td>
                             </tr>
                         @endforeach
                     </tbody>
