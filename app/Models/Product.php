@@ -314,6 +314,12 @@ class Product extends Model
         return $this->import_source === 'eline';
     }
 
+    /** Marža, PDV i zaokruživanje naniže važe samo za A1 katalog. */
+    public function usesA1PriceFormula(): bool
+    {
+        return in_array($this->import_source, self::a1ImportSources(), true);
+    }
+
     public function scopeFromEline(Builder $query): Builder
     {
         return $query->where('import_source', 'eline');

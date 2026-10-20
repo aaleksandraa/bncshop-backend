@@ -455,6 +455,19 @@ class PriceCalculatorSupplierMarginTest extends TestCase
         $this->assertNull($product->fresh()->margin_percentage);
     }
 
+    public function test_only_a1_products_use_the_sell_price_formula(): void
+    {
+        $eline = Product::factory()->create(['import_source' => 'eline']);
+        $manual = Product::factory()->create(['import_source' => 'manual']);
+        $a1 = Product::factory()->create(['import_source' => 'a1']);
+        $bncShop = Product::factory()->create(['import_source' => 'bnc-shop']);
+
+        $this->assertFalse($eline->usesA1PriceFormula());
+        $this->assertFalse($manual->usesA1PriceFormula());
+        $this->assertTrue($a1->usesA1PriceFormula());
+        $this->assertTrue($bncShop->usesA1PriceFormula());
+    }
+
     public function test_eline_price_is_not_charm_rounded(): void
     {
         $product = Product::factory()->create([

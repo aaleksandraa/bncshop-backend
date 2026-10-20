@@ -395,7 +395,8 @@ class ProductResource extends Resource
                                     }),
                                 Forms\Components\Placeholder::make('pricing_calculated')
                                     ->label('Izračunata prodajna cijena')
-                                    ->visible(fn (): bool => auth()->user()?->can('view_margin') ?? false)
+                                    ->visible(fn (?Product $record): bool => ($record?->usesA1PriceFormula() ?? false)
+                                        && (auth()->user()?->can('view_margin') ?? false))
                                     ->content(function (?Product $record): string {
                                         if (! $record) {
                                             return '—';
@@ -426,7 +427,8 @@ class ProductResource extends Resource
                                     ->disabled()
                                     ->dehydrated(false)
                                     ->helperText('Nabavna × marža × PDV, zaokruženo na cijeli KM. Preračun upisuje ovu vrijednost u redovnu cijenu ako cijena nije zaključana.')
-                                    ->visible(fn (): bool => auth()->user()?->can('view_margin') ?? false),
+                                    ->visible(fn (?Product $record): bool => ($record?->usesA1PriceFormula() ?? false)
+                                        && (auth()->user()?->can('view_margin') ?? false)),
                                 Forms\Components\Select::make('preferred_supplier_id')
                                     ->label('Preferirani dobavljač')
                                     ->options(function (?Product $record): array {
@@ -461,7 +463,12 @@ class ProductResource extends Resource
                                 Forms\Components\TextInput::make('display_price')
                                     ->label('Prikazna cijena')
                                     ->numeric()
-                                    ->prefix('KM'),
+                                    ->prefix('KM')
+                                    ->helperText(fn (?Product $record): ?string => $record?->isFromEline()
+                                        ? 'eLine cijena se ne preračunava. Ručna izmjena se zaključava i ostaje kakva je sačuvana.'
+                                        : ($record !== null && ! $record->usesA1PriceFormula()
+                                            ? 'Ručno unesena cijena ostaje kakva je sačuvana.'
+                                            : null)),
                                 Forms\Components\TextInput::make('manual_price')
                                     ->label('Ručna cijena')
                                     ->numeric()

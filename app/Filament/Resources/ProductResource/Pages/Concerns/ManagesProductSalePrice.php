@@ -36,6 +36,28 @@ trait ManagesProductSalePrice
             $rawState['sale_ends_at'] ?? null,
         );
 
-        app(PriceCalculator::class)->recalculateAndPersist($product->fresh());
+        $fresh = $product->fresh();
+
+        if ($fresh->usesA1PriceFormula()) {
+            app(PriceCalculator::class)->recalculateAndPersist($fresh);
+
+            return;
+        }
+
+        $regular = (float) ($fresh->regular_price ?? 0);
+        $display = (float) ($fresh->display_price ?? 0);
+
+        if ($salePrice !== null && $salePrice > 0 && ($regular <= 0 || $salePrice < $regular)) {
+            $fresh->update([
+                'display_price' => round($salePrice, 2),
+                'on_sale' => $regular > 0,
+            ]);
+
+            return;
+        }
+
+        $fresh->update([
+            'on_sale' => $regular > 0 && $display > 0 && $display < $regular,
+        ]);
     }
 }

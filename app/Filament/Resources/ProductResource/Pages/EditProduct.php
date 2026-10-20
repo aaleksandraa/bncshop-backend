@@ -35,7 +35,7 @@ class EditProduct extends EditRecord
                     : 'Upisuje nabavna × marža × PDV u izračunatu i redovnu cijenu (zaokruženo na cijeli KM).')
                 ->visible(fn (): bool => $this->record !== null
                     && ! $this->record->isSet()
-                    && ! $this->record->isFromEline())
+                    && $this->record->usesA1PriceFormula())
                 ->action(function (): void {
                     app(ProductPriceRecalculator::class)->forProduct($this->record);
                     $this->record->refresh();
@@ -76,9 +76,47 @@ class EditProduct extends EditRecord
      */
     protected function mutateFormDataBeforeSave(array $data): array
     {
-        return $this->stripVirtualGratisFields(
+        $data = $this->stripVirtualGratisFields(
             $this->stripVirtualSetFields($this->prepareSetProductData($data)),
         );
+
+        return $this->lockEditedElinePrice($data);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function lockEditedElinePrice(array $data): array
+    {
+        if ($this->record === null || $this->record->isSet() || ! $this->record->isFromEline()) {
+            return $data;
+        }
+
+        $displayChanged = $this->priceChanged($this->record->display_price, $data['display_price'] ?? null);
+        $regularChanged = $this->priceChanged($this->record->regular_price, $data['regular_price'] ?? null);
+
+        if (! $displayChanged && ! $regularChanged) {
+            return $data;
+        }
+
+        $data['price_locked'] = true;
+        $manual = $data['display_price'] ?? $data['regular_price'] ?? null;
+
+        if ($manual !== null && $manual !== '') {
+            $data['manual_price'] = $manual;
+        }
+
+        return $data;
+    }
+
+    private function priceChanged(mixed $current, mixed $next): bool
+    {
+        if ($next === null || $next === '') {
+            return false;
+        }
+
+        return round((float) $current, 2) !== round((float) $next, 2);
     }
 
     protected function afterSave(): void
@@ -104,7 +142,10 @@ class EditProduct extends EditRecord
         $this->persistProductSalePriceFromForm();
         $this->syncGratisOffersIfNeeded();
 
-        if ($this->record->wasChanged(['preferred_supplier_id', 'margin_percentage', 'price_locked', 'manual_price'])) {
+        if (
+            $this->record->usesA1PriceFormula()
+            && $this->record->wasChanged(['preferred_supplier_id', 'margin_percentage', 'price_locked', 'manual_price'])
+        ) {
             app(ProductPriceRecalculator::class)->forProduct($this->record->fresh());
         }
     }
