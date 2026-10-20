@@ -328,10 +328,29 @@ class Product extends Model
         });
     }
 
-    /** Prodavački panel: polovni / refurbished eLine artikli. */
+    public function scopeSellerPanelManual(Builder $query): Builder
+    {
+        return $query->where(function (Builder $builder): void {
+            $builder
+                ->where('import_source', 'manual')
+                ->orWhereNull('import_source');
+        });
+    }
+
+    /** Prodavački panel: polovni eLine + ručno uneseni polovni artikli. */
     public function scopeSellerPanelRefurbished(Builder $query): Builder
     {
-        return $query->fromEline()->where('is_refurbished', true);
+        return $query->where(function (Builder $builder): void {
+            $builder
+                ->where(function (Builder $eline): void {
+                    $eline->fromEline()->where('is_refurbished', true);
+                })
+                ->orWhere(function (Builder $manual): void {
+                    $manual
+                        ->sellerPanelManual()
+                        ->where('is_refurbished', true);
+                });
+        });
     }
 
     /** Prodavački panel: novi artikli iz A1 Technoshop uvoza. */

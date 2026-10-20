@@ -129,6 +129,34 @@ class SellerProductApiTest extends TestCase
             ->assertJsonPath('data.sale_validity', 'until_date');
     }
 
+    public function test_seller_product_list_includes_manual_refurbished_products(): void
+    {
+        $seller = $this->createSeller();
+        $manualPolovan = Product::factory()->create([
+            'import_source' => 'manual',
+            'name' => 'Ručni polovni printer',
+            'is_new' => false,
+            'is_refurbished' => true,
+        ]);
+        Product::factory()->create([
+            'import_source' => 'manual',
+            'name' => 'Ručni novi artikal',
+            'is_new' => true,
+            'is_refurbished' => false,
+        ]);
+
+        $this->postJsonStateful('/api/v1/seller/login', [
+            'email' => $seller->email,
+            'password' => 'password123',
+        ])->assertOk();
+
+        $this->getJsonStateful('/api/v1/seller/products')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $manualPolovan->id)
+            ->assertJsonPath('data.0.name', 'Ručni polovni printer');
+    }
+
     public function test_seller_product_list_excludes_non_refurbished_eline(): void
     {
         $seller = $this->createSeller();
