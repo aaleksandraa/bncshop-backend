@@ -353,9 +353,11 @@ class Product extends Model
         });
     }
 
-    /** Prodavački panel: novi artikli iz A1 Technoshop uvoza. */
+    /** Prodavački panel: novi A1 artikli (katalog bez polovnog/refurbished statusa). */
     public function scopeSellerPanelA1New(Builder $query): Builder
     {
-        return $query->where('import_source', 'a1')->where('is_new', true);
+        return $query
+            ->where('import_source', 'a1')
+            ->where('is_refurbished', false);
     }
 }

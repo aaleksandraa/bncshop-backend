@@ -42,6 +42,7 @@ class SellerCatalogProductApiTest extends TestCase
         Product::factory()->create([
             'import_source' => 'a1',
             'is_new' => false,
+            'is_refurbished' => true,
             'name' => 'A1 polovni monitor',
         ]);
         Product::factory()->create([
@@ -134,6 +135,32 @@ class SellerCatalogProductApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.0.supplier_name', 'Comtrade, Arbis')
             ->assertJsonPath('data.0.import_source_label', 'A1 Technoshop');
+    }
+
+    public function test_seller_lists_a1_products_without_is_new_flag(): void
+    {
+        $seller = $this->createSeller();
+        $product = Product::factory()->create([
+            'import_source' => 'a1',
+            'is_new' => false,
+            'is_refurbished' => false,
+            'name' => 'A1 laptop bez is_new',
+        ]);
+
+        $this->postJsonStateful('/api/v1/seller/login', [
+            'email' => $seller->email,
+            'password' => 'password123',
+        ])->assertOk();
+
+        $this->getJsonStateful('/api/v1/seller/catalog-products')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $product->id);
+
+        $this->getJsonStateful('/api/v1/seller/catalog-products?search=laptop')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.name', 'A1 laptop bez is_new');
     }
 
     public function test_seller_can_filter_catalog_products(): void
