@@ -5,14 +5,46 @@ namespace Tests\Unit;
 use App\Models\Product;
 use App\Services\Pricing\ProductSalePriceService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class RestoreElinePricesCommandTest extends TestCase
 {
     use RefreshDatabase;
 
+    /**
+     * @param  array<string, float>  $mpcBySifra
+     */
+    private function fakeElinePrices(array $mpcBySifra): void
+    {
+        config([
+            'bnc.eline_api_base_url' => 'https://eline.test/json',
+            'bnc.eline_api_token' => 'token',
+            'bnc.eline_api_shop_code' => 'bnc',
+        ]);
+
+        $rows = [];
+
+        foreach ($mpcBySifra as $sifra => $mpc) {
+            $rows[] = [
+                'sifra' => (string) $sifra,
+                'mpc' => $mpc,
+                'skladiste' => 1,
+                'aktivan' => 255,
+            ];
+        }
+
+        Http::fake(function () use ($rows) {
+            return Http::response([
+                'cjenovnici' => $rows,
+            ]);
+        });
+    }
+
     public function test_refurbished_eline_prices_return_to_api_price(): void
     {
+        $this->fakeElinePrices([]);
+
         $product = Product::factory()->create([
             'import_source' => 'eline',
             'is_refurbished' => true,
@@ -58,6 +90,8 @@ class RestoreElinePricesCommandTest extends TestCase
 
     public function test_seller_sale_stays_exact_below_restored_eline_price(): void
     {
+        $this->fakeElinePrices([]);
+
         $product = Product::factory()->create([
             'import_source' => 'eline',
             'is_refurbished' => true,
@@ -78,6 +112,8 @@ class RestoreElinePricesCommandTest extends TestCase
 
     public function test_keep_locked_and_dry_run_do_not_overwrite(): void
     {
+        $this->fakeElinePrices([]);
+
         $locked = Product::factory()->create([
             'import_source' => 'eline',
             'is_refurbished' => true,
@@ -106,5 +142,32 @@ class RestoreElinePricesCommandTest extends TestCase
             ->assertSuccessful();
 
         $this->assertSame(399.0, (float) $charm->fresh()->display_price);
+    }
+
+    public function test_live_cjenovnik_mpc_replaces_charmed_shelf_price(): void
+    {
+        $product = Product::factory()->create([
+            'import_source' => 'eline',
+            'is_refurbished' => true,
+            'eline_sifra' => '2716',
+            'name' => 'RACUNAR DELL 3080 I5 10500 / 16GB DDR4 / SSD 256GB / SFF / REFURBISHED',
+            'api_price' => 669,
+            'api_final_price' => 669,
+            'regular_price' => 669,
+            'display_price' => 669,
+            'calculated_price' => 669,
+        ]);
+
+        $this->fakeElinePrices(['2716' => 675]);
+
+        $this->artisan('bnc:eline-restore-prices')
+            ->expectsOutputToContain('669.00 → 675.00')
+            ->assertSuccessful();
+
+        $fresh = $product->fresh();
+        $this->assertSame(675.0, (float) $fresh->api_price);
+        $this->assertSame(675.0, (float) $fresh->regular_price);
+        $this->assertSame(675.0, (float) $fresh->display_price);
+        $this->assertFalse($fresh->on_sale);
     }
 }

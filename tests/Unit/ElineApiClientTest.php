@@ -46,6 +46,23 @@ class ElineApiClientTest extends TestCase
         $this->assertSame(200, $map['20']['mpc']);
     }
 
+    public function test_build_price_map_keeps_warehouse_one_when_sifra_repeats(): void
+    {
+        $client = new ElineApiClient;
+
+        $map = $client->buildPriceMap([
+            ['sifra' => '2716', 'skladiste' => 2, 'mpc' => 669],
+            ['sifra' => '2716', 'skladiste' => 1, 'mpc' => 675],
+            ['sifra' => '2716', 'skladiste' => 3, 'mpc' => 10],
+        ]);
+
+        $this->assertSame(675, $map['2716']['mpc']);
+        $this->assertSame(675.0, $client->mpcBySifra([
+            ['sifra' => '2716', 'skladiste' => 1, 'mpc' => 675],
+            ['sifra' => '2716', 'skladiste' => 2, 'mpc' => 669],
+        ])['2716']);
+    }
+
     public function test_merge_product_data_combines_article_and_price(): void
     {
         $client = new ElineApiClient;

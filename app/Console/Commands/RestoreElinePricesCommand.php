@@ -3,8 +3,10 @@
 namespace App\Console\Commands;
 
 use App\Jobs\ReindexProductsJob;
+use App\Services\Eline\ElineApiClient;
 use App\Services\Eline\ElinePriceRestoreService;
 use Illuminate\Console\Command;
+use Throwable;
 
 class RestoreElinePricesCommand extends Command
 {
@@ -13,9 +15,9 @@ class RestoreElinePricesCommand extends Command
                             {--keep-locked : Skip products whose price was manually locked}
                             {--all-eline : Also restore eLine products that are not marked refurbished}';
 
-    protected $description = 'Restore refurbished eLine shelf prices to the original eLine MPC (api_price)';
+    protected $description = 'Restore eLine shelf prices to the live cjenovnik MPC';
 
-    public function handle(ElinePriceRestoreService $service): int
+    public function handle(ElinePriceRestoreService $service, ElineApiClient $client): int
     {
         set_time_limit(0);
 
@@ -27,18 +29,28 @@ class RestoreElinePricesCommand extends Command
             $this->warn('Dry run — no prices will be saved.');
         }
 
+        try {
+            $mpcBySifra = $client->mpcBySifra($client->fetchCjenovnici());
+        } catch (Throwable $e) {
+            $this->error($e->getMessage());
+
+            return self::FAILURE;
+        }
+
         $scope = $refurbishedOnly
             ? 'refurbished eLine products'
             : 'all eLine products';
 
-        $this->info("Restoring original eLine MPC on {$scope}...");
+        $this->info("Restoring live eLine MPC on {$scope}...");
+        $this->line('Feed prices: '.count($mpcBySifra));
 
-        $stats = $service->restore($dryRun, $keepLocked, $refurbishedOnly);
+        $stats = $service->restore($dryRun, $keepLocked, $refurbishedOnly, $mpcBySifra);
 
         $this->line("Scanned: {$stats['scanned']}");
         $this->line('Updated: '.$stats['updated'].($dryRun ? ' (would update)' : ''));
         $this->line("Unchanged: {$stats['unchanged']}");
         $this->line("Skipped locked: {$stats['skipped_locked']}");
+        $this->line("Skipped without price: {$stats['skipped_missing']}");
 
         foreach ($stats['samples'] as $sample) {
             $this->line(sprintf(

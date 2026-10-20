@@ -56,7 +56,39 @@ class ElineApiClient
                 continue;
             }
 
-            $map[(string) $entry['sifra']] = $entry;
+            $sifra = (string) $entry['sifra'];
+            $current = $map[$sifra] ?? null;
+
+            if (
+                $current !== null
+                && (int) ($current['skladiste'] ?? 0) === 1
+                && (int) ($entry['skladiste'] ?? 0) !== 1
+            ) {
+                continue;
+            }
+
+            $map[$sifra] = $entry;
+        }
+
+        return $map;
+    }
+
+    /**
+     * MPC po šifri, isto pravilo kao sync: zadnji red cjenovnika za tu šifru.
+     *
+     * @param  array<int, array<string, mixed>>  $cjenovnici
+     * @return array<string, float>
+     */
+    public function mpcBySifra(array $cjenovnici): array
+    {
+        $map = [];
+
+        foreach ($this->buildPriceMap($cjenovnici) as $sifra => $entry) {
+            $mpc = ElineSupport::parseMpc($entry['mpc'] ?? 0);
+
+            if ($mpc > 0) {
+                $map[(string) $sifra] = $mpc;
+            }
         }
 
         return $map;
