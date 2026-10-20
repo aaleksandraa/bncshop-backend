@@ -134,14 +134,20 @@ class PriceCalculator
 
         $fresh = $product->fresh() ?? $product;
         $fresh->loadMissing(['supplierOffers.supplier', 'category']);
-        $formulaPricing = $this->resolveRegularPrice($fresh);
-        $result = $this->calculate($fresh);
-        $formulaPrice = round((float) $formulaPricing['regular_price'], 2);
+
+        if ($fresh->isFromEline()) {
+            $result = $this->calculate($fresh);
+            $formulaPrice = null;
+        } else {
+            $formulaPricing = $this->resolveRegularPrice($fresh);
+            $result = $this->calculate($fresh);
+            $formulaPrice = round((float) $formulaPricing['regular_price'], 2);
+        }
 
         $updates = [
             'display_price' => $result->displayPrice,
             'on_sale' => $result->onSale,
-            'calculated_price' => $formulaPrice > 0 ? $formulaPrice : null,
+            'calculated_price' => $formulaPrice !== null && $formulaPrice > 0 ? $formulaPrice : null,
         ];
 
         if (! $product->price_locked || $product->isFromEline()) {
