@@ -19,7 +19,7 @@ class ElinePriceRestoreService
      * Vrati police cijene eLine artikala na MPC iz cjenovnika.
      * Ako šifre nema u feedu, ostaje sačuvani api_price.
      *
-     * @param  array<string, float>  $mpcBySifra
+     * @param  array<string, array{mpc: float, candidates: list<float>}>  $priceChoices
      * @return array{
      *     scanned: int,
      *     updated: int,
@@ -34,7 +34,7 @@ class ElinePriceRestoreService
         bool $dryRun = false,
         bool $keepLocked = false,
         bool $refurbishedOnly = true,
-        array $mpcBySifra = [],
+        array $priceChoices = [],
     ): array {
         $stats = [
             'scanned' => 0,
@@ -48,10 +48,10 @@ class ElinePriceRestoreService
 
         $this->query($refurbishedOnly)
             ->orderBy('id')
-            ->chunkById(200, function ($products) use (&$stats, $dryRun, $keepLocked, $mpcBySifra): void {
+            ->chunkById(200, function ($products) use (&$stats, $dryRun, $keepLocked, $priceChoices): void {
                 foreach ($products as $product) {
                     $stats['scanned']++;
-                    $plan = $this->plan($product, $keepLocked, $mpcBySifra);
+                    $plan = $this->plan($product, $keepLocked, $priceChoices);
 
                     if ($plan['action'] === 'skipped_locked') {
                         $stats['skipped_locked']++;
@@ -116,10 +116,10 @@ class ElinePriceRestoreService
     }
 
     /**
-     * @param  array<string, float>  $mpcBySifra
+     * @param  array<string, array{mpc: float, candidates: list<float>}>  $priceChoices
      * @return array{action: string, from: string, to: string, target: float}
      */
-    private function plan(Product $product, bool $keepLocked, array $mpcBySifra): array
+    private function plan(Product $product, bool $keepLocked, array $priceChoices): array
     {
         $empty = ['from' => '', 'to' => '', 'target' => 0.0];
 
@@ -128,7 +128,10 @@ class ElinePriceRestoreService
         }
 
         $sifra = (string) $product->eline_sifra;
-        $target = $mpcBySifra[$sifra] ?? round((float) ($product->api_price ?? 0), 2);
+        $choice = $priceChoices[$sifra] ?? null;
+        $candidates = $choice['candidates'] ?? [];
+        $fallback = $choice['mpc'] ?? round((float) ($product->api_price ?? 0), 2);
+        $target = $this->resolveFeedTarget($product, $candidates, $fallback);
 
         if ($target <= 0) {
             return ['action' => 'skipped_missing'] + $empty;
@@ -156,6 +159,55 @@ class ElinePriceRestoreService
         }
 
         return ['action' => 'update', 'from' => $from, 'to' => $to, 'target' => $target];
+    }
+
+    /**
+     * Ako shop već ima neku MPC iz cjenovnika, ta cijena ostaje.
+     * Zaokružena cijena (675 → 669) vraća se na onu MPC iz feeda.
+     *
+     * @param  list<float>  $candidates
+     */
+    private function resolveFeedTarget(Product $product, array $candidates, float $fallback): float
+    {
+        $candidates = array_values(array_unique(array_map(
+            fn (float|int|string $mpc): float => round((float) $mpc, 2),
+            $candidates,
+        )));
+
+        foreach ([
+            round((float) $product->regular_price, 2),
+            round((float) ($product->api_price ?? 0), 2),
+            round((float) $product->display_price, 2),
+        ] as $current) {
+            if ($current > 0 && in_array($current, $candidates, true)) {
+                return $current;
+            }
+        }
+
+        $currentShelf = round((float) ($product->regular_price ?: $product->display_price), 2);
+        $charmedMatches = [];
+
+        foreach ($candidates as $mpc) {
+            if ($mpc <= 100 || $mpc === $currentShelf) {
+                continue;
+            }
+
+            if (round($this->priceCalculator->applyOver100CharmPrice($mpc), 2) === $currentShelf) {
+                $charmedMatches[] = $mpc;
+            }
+        }
+
+        if ($charmedMatches !== []) {
+            $fallback = round($fallback, 2);
+
+            if (in_array($fallback, $charmedMatches, true)) {
+                return $fallback;
+            }
+
+            return max($charmedMatches);
+        }
+
+        return round($fallback, 2);
     }
 
     private function priceLabel(Product $product): string

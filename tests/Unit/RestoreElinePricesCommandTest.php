@@ -170,4 +170,41 @@ class RestoreElinePricesCommandTest extends TestCase
         $this->assertSame(675.0, (float) $fresh->display_price);
         $this->assertFalse($fresh->on_sale);
     }
+
+    public function test_warehouse_mpc_already_on_the_product_is_not_replaced(): void
+    {
+        config([
+            'bnc.eline_api_base_url' => 'https://eline.test/json',
+            'bnc.eline_api_token' => 'token',
+            'bnc.eline_api_shop_code' => 'bnc',
+        ]);
+
+        Http::fake(function () {
+            return Http::response([
+                'cjenovnici' => [
+                    ['sifra' => '575', 'skladiste' => 1, 'mpc' => 254.45, 'aktivan' => 255],
+                    ['sifra' => '575', 'skladiste' => 2, 'mpc' => 310, 'aktivan' => 255, 'stanje' => 0],
+                ],
+            ]);
+        });
+
+        $product = Product::factory()->create([
+            'import_source' => 'eline',
+            'is_refurbished' => true,
+            'eline_sifra' => '575',
+            'name' => 'Dell Latitude E7480 i5-6300U',
+            'api_price' => 310,
+            'api_final_price' => 310,
+            'regular_price' => 310,
+            'display_price' => 310,
+        ]);
+
+        $this->artisan('bnc:eline-restore-prices')
+            ->expectsOutputToContain('Updated: 0')
+            ->assertSuccessful();
+
+        $fresh = $product->fresh();
+        $this->assertSame(310.0, (float) $fresh->regular_price);
+        $this->assertSame(310.0, (float) $fresh->display_price);
+    }
 }

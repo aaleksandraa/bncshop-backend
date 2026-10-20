@@ -56,42 +56,67 @@ class ElineApiClient
                 continue;
             }
 
-            $sifra = (string) $entry['sifra'];
-            $current = $map[$sifra] ?? null;
-
-            if (
-                $current !== null
-                && (int) ($current['skladiste'] ?? 0) === 1
-                && (int) ($entry['skladiste'] ?? 0) !== 1
-            ) {
-                continue;
-            }
-
-            $map[$sifra] = $entry;
+            $map[(string) $entry['sifra']] = $entry;
         }
 
         return $map;
     }
 
     /**
-     * MPC po šifri, isto pravilo kao sync: zadnji red cjenovnika za tu šifru.
+     * MPC po šifri. Sync i dalje uzima zadnji red. candidates su sve aktivne MPC vrijednosti.
      *
      * @param  array<int, array<string, mixed>>  $cjenovnici
-     * @return array<string, float>
+     * @return array<string, array{mpc: float, candidates: list<float>}>
      */
-    public function mpcBySifra(array $cjenovnici): array
+    public function priceChoicesBySifra(array $cjenovnici): array
     {
-        $map = [];
+        /** @var array<string, list<float>> $candidates */
+        $candidates = [];
+        /** @var array<string, float> $lastActive */
+        $lastActive = [];
 
-        foreach ($this->buildPriceMap($cjenovnici) as $sifra => $entry) {
+        foreach ($cjenovnici as $entry) {
+            if (! isset($entry['sifra']) || ! $this->isPriceRowActive($entry)) {
+                continue;
+            }
+
             $mpc = ElineSupport::parseMpc($entry['mpc'] ?? 0);
 
-            if ($mpc > 0) {
-                $map[(string) $sifra] = $mpc;
+            if ($mpc <= 0) {
+                continue;
+            }
+
+            $sifra = (string) $entry['sifra'];
+            $lastActive[$sifra] = $mpc;
+            $candidates[$sifra] ??= [];
+
+            if (! in_array($mpc, $candidates[$sifra], true)) {
+                $candidates[$sifra][] = $mpc;
             }
         }
 
-        return $map;
+        $choices = [];
+
+        foreach ($lastActive as $sifra => $mpc) {
+            $choices[$sifra] = [
+                'mpc' => $mpc,
+                'candidates' => $candidates[$sifra],
+            ];
+        }
+
+        return $choices;
+    }
+
+    /**
+     * @param  array<string, mixed>  $entry
+     */
+    private function isPriceRowActive(array $entry): bool
+    {
+        if (! array_key_exists('aktivan', $entry) || $entry['aktivan'] === null) {
+            return true;
+        }
+
+        return ElineSupport::isActive($entry['aktivan']);
     }
 
     /**

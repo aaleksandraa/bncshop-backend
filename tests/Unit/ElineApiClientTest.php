@@ -46,21 +46,20 @@ class ElineApiClientTest extends TestCase
         $this->assertSame(200, $map['20']['mpc']);
     }
 
-    public function test_build_price_map_keeps_warehouse_one_when_sifra_repeats(): void
+    public function test_price_choices_keep_every_active_warehouse_mpc(): void
     {
         $client = new ElineApiClient;
+        $rows = [
+            ['sifra' => '575', 'skladiste' => 1, 'mpc' => 254.45, 'aktivan' => 255],
+            ['sifra' => '575', 'skladiste' => 2, 'mpc' => 310, 'aktivan' => 255],
+            ['sifra' => '575', 'skladiste' => 3, 'mpc' => 999, 'aktivan' => 0],
+        ];
 
-        $map = $client->buildPriceMap([
-            ['sifra' => '2716', 'skladiste' => 2, 'mpc' => 669],
-            ['sifra' => '2716', 'skladiste' => 1, 'mpc' => 675],
-            ['sifra' => '2716', 'skladiste' => 3, 'mpc' => 10],
-        ]);
+        $this->assertSame(999, $client->buildPriceMap($rows)['575']['mpc']);
 
-        $this->assertSame(675, $map['2716']['mpc']);
-        $this->assertSame(675.0, $client->mpcBySifra([
-            ['sifra' => '2716', 'skladiste' => 1, 'mpc' => 675],
-            ['sifra' => '2716', 'skladiste' => 2, 'mpc' => 669],
-        ])['2716']);
+        $choice = $client->priceChoicesBySifra($rows)['575'];
+        $this->assertSame(310.0, $choice['mpc']);
+        $this->assertEqualsCanonicalizing([254.45, 310.0], $choice['candidates']);
     }
 
     public function test_merge_product_data_combines_article_and_price(): void

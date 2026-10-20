@@ -30,7 +30,7 @@ class RestoreElinePricesCommand extends Command
         }
 
         try {
-            $mpcBySifra = $client->mpcBySifra($client->fetchCjenovnici());
+            $priceChoices = $client->priceChoicesBySifra($client->fetchCjenovnici());
         } catch (Throwable $e) {
             $this->error($e->getMessage());
 
@@ -42,9 +42,9 @@ class RestoreElinePricesCommand extends Command
             : 'all eLine products';
 
         $this->info("Restoring live eLine MPC on {$scope}...");
-        $this->line('Feed prices: '.count($mpcBySifra));
+        $this->line('Feed prices: '.count($priceChoices));
 
-        $stats = $service->restore($dryRun, $keepLocked, $refurbishedOnly, $mpcBySifra);
+        $stats = $service->restore($dryRun, $keepLocked, $refurbishedOnly, $priceChoices);
 
         $this->line("Scanned: {$stats['scanned']}");
         $this->line('Updated: '.$stats['updated'].($dryRun ? ' (would update)' : ''));
