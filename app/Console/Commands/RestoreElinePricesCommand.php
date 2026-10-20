@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Jobs\ReindexProductsJob;
 use App\Services\Eline\ElineApiClient;
 use App\Services\Eline\ElinePriceRestoreService;
+use App\Services\Eline\ElineSupport;
 use Illuminate\Console\Command;
 use Throwable;
 
@@ -13,9 +14,11 @@ class RestoreElinePricesCommand extends Command
     protected $signature = 'bnc:eline-restore-prices
                             {--dry-run : Preview restored prices without saving}
                             {--keep-locked : Skip products whose price was manually locked}
-                            {--all-eline : Also restore eLine products that are not marked refurbished}';
+                            {--refurbished-only : Only products marked refurbished}
+                            {--sifra= : Limit to one eLine sifra and print every cjenovnik row}
+                            {--all-eline : Accepted for compatibility; all eLine products are included unless --refurbished-only}';
 
-    protected $description = 'Restore eLine shelf prices to the live cjenovnik MPC';
+    protected $description = 'Rewrite eLine shelf prices from the live cjenovnik MPC';
 
     public function handle(ElinePriceRestoreService $service, ElineApiClient $client): int
     {
@@ -23,7 +26,8 @@ class RestoreElinePricesCommand extends Command
 
         $dryRun = (bool) $this->option('dry-run');
         $keepLocked = (bool) $this->option('keep-locked');
-        $refurbishedOnly = ! $this->option('all-eline');
+        $refurbishedOnly = (bool) $this->option('refurbished-only');
+        $onlySifra = trim((string) $this->option('sifra'));
 
         if ($dryRun) {
             $this->warn('Dry run — no prices will be saved.');
@@ -41,10 +45,14 @@ class RestoreElinePricesCommand extends Command
             ? 'refurbished eLine products'
             : 'all eLine products';
 
-        $this->info("Restoring live eLine MPC on {$scope}...");
+        $this->info("Rewriting eLine MPC on {$scope}...");
         $this->line('Feed prices: '.count($priceChoices));
 
-        $stats = $service->restore($dryRun, $keepLocked, $refurbishedOnly, $priceChoices);
+        if ($onlySifra !== '') {
+            $this->printSifra($onlySifra, $priceChoices);
+        }
+
+        $stats = $service->restore($dryRun, $keepLocked, $refurbishedOnly, $priceChoices, $onlySifra !== '' ? $onlySifra : null);
 
         $this->line("Scanned: {$stats['scanned']}");
         $this->line('Updated: '.$stats['updated'].($dryRun ? ' (would update)' : ''));
@@ -76,5 +84,36 @@ class RestoreElinePricesCommand extends Command
         }
 
         return self::SUCCESS;
+    }
+
+    /**
+     * @param  array<string, array{mpc: float, candidates: list<float>, rows?: list<array<string, mixed>>}>  $priceChoices
+     */
+    private function printSifra(string $sifra, array $priceChoices): void
+    {
+        $choice = null;
+
+        foreach (ElineSupport::sifraKeys($sifra) as $key) {
+            if (isset($priceChoices[$key])) {
+                $choice = $priceChoices[$key];
+                break;
+            }
+        }
+
+        $this->line('Cjenovnik za šifru '.$sifra.':');
+
+        foreach ($choice['rows'] ?? [] as $row) {
+            $this->line(sprintf(
+                '  skladiste %s | mpc %s | stanje %s | aktivan %s',
+                (string) ($row['skladiste'] ?? '—'),
+                number_format((float) $row['mpc'], 2, '.', ''),
+                (string) ($row['stanje'] ?? '—'),
+                (string) ($row['aktivan'] ?? '—'),
+            ));
+        }
+
+        if ($choice === null) {
+            $this->warn('  Nema MPC za ovu šifru u cjenovniku.');
+        }
     }
 }

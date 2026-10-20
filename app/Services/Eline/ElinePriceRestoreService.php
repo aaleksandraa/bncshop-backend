@@ -13,6 +13,7 @@ class ElinePriceRestoreService
     public function __construct(
         private readonly PriceCalculator $priceCalculator,
         private readonly ProductReadCache $productReadCache,
+        private readonly ElineShelfPrice $shelfPrice,
     ) {}
 
     /**
@@ -33,8 +34,9 @@ class ElinePriceRestoreService
     public function restore(
         bool $dryRun = false,
         bool $keepLocked = false,
-        bool $refurbishedOnly = true,
+        bool $refurbishedOnly = false,
         array $priceChoices = [],
+        ?string $onlySifra = null,
     ): array {
         $stats = [
             'scanned' => 0,
@@ -46,7 +48,7 @@ class ElinePriceRestoreService
             'samples' => [],
         ];
 
-        $this->query($refurbishedOnly)
+        $this->query($refurbishedOnly, $onlySifra)
             ->orderBy('id')
             ->chunkById(200, function ($products) use (&$stats, $dryRun, $keepLocked, $priceChoices): void {
                 foreach ($products as $product) {
@@ -105,13 +107,19 @@ class ElinePriceRestoreService
         return $stats;
     }
 
-    private function query(bool $refurbishedOnly): Builder
+    private function query(bool $refurbishedOnly, ?string $onlySifra = null): Builder
     {
         return Product::query()
             ->fromEline()
             ->where('is_set', false)
-            ->when($refurbishedOnly, function (Builder $query): void {
+            ->when($refurbishedOnly && ($onlySifra === null || $onlySifra === ''), function (Builder $query): void {
                 $query->where('is_refurbished', true);
+            })
+            ->when($onlySifra !== null && $onlySifra !== '', function (Builder $query) use ($onlySifra): void {
+                $keys = ElineSupport::sifraKeys($onlySifra);
+                $query->where(function (Builder $match) use ($keys): void {
+                    $match->whereIn('eline_sifra', $keys)->orWhereIn('sku', $keys);
+                });
             });
     }
 
@@ -128,7 +136,14 @@ class ElinePriceRestoreService
         }
 
         $choice = $this->choiceForProduct($product, $priceChoices);
-        $target = round((float) ($choice['mpc'] ?? 0), 2);
+        $rows = is_array($choice['rows'] ?? null) ? $choice['rows'] : [];
+        $current = (float) ($product->regular_price ?: $product->display_price);
+        $target = round($this->shelfPrice->resolve($rows, $current), 2);
+        $displayLift = $this->shelfPrice->charmLift($rows, (float) $product->display_price);
+
+        if ($displayLift !== null && $displayLift > $target) {
+            $target = $displayLift;
+        }
 
         if ($choice === null || $target <= 0) {
             return ['action' => 'skipped_missing'] + $empty;

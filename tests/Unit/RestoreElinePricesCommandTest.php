@@ -247,4 +247,51 @@ class RestoreElinePricesCommandTest extends TestCase
         $this->assertSame(675.0, (float) $fresh->regular_price);
         $this->assertSame(675.0, (float) $fresh->display_price);
     }
+
+    public function test_exact_lower_warehouse_price_is_kept_and_uncharmed_price_is_rewritten_for_every_eline_product(): void
+    {
+        config([
+            'bnc.eline_api_base_url' => 'https://eline.test/json',
+            'bnc.eline_api_token' => 'token',
+            'bnc.eline_api_shop_code' => 'bnc',
+        ]);
+
+        Http::fake(function () {
+            return Http::response([
+                'cjenovnici' => [
+                    ['sifra' => '1317', 'skladiste' => 1, 'mpc' => 130, 'aktivan' => 255],
+                    ['sifra' => '1317', 'skladiste' => 2, 'mpc' => 221.10, 'aktivan' => 255],
+                    ['sifra' => '2716', 'skladiste' => 1, 'mpc' => 675, 'aktivan' => 255, 'stanje' => 5],
+                ],
+            ]);
+        });
+
+        $kept = Product::factory()->create([
+            'import_source' => 'eline',
+            'is_refurbished' => true,
+            'eline_sifra' => '1317',
+            'sku' => '1317',
+            'regular_price' => 130,
+            'display_price' => 130,
+            'api_price' => 130,
+        ]);
+
+        $charmed = Product::factory()->create([
+            'import_source' => 'eline',
+            'is_refurbished' => false,
+            'eline_sifra' => '2716',
+            'sku' => '2716',
+            'regular_price' => 669,
+            'display_price' => 669,
+            'api_price' => 669,
+        ]);
+
+        $this->artisan('bnc:eline-restore-prices')
+            ->expectsOutputToContain('669.00 → 675.00')
+            ->assertSuccessful();
+
+        $this->assertSame(130.0, (float) $kept->fresh()->display_price);
+        $this->assertSame(675.0, (float) $charmed->fresh()->display_price);
+        $this->assertSame(675.0, (float) $charmed->fresh()->regular_price);
+    }
 }

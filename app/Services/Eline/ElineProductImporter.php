@@ -20,6 +20,7 @@ class ElineProductImporter
     public function __construct(
         private readonly FieldLockService $fieldLockService,
         private readonly PriceCalculator $priceCalculator,
+        private readonly ElineShelfPrice $shelfPrice,
     ) {}
 
     /**
@@ -135,7 +136,13 @@ class ElineProductImporter
             $product->first_imported_at = now();
         }
 
-        $mpc = $item['mpc'];
+        $mpc = $this->shelfPrice->resolve(
+            is_array($item['mpc_rows'] ?? null) ? $item['mpc_rows'] : [],
+            $wasExisting ? (float) ($product->regular_price ?: $product->display_price) : null,
+        );
+        if ($mpc <= 0) {
+            $mpc = $item['mpc'];
+        }
         $stanje = (int) ($item['stanje'] ?? 0);
         $description = (string) ($item['opis'] ?? '');
         $shortDescription = Str::limit($description, 255, '');

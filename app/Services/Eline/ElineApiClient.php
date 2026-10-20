@@ -66,15 +66,15 @@ class ElineApiClient
      * MPC za shop je najviša aktivna MPC, čak i kad drugo skladište ima nižu cijenu.
      *
      * @param  array<int, array<string, mixed>>  $cjenovnici
-     * @return array<string, array{mpc: float, candidates: list<float>}>
+     * @return array<string, array{mpc: float, candidates: list<float>, rows: list<array{mpc: float, active: bool, skladiste: int|null, stanje: float|null, aktivan: mixed}>}>
      */
     public function priceChoicesBySifra(array $cjenovnici): array
     {
-        /** @var array<string, list<float>> $candidates */
-        $candidates = [];
+        /** @var array<string, list<array{mpc: float, active: bool, skladiste: int|null, stanje: float|null, aktivan: mixed}>> $rowsBySifra */
+        $rowsBySifra = [];
 
         foreach ($cjenovnici as $entry) {
-            if (! isset($entry['sifra']) || ! $this->isPriceRowActive($entry)) {
+            if (! isset($entry['sifra'])) {
                 continue;
             }
 
@@ -85,19 +85,26 @@ class ElineApiClient
             }
 
             $sifra = (string) $entry['sifra'];
-            $candidates[$sifra] ??= [];
-
-            if (! in_array($mpc, $candidates[$sifra], true)) {
-                $candidates[$sifra][] = $mpc;
-            }
+            $rowsBySifra[$sifra][] = [
+                'mpc' => $mpc,
+                'active' => $this->isPriceRowActive($entry),
+                'skladiste' => isset($entry['skladiste']) ? (int) $entry['skladiste'] : null,
+                'stanje' => isset($entry['stanje']) ? (float) $entry['stanje'] : null,
+                'aktivan' => $entry['aktivan'] ?? null,
+            ];
         }
 
         $choices = [];
 
-        foreach ($candidates as $sifra => $mpcs) {
+        foreach ($rowsBySifra as $sifra => $rows) {
+            $activeMpcs = array_values(array_map(
+                fn (array $row): float => $row['mpc'],
+                array_values(array_filter($rows, fn (array $row): bool => $row['active'])),
+            ));
             $choice = [
-                'mpc' => max($mpcs),
-                'candidates' => $mpcs,
+                'mpc' => $activeMpcs !== [] ? max($activeMpcs) : max(array_column($rows, 'mpc')),
+                'candidates' => $activeMpcs !== [] ? $activeMpcs : array_column($rows, 'mpc'),
+                'rows' => $rows,
             ];
 
             foreach (ElineSupport::sifraKeys($sifra) as $key) {
@@ -134,6 +141,7 @@ class ElineApiClient
             }
 
             $entry['mpc'] = $choice['mpc'];
+            $entry['mpc_rows'] = $choice['rows'];
             $priceMap[(string) $sifra] = $entry;
         }
 
@@ -178,6 +186,7 @@ class ElineApiClient
                     'brend' => (string) ($article['brend'] ?? ''),
                     'marka' => (string) ($article['marka'] ?? ''),
                     'mpc' => $price !== null ? ElineSupport::parseMpc($price['mpc'] ?? 0) : null,
+                    'mpc_rows' => is_array($price['mpc_rows'] ?? null) ? $price['mpc_rows'] : [],
                     'stanje' => $price !== null ? (int) floor((float) ($price['stanje'] ?? 0)) : 0,
                     'price_aktivan' => $price['aktivan'] ?? null,
                 ];
