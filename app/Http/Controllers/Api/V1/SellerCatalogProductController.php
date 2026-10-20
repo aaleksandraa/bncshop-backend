@@ -28,7 +28,7 @@ class SellerCatalogProductController extends Controller
         }
 
         $query = Product::query()
-            ->notFromEline()
+            ->sellerPanelA1New()
             ->with(['defaultImage', 'images', 'category:id,name,display_name,full_slug', 'supplierOffers.supplier']);
 
         $this->applyListingFilters($query, $request);
@@ -49,7 +49,7 @@ class SellerCatalogProductController extends Controller
         }
 
         $categories = Category::query()
-            ->whereHas('products', fn (Builder $builder) => $builder->notFromEline())
+            ->whereHas('products', fn (Builder $builder) => $builder->sellerPanelA1New())
             ->orderBy('name')
             ->get(['id', 'name', 'display_name', 'full_slug']);
 

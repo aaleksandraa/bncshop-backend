@@ -27,7 +27,7 @@ class SellerProductController extends Controller
         }
 
         $query = Product::query()
-            ->fromEline()
+            ->sellerPanelRefurbished()
             ->with(['defaultImage', 'images', 'category:id,name,display_name,full_slug'])
             ->orderByRaw('CASE WHEN available_stock > 0 THEN 0 ELSE 1 END')
             ->orderByDesc('updated_at');
@@ -73,7 +73,7 @@ class SellerProductController extends Controller
         }
 
         $categories = Category::query()
-            ->whereHas('products', fn ($builder) => $builder->fromEline())
+            ->whereHas('products', fn ($builder) => $builder->sellerPanelRefurbished())
             ->orderBy('name')
             ->get(['id', 'name', 'display_name', 'full_slug']);
 

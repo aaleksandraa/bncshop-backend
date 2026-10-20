@@ -327,4 +327,16 @@ class Product extends Model
                 ->orWhereNull('import_source');
         });
     }
+
+    /** Prodavački panel: polovni / refurbished eLine artikli. */
+    public function scopeSellerPanelRefurbished(Builder $query): Builder
+    {
+        return $query->fromEline()->where('is_refurbished', true);
+    }
+
+    /** Prodavački panel: novi artikli iz A1 Technoshop uvoza. */
+    public function scopeSellerPanelA1New(Builder $query): Builder
+    {
+        return $query->where('import_source', 'a1')->where('is_new', true);
+    }
 }

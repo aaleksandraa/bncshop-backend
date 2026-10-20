@@ -34,12 +34,19 @@ class SellerCatalogProductApiTest extends TestCase
 
         $catalogProduct = Product::factory()->create([
             'import_source' => 'a1',
+            'is_new' => true,
             'name' => 'A1 monitor',
             'category_id' => $category->id,
             'available_stock' => 3,
         ]);
         Product::factory()->create([
+            'import_source' => 'a1',
+            'is_new' => false,
+            'name' => 'A1 polovni monitor',
+        ]);
+        Product::factory()->create([
             'import_source' => 'eline',
+            'is_refurbished' => true,
             'name' => 'eLine laptop',
         ]);
 
@@ -93,6 +100,7 @@ class SellerCatalogProductApiTest extends TestCase
         ]);
         $product = Product::factory()->create([
             'import_source' => 'a1',
+            'is_new' => true,
             'name' => 'A1 monitor',
         ]);
 
@@ -135,6 +143,7 @@ class SellerCatalogProductApiTest extends TestCase
 
         $inStock = Product::factory()->create([
             'import_source' => 'a1',
+            'is_new' => true,
             'name' => 'Na stanju',
             'category_id' => $category->id,
             'available_stock' => 4,
@@ -142,6 +151,7 @@ class SellerCatalogProductApiTest extends TestCase
         ]);
         $outOfStock = Product::factory()->create([
             'import_source' => 'a1',
+            'is_new' => true,
             'name' => 'Bez zalihe',
             'category_id' => $category->id,
             'available_stock' => 0,

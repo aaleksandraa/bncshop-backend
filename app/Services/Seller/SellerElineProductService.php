@@ -36,7 +36,7 @@ class SellerElineProductService
     public function findElineProduct(int $id): Product
     {
         return Product::query()
-            ->fromEline()
+            ->sellerPanelRefurbished()
             ->with(['images', 'defaultImage'])
             ->findOrFail($id);
     }
@@ -44,7 +44,7 @@ class SellerElineProductService
     public function findCatalogProduct(int $id): Product
     {
         return Product::query()
-            ->notFromEline()
+            ->sellerPanelA1New()
             ->with(['images', 'defaultImage', 'category:id,name,display_name,full_slug', 'supplierOffers.supplier'])
             ->findOrFail($id);
     }

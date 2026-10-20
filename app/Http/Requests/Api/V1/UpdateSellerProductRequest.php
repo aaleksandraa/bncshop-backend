@@ -47,7 +47,7 @@ class UpdateSellerProductRequest extends FormRequest
             }
 
             $product = Product::query()
-                ->fromEline()
+                ->sellerPanelRefurbished()
                 ->find($this->route('id'));
 
             if ($product === null) {

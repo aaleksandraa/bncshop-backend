@@ -41,6 +41,7 @@ class SellerProductApiTest extends TestCase
         ]);
         Product::factory()->create([
             'import_source' => 'a1',
+            'is_new' => true,
             'name' => 'A1 proizvod',
         ]);
 
@@ -128,6 +129,31 @@ class SellerProductApiTest extends TestCase
             ->assertJsonPath('data.sale_validity', 'until_date');
     }
 
+    public function test_seller_product_list_excludes_non_refurbished_eline(): void
+    {
+        $seller = $this->createSeller();
+        $this->createElineProduct([
+            'name' => 'Novi eLine laptop',
+            'is_refurbished' => false,
+            'is_new' => true,
+        ]);
+        $refurbished = $this->createElineProduct([
+            'name' => 'Polovni eLine laptop',
+            'is_refurbished' => true,
+            'is_new' => false,
+        ]);
+
+        $this->postJsonStateful('/api/v1/seller/login', [
+            'email' => $seller->email,
+            'password' => 'password123',
+        ])->assertOk();
+
+        $this->getJsonStateful('/api/v1/seller/products')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $refurbished->id);
+    }
+
     public function test_seller_can_filter_and_sort_eline_products(): void
     {
         $seller = $this->createSeller();
@@ -135,6 +161,7 @@ class SellerProductApiTest extends TestCase
         $monitorCategory = Category::factory()->create(['name' => 'Monitori']);
 
         $inStockLaptop = $this->createElineProduct([
+            'is_refurbished' => true,
             'name' => 'Laptop na stanju',
             'category_id' => $laptopCategory->id,
             'available_stock' => 5,
@@ -143,12 +170,14 @@ class SellerProductApiTest extends TestCase
         $outOfStockLaptop = $this->createElineProduct([
             'name' => 'Laptop bez zalihe',
             'category_id' => $laptopCategory->id,
+            'is_refurbished' => true,
             'available_stock' => 0,
             'updated_at' => now(),
         ]);
         $inStockMonitor = $this->createElineProduct([
             'name' => 'Monitor na stanju',
             'category_id' => $monitorCategory->id,
+            'is_refurbished' => true,
             'available_stock' => 2,
         ]);
 
@@ -363,6 +392,8 @@ class SellerProductApiTest extends TestCase
     {
         return Product::factory()->create(array_merge([
             'import_source' => 'eline',
+            'is_refurbished' => true,
+            'is_new' => false,
             'external_product_id' => ElineSupport::externalProductId('EL-'.fake()->unique()->numberBetween(1000, 9999)),
             'eline_sifra' => 'EL-'.fake()->unique()->numberBetween(1000, 9999),
             'regular_price' => 100,
