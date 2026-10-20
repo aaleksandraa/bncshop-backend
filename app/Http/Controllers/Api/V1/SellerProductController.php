@@ -27,8 +27,7 @@ class SellerProductController extends Controller
         }
 
         $query = Product::query()
-            ->sellerPanelRefurbished()
-            ->with(['defaultImage', 'images', 'category:id,name,display_name,full_slug'])
+            ->with(['defaultImage', 'images', 'category:id,name,display_name,full_slug', 'supplierOffers.supplier'])
             ->orderByRaw('CASE WHEN available_stock > 0 THEN 0 ELSE 1 END')
             ->orderByDesc('updated_at');
 
@@ -73,7 +72,7 @@ class SellerProductController extends Controller
         }
 
         $categories = Category::query()
-            ->whereHas('products', fn ($builder) => $builder->sellerPanelRefurbished())
+            ->whereHas('products')
             ->orderBy('name')
             ->get(['id', 'name', 'display_name', 'full_slug']);
 
@@ -94,18 +93,25 @@ class SellerProductController extends Controller
             return $response;
         }
 
-        $product = $this->sellerProducts->findElineProduct($id);
+        $product = $this->sellerProducts->findSellerProduct($id);
 
         return $this->success($this->sellerProducts->formatDetail($product));
     }
 
     public function update(UpdateSellerProductRequest $request, int $id): JsonResponse
     {
-        $product = $this->sellerProducts->findElineProduct($id);
+        $product = $this->sellerProducts->findSellerProduct($id);
+        $payload = $request->validated();
+        $contentKeys = ['description', 'short_description', 'sale_price', 'sale_validity', 'sale_ends_at'];
+        $touchesContent = array_intersect_key($payload, array_flip($contentKeys)) !== [];
+
+        if ($touchesContent && ! $this->sellerProducts->canEditContent($product)) {
+            return $this->error('Ovaj proizvod nema uređivanje opisa i cijene.', 404);
+        }
 
         $updated = $this->sellerProducts->update(
             $product,
-            $request->validated(),
+            $payload,
             $request->user(),
         );
 
@@ -114,7 +120,7 @@ class SellerProductController extends Controller
 
     public function storeImage(UploadSellerProductImageRequest $request, int $id): JsonResponse
     {
-        $product = $this->sellerProducts->findElineProduct($id);
+        $product = $this->sellerProducts->findSellerProduct($id);
 
         $this->sellerProducts->storeImage(
             $product,
@@ -133,7 +139,7 @@ class SellerProductController extends Controller
             return $response;
         }
 
-        $product = $this->sellerProducts->findElineProduct($id);
+        $product = $this->sellerProducts->findSellerProduct($id);
         $this->sellerProducts->deleteImage($product, $imageId);
 
         return $this->success(

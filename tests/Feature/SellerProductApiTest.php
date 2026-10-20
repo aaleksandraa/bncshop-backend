@@ -37,6 +37,8 @@ class SellerProductApiTest extends TestCase
             'name' => 'eLine laptop',
             'regular_price' => 500,
             'display_price' => 500,
+            'api_price' => 500,
+            'api_final_price' => 500,
             'description' => 'Original opis',
         ]);
         Product::factory()->create([
@@ -53,9 +55,9 @@ class SellerProductApiTest extends TestCase
 
         $this->getJsonStateful('/api/v1/seller/products')
             ->assertOk()
-            ->assertJsonCount(1, 'data')
-            ->assertJsonPath('data.0.name', 'eLine laptop')
-            ->assertJsonPath('data.0.available_stock', $elineProduct->available_stock);
+            ->assertJsonCount(2, 'data')
+            ->assertJsonFragment(['name' => 'eLine laptop'])
+            ->assertJsonFragment(['name' => 'A1 proizvod', 'import_source_label' => 'A1 Technoshop']);
 
         $this->patchJsonStateful("/api/v1/seller/products/{$elineProduct->id}", [
                 'description' => 'Prodavačev opis',
@@ -79,6 +81,8 @@ class SellerProductApiTest extends TestCase
         $elineProduct = $this->createElineProduct([
             'regular_price' => 500,
             'display_price' => 500,
+            'api_price' => 500,
+            'api_final_price' => 500,
         ]);
 
         $this->postJsonStateful('/api/v1/seller/login', [
@@ -105,6 +109,8 @@ class SellerProductApiTest extends TestCase
         $elineProduct = $this->createElineProduct([
             'regular_price' => 500,
             'display_price' => 500,
+            'api_price' => 500,
+            'api_final_price' => 500,
         ]);
 
         $this->postJsonStateful('/api/v1/seller/login', [
@@ -152,12 +158,12 @@ class SellerProductApiTest extends TestCase
 
         $this->getJsonStateful('/api/v1/seller/products')
             ->assertOk()
-            ->assertJsonCount(1, 'data')
-            ->assertJsonPath('data.0.id', $manualPolovan->id)
-            ->assertJsonPath('data.0.name', 'Ručni polovni printer');
+            ->assertJsonCount(2, 'data')
+            ->assertJsonFragment(['name' => 'Ručni polovni printer', 'import_source_label' => 'Ručno'])
+            ->assertJsonFragment(['name' => 'Ručni novi artikal']);
     }
 
-    public function test_seller_product_list_excludes_non_refurbished_eline(): void
+    public function test_seller_product_list_includes_new_and_refurbished_eline(): void
     {
         $seller = $this->createSeller();
         $this->createElineProduct([
@@ -165,7 +171,7 @@ class SellerProductApiTest extends TestCase
             'is_refurbished' => false,
             'is_new' => true,
         ]);
-        $refurbished = $this->createElineProduct([
+        $this->createElineProduct([
             'name' => 'Polovni eLine laptop',
             'is_refurbished' => true,
             'is_new' => false,
@@ -178,8 +184,9 @@ class SellerProductApiTest extends TestCase
 
         $this->getJsonStateful('/api/v1/seller/products')
             ->assertOk()
-            ->assertJsonCount(1, 'data')
-            ->assertJsonPath('data.0.id', $refurbished->id);
+            ->assertJsonCount(2, 'data')
+            ->assertJsonFragment(['name' => 'Novi eLine laptop'])
+            ->assertJsonFragment(['name' => 'Polovni eLine laptop']);
     }
 
     public function test_seller_can_filter_and_sort_eline_products(): void

@@ -41,6 +41,19 @@ class SellerElineProductService
             ->findOrFail($id);
     }
 
+    public function findSellerProduct(int $id): Product
+    {
+        return Product::query()
+            ->with(['images', 'defaultImage', 'category:id,name,display_name,full_slug', 'supplierOffers.supplier'])
+            ->findOrFail($id);
+    }
+
+    public function canEditContent(Product $product): bool
+    {
+        return $product->import_source === null
+            || in_array($product->import_source, ['eline', 'manual'], true);
+    }
+
     public function findCatalogProduct(int $id): Product
     {
         return Product::query()
@@ -54,6 +67,16 @@ class SellerElineProductService
      */
     public function update(Product $product, array $data, User $user): Product
     {
+        if (! $this->canEditContent($product)) {
+            unset(
+                $data['description'],
+                $data['short_description'],
+                $data['sale_price'],
+                $data['sale_validity'],
+                $data['sale_ends_at'],
+            );
+        }
+
         if (array_key_exists('description', $data)) {
             $product->description = (string) $data['description'];
             $this->fieldLockService->lockField($product, 'description', $user->id);
@@ -232,6 +255,7 @@ class SellerElineProductService
             'import_source' => $product->import_source,
             'import_source_label' => $this->importSourceLabel($product->import_source),
             'supplier_name' => $this->resolveSupplierName($product),
+            'can_edit_content' => $this->canEditContent($product),
             'primary_image_url' => $primaryImage
                 ? PublicStorageUrl::absoluteFromResolved($this->productImageStorage->resolvedUrl($primaryImage))
                 : null,

@@ -46,9 +46,7 @@ class UpdateSellerProductRequest extends FormRequest
                 return;
             }
 
-            $product = Product::query()
-                ->sellerPanelRefurbished()
-                ->find($this->route('id'));
+            $product = Product::query()->find($this->route('id'));
 
             if ($product === null) {
                 return;
