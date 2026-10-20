@@ -8,6 +8,7 @@ use App\Models\ProductSupplierOffer;
 use App\Models\Supplier;
 use App\Models\SupplierCategoryMarginRule;
 use App\Services\Pricing\PriceCalculator;
+use App\Services\Pricing\ProductSalePriceService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -452,5 +453,61 @@ class PriceCalculatorSupplierMarginTest extends TestCase
         $this->assertSame('eline', $result->marginSource);
         $this->assertSame(450.0, (float) $product->fresh()->regular_price);
         $this->assertNull($product->fresh()->margin_percentage);
+    }
+
+    public function test_eline_price_is_not_charm_rounded(): void
+    {
+        $product = Product::factory()->create([
+            'import_source' => 'eline',
+            'api_price' => 179,
+            'api_final_price' => 179,
+            'regular_price' => 179,
+            'display_price' => 169,
+            'margin_percentage' => 22,
+        ]);
+
+        app(PriceCalculator::class)->recalculateAndPersist($product->fresh());
+
+        $fresh = $product->fresh();
+        $this->assertSame(179.0, (float) $fresh->regular_price);
+        $this->assertSame(179.0, (float) $fresh->display_price);
+        $this->assertFalse($fresh->on_sale);
+    }
+
+    public function test_eline_seller_sale_price_is_kept_exactly(): void
+    {
+        $product = Product::factory()->create([
+            'import_source' => 'eline',
+            'api_price' => 250,
+            'regular_price' => 250,
+            'display_price' => 250,
+        ]);
+
+        app(ProductSalePriceService::class)->upsert($product, 179);
+        app(PriceCalculator::class)->recalculateAndPersist($product->fresh());
+
+        $fresh = $product->fresh();
+        $this->assertSame(250.0, (float) $fresh->regular_price);
+        $this->assertSame(179.0, (float) $fresh->display_price);
+        $this->assertTrue($fresh->on_sale);
+        $this->assertSame(179.0, app(ProductSalePriceService::class)->resolveSalePrice($fresh));
+    }
+
+    public function test_eline_locked_manual_price_is_not_replaced_by_api_price(): void
+    {
+        $product = Product::factory()->create([
+            'import_source' => 'eline',
+            'api_price' => 179,
+            'regular_price' => 179,
+            'display_price' => 179,
+            'price_locked' => true,
+            'manual_price' => 199,
+        ]);
+
+        app(PriceCalculator::class)->recalculateAndPersist($product->fresh());
+
+        $fresh = $product->fresh();
+        $this->assertSame(199.0, (float) $fresh->regular_price);
+        $this->assertSame(199.0, (float) $fresh->display_price);
     }
 }

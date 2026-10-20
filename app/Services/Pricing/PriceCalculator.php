@@ -26,6 +26,10 @@ class PriceCalculator
             return $this->calculateSet($product, $coupon);
         }
 
+        if ($product->isFromEline()) {
+            return $this->calculateElinePrice($product, $coupon);
+        }
+
         $priceLocked = (bool) $product->price_locked;
         $wholesalePrice = null;
         $appliedMargin = null;
@@ -140,7 +144,7 @@ class PriceCalculator
             'calculated_price' => $formulaPrice > 0 ? $formulaPrice : null,
         ];
 
-        if (! $product->price_locked) {
+        if (! $product->price_locked || $product->isFromEline()) {
             $updates['regular_price'] = $result->regularPrice;
         }
 
@@ -174,6 +178,78 @@ class PriceCalculator
         }
 
         return $result;
+    }
+
+    /**
+     * eLine MPC is the shelf price. No margin, VAT or charm rounding.
+     * A seller sale price or a locked manual price is kept exactly.
+     */
+    private function calculateElinePrice(Product $product, ?Coupon $coupon = null): PriceResult
+    {
+        $listPrice = $this->elineListPrice($product);
+        $displayPrice = $listPrice;
+        $discount = null;
+        $discountSource = 'none';
+        $discountAmount = 0.0;
+        $badgeText = null;
+        $priceLocked = (bool) $product->price_locked && $product->manual_price !== null;
+
+        if ($this->productSalePriceService->isSaleDiscountApplicable($product)) {
+            $sellerDiscount = $this->productSalePriceService->findProductSaleDiscount($product);
+            $targetSalePrice = $this->productSalePriceService->resolveTargetSalePrice($product, $sellerDiscount);
+
+            if ($targetSalePrice !== null && $targetSalePrice < $listPrice) {
+                $displayPrice = round($targetSalePrice, 2);
+                $discount = $sellerDiscount;
+                $discountAmount = round($listPrice - $displayPrice, 2);
+                $discountSource = 'local';
+                $badgeText = $sellerDiscount?->badge_text;
+            }
+        }
+
+        if ($coupon) {
+            $beforeCoupon = $displayPrice;
+            $displayPrice = $this->couponEngine->apply($displayPrice, $coupon, $product);
+            if ($displayPrice < $beforeCoupon) {
+                $discountAmount += round($beforeCoupon - $displayPrice, 2);
+                $discountSource = $discountSource === 'none' ? 'coupon' : $discountSource.'+coupon';
+            }
+        }
+
+        $onSale = $displayPrice < $listPrice;
+
+        return new PriceResult(
+            displayPrice: $displayPrice,
+            regularPrice: $listPrice,
+            originalPrice: $onSale ? $listPrice : null,
+            discountSource: $discountSource,
+            discountAmount: $discountAmount,
+            discount: $discount,
+            coupon: $coupon,
+            badgeText: $badgeText,
+            onSale: $onSale,
+            priceLocked: $priceLocked,
+            wholesalePrice: null,
+            appliedMargin: null,
+            marginSource: 'eline',
+            supplierName: null,
+            appliedPriceAdjustment: null,
+        );
+    }
+
+    private function elineListPrice(Product $product): float
+    {
+        if ($product->price_locked && $product->manual_price !== null) {
+            return round((float) $product->manual_price, 2);
+        }
+
+        $apiPrice = (float) ($product->api_price ?? 0);
+
+        if ($apiPrice > 0) {
+            return round($apiPrice, 2);
+        }
+
+        return round((float) ($product->regular_price ?? 0), 2);
     }
 
     private function calculateSet(Product $product, ?Coupon $coupon = null): PriceResult
