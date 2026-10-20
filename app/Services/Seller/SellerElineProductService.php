@@ -316,10 +316,15 @@ class SellerElineProductService
             return null;
         }
 
+        $a1Code = (string) config('bnc.a1_api_target_system_code', 'bnc-shop');
+
+        if (in_array($source, ['a1', 'bnc-shop', $a1Code], true)) {
+            return 'A1 Technoshop';
+        }
+
         return match ($source) {
             'eline' => 'eLine ERP',
             'manual' => 'Ručno',
-            'a1' => 'A1 Technoshop',
             default => $source,
         };
     }

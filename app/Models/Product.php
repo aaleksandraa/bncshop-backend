@@ -353,11 +353,30 @@ class Product extends Model
         });
     }
 
-    /** Prodavački panel: novi A1 artikli (katalog bez polovnog/refurbished statusa). */
+    /**
+     * A1 Technoshop uvoz. U bazi je import_source obično target kod izvora (bnc-shop), ne "a1".
+     *
+     * @return list<string>
+     */
+    public static function a1ImportSources(): array
+    {
+        return array_values(array_unique(array_filter([
+            'a1',
+            'bnc-shop',
+            (string) config('bnc.a1_api_target_system_code', 'bnc-shop'),
+        ])));
+    }
+
+    public function scopeFromA1(Builder $query): Builder
+    {
+        return $query->whereIn('import_source', self::a1ImportSources());
+    }
+
+    /** Prodavački panel: A1 artikli koji nisu označeni kao refurbished. */
     public function scopeSellerPanelA1New(Builder $query): Builder
     {
         return $query
-            ->where('import_source', 'a1')
+            ->fromA1()
             ->where('is_refurbished', false);
     }
 }

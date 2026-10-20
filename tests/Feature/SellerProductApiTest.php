@@ -163,6 +163,45 @@ class SellerProductApiTest extends TestCase
             ->assertJsonFragment(['name' => 'Ručni novi artikal']);
     }
 
+    public function test_seller_product_list_includes_a1_catalog_stored_as_bnc_shop(): void
+    {
+        $seller = $this->createSeller();
+        $a1 = Product::factory()->create([
+            'import_source' => 'bnc-shop',
+            'name' => 'PRINTER TRIUMPH ADLER 4025W',
+            'sku' => 'TA-4025',
+            'is_new' => false,
+            'is_refurbished' => false,
+        ]);
+        $this->createElineProduct([
+            'name' => 'Polovni laptop',
+        ]);
+
+        $this->postJsonStateful('/api/v1/seller/login', [
+            'email' => $seller->email,
+            'password' => 'password123',
+        ])->assertOk();
+
+        $this->getJsonStateful('/api/v1/seller/products')
+            ->assertOk()
+            ->assertJsonFragment([
+                'id' => $a1->id,
+                'name' => 'PRINTER TRIUMPH ADLER 4025W',
+                'import_source' => 'bnc-shop',
+                'import_source_label' => 'A1 Technoshop',
+            ]);
+
+        $this->getJsonStateful('/api/v1/seller/products?search=triumph')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $a1->id);
+
+        $this->getJsonStateful('/api/v1/seller/products?source=a1')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.import_source', 'bnc-shop');
+    }
+
     public function test_seller_product_list_includes_new_and_refurbished_eline(): void
     {
         $seller = $this->createSeller();

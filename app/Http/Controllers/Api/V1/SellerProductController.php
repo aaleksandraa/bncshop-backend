@@ -27,16 +27,33 @@ class SellerProductController extends Controller
         }
 
         $query = Product::query()
-            ->with(['defaultImage', 'images', 'category:id,name,display_name,full_slug', 'supplierOffers.supplier'])
+            ->with(['defaultImage', 'category:id,name,display_name,full_slug', 'supplierOffers.supplier'])
             ->orderByRaw('CASE WHEN available_stock > 0 THEN 0 ELSE 1 END')
             ->orderByDesc('updated_at');
 
+        if ($source = trim($request->string('source')->toString())) {
+            $query->where(function ($builder) use ($source): void {
+                if ($source === 'a1') {
+                    $builder->fromA1();
+                } elseif ($source === 'eline') {
+                    $builder->fromEline();
+                } elseif ($source === 'manual') {
+                    $builder->sellerPanelManual();
+                }
+            });
+        }
+
         if ($search = trim($request->string('search')->toString())) {
-            $query->where(function ($builder) use ($search): void {
-                $builder
-                    ->where('name', 'like', "%{$search}%")
-                    ->orWhere('sku', 'like', "%{$search}%")
-                    ->orWhere('eline_sifra', 'like', "%{$search}%");
+            $needle = '%'.mb_strtolower($search).'%';
+            $query->where(function ($builder) use ($needle): void {
+                foreach (['name', 'sku', 'eline_sifra', 'barcode'] as $index => $column) {
+                    $sql = 'LOWER(COALESCE('.$column.", '')) LIKE ?";
+                    if ($index === 0) {
+                        $builder->whereRaw($sql, [$needle]);
+                    } else {
+                        $builder->orWhereRaw($sql, [$needle]);
+                    }
+                }
             });
         }
 
