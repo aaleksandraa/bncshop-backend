@@ -110,6 +110,8 @@ class ElineApiClient
             foreach (ElineSupport::sifraKeys($sifra) as $key) {
                 $choices[$key] = $choice;
             }
+
+            $choices['external:'.ElineSupport::externalProductId($sifra)] = $choice;
         }
 
         return $choices;

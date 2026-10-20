@@ -3,6 +3,7 @@
 namespace Tests\Unit;
 
 use App\Models\Product;
+use App\Services\Eline\ElineSupport;
 use App\Services\Pricing\ProductSalePriceService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -209,7 +210,7 @@ class RestoreElinePricesCommandTest extends TestCase
         $this->assertSame(310.0, (float) $fresh->display_price);
     }
 
-    public function test_lower_warehouse_mpc_does_not_keep_the_charmed_price(): void
+    public function test_sifra_matches_the_original_eline_id_when_sku_differs(): void
     {
         config([
             'bnc.eline_api_base_url' => 'https://eline.test/json',
@@ -220,32 +221,56 @@ class RestoreElinePricesCommandTest extends TestCase
         Http::fake(function () {
             return Http::response([
                 'cjenovnici' => [
-                    ['sifra' => '2716', 'skladiste' => 2, 'mpc' => 669, 'aktivan' => 255],
                     ['sifra' => '2716', 'skladiste' => 1, 'mpc' => 675, 'aktivan' => 255, 'stanje' => 5],
+                    ['sifra' => '2312', 'skladiste' => 1, 'mpc' => 34.9, 'aktivan' => 255, 'stanje' => 6],
                 ],
             ]);
         });
 
-        $product = Product::factory()->create([
-            'import_source' => 'eline',
-            'is_refurbished' => true,
-            'eline_sifra' => '2716',
-            'sku' => '2716',
-            'name' => 'RACUNAR DELL 3080 I5 10500 / 16GB DDR4 / SSD 256GB / SFF / REFURBISHED',
-            'api_price' => 669,
-            'api_final_price' => 669,
+        $dell = Product::factory()->create([
+            'import_source' => 'manual',
+            'external_product_id' => ElineSupport::externalProductId('2716'),
+            'eline_sifra' => null,
+            'sku' => 'DELL-3080',
             'regular_price' => 669,
             'display_price' => 669,
+            'api_price' => 669,
         ]);
 
-        $this->artisan('bnc:eline-restore-prices')
+        $toner = Product::factory()->create([
+            'import_source' => 'eline',
+            'eline_sifra' => '2312',
+            'sku' => '2312',
+            'regular_price' => 38.90,
+            'display_price' => 38.90,
+            'api_price' => 38.90,
+        ]);
+
+        $this->artisan('bnc:eline-restore-prices', ['--sifra' => '2716'])
             ->expectsOutputToContain('669.00 → 675.00')
             ->assertSuccessful();
 
-        $fresh = $product->fresh();
-        $this->assertSame(675.0, (float) $fresh->api_price);
-        $this->assertSame(675.0, (float) $fresh->regular_price);
-        $this->assertSame(675.0, (float) $fresh->display_price);
+        $this->assertSame(675.0, (float) $dell->fresh()->display_price);
+        $this->assertSame(38.90, (float) $toner->fresh()->display_price);
+
+        $manual = Product::factory()->create([
+            'import_source' => 'manual',
+            'eline_sifra' => null,
+            'sku' => '2716',
+            'regular_price' => 669,
+            'display_price' => 669,
+            'api_price' => 669,
+        ]);
+
+        $this->artisan('bnc:eline-restore-prices')
+            ->expectsOutputToContain('38.90 → 34.90')
+            ->expectsOutputToContain('669.00 → 675.00')
+            ->assertSuccessful();
+
+        $this->assertSame(675.0, (float) $manual->fresh()->display_price);
+
+        $this->assertSame(34.90, (float) $toner->fresh()->display_price);
+        $this->assertSame(34.90, (float) $toner->fresh()->regular_price);
     }
 
     public function test_exact_lower_warehouse_price_is_kept_and_uncharmed_price_is_rewritten_for_every_eline_product(): void

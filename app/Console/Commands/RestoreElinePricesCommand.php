@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Jobs\ReindexProductsJob;
+use App\Models\Product;
 use App\Services\Eline\ElineApiClient;
 use App\Services\Eline\ElinePriceRestoreService;
 use App\Services\Eline\ElineSupport;
@@ -45,8 +46,16 @@ class RestoreElinePricesCommand extends Command
             ? 'refurbished eLine products'
             : 'all eLine products';
 
-        $this->info("Rewriting eLine MPC on {$scope}...");
-        $this->line('Feed prices: '.count($priceChoices));
+        $this->info("Upisuje se polje mpc iz eLine cjenovnika ({$scope})...");
+        $feedCount = 0;
+
+        foreach ($priceChoices as $key => $choice) {
+            if (! is_string($key) || ! str_starts_with($key, 'external:')) {
+                $feedCount++;
+            }
+        }
+
+        $this->line('Feed prices: '.$feedCount);
 
         if ($onlySifra !== '') {
             $this->printSifra($onlySifra, $priceChoices);
@@ -68,6 +77,10 @@ class RestoreElinePricesCommand extends Command
                 $sample['from'],
                 $sample['to'],
             ));
+        }
+
+        if ($onlySifra !== '' && $stats['scanned'] === 0) {
+            $this->printMissingProduct($onlySifra);
         }
 
         if (count($stats['samples']) < $stats['updated']) {
@@ -114,6 +127,38 @@ class RestoreElinePricesCommand extends Command
 
         if ($choice === null) {
             $this->warn('  Nema MPC za ovu šifru u cjenovniku.');
+        }
+    }
+
+    private function printMissingProduct(string $sifra): void
+    {
+        $this->warn('Shop nema artikal sa šifrom '.$sifra.' (SKU, eline_sifra ni originalni eLine id).');
+
+        $rows = Product::query()
+            ->where(function ($query) use ($sifra): void {
+                $like = '%'.$sifra.'%';
+                $query->where('sku', 'like', $like)->orWhere('eline_sifra', 'like', $like);
+            })
+            ->orderBy('id')
+            ->limit(8)
+            ->get();
+
+        if ($rows->isEmpty()) {
+            $this->line('  Nema ni sličnog SKU ni šifre u bazi.');
+
+            return;
+        }
+
+        foreach ($rows as $row) {
+            $this->line(sprintf(
+                '  id %d | izvor %s | sku %s | eline_sifra %s | cijena %s | %s',
+                $row->id,
+                (string) ($row->import_source ?: '—'),
+                (string) $row->sku,
+                (string) ($row->eline_sifra ?: '—'),
+                number_format((float) $row->display_price, 2, '.', ''),
+                (string) $row->name,
+            ));
         }
     }
 }
