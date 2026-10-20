@@ -43,7 +43,7 @@ class RestoreElinePricesCommandTest extends TestCase
 
     public function test_refurbished_eline_prices_return_to_api_price(): void
     {
-        $this->fakeElinePrices([]);
+        $this->fakeElinePrices(['EL-179' => 179]);
 
         $product = Product::factory()->create([
             'import_source' => 'eline',
@@ -90,11 +90,12 @@ class RestoreElinePricesCommandTest extends TestCase
 
     public function test_seller_sale_stays_exact_below_restored_eline_price(): void
     {
-        $this->fakeElinePrices([]);
+        $this->fakeElinePrices(['EL-250' => 250]);
 
         $product = Product::factory()->create([
             'import_source' => 'eline',
             'is_refurbished' => true,
+            'eline_sifra' => 'EL-250',
             'api_price' => 250,
             'regular_price' => 169,
             'display_price' => 169,
@@ -206,5 +207,44 @@ class RestoreElinePricesCommandTest extends TestCase
         $fresh = $product->fresh();
         $this->assertSame(310.0, (float) $fresh->regular_price);
         $this->assertSame(310.0, (float) $fresh->display_price);
+    }
+
+    public function test_lower_warehouse_mpc_does_not_keep_the_charmed_price(): void
+    {
+        config([
+            'bnc.eline_api_base_url' => 'https://eline.test/json',
+            'bnc.eline_api_token' => 'token',
+            'bnc.eline_api_shop_code' => 'bnc',
+        ]);
+
+        Http::fake(function () {
+            return Http::response([
+                'cjenovnici' => [
+                    ['sifra' => '2716', 'skladiste' => 2, 'mpc' => 669, 'aktivan' => 255],
+                    ['sifra' => '2716', 'skladiste' => 1, 'mpc' => 675, 'aktivan' => 255, 'stanje' => 5],
+                ],
+            ]);
+        });
+
+        $product = Product::factory()->create([
+            'import_source' => 'eline',
+            'is_refurbished' => true,
+            'eline_sifra' => '2716',
+            'sku' => '2716',
+            'name' => 'RACUNAR DELL 3080 I5 10500 / 16GB DDR4 / SSD 256GB / SFF / REFURBISHED',
+            'api_price' => 669,
+            'api_final_price' => 669,
+            'regular_price' => 669,
+            'display_price' => 669,
+        ]);
+
+        $this->artisan('bnc:eline-restore-prices')
+            ->expectsOutputToContain('669.00 → 675.00')
+            ->assertSuccessful();
+
+        $fresh = $product->fresh();
+        $this->assertSame(675.0, (float) $fresh->api_price);
+        $this->assertSame(675.0, (float) $fresh->regular_price);
+        $this->assertSame(675.0, (float) $fresh->display_price);
     }
 }

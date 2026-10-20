@@ -7,6 +7,26 @@ use Ramsey\Uuid\Uuid;
 
 class ElineSupport
 {
+    /**
+     * @return list<string>
+     */
+    public static function sifraKeys(string $sifra): array
+    {
+        $sifra = trim($sifra);
+
+        if ($sifra === '') {
+            return [];
+        }
+
+        $keys = [$sifra];
+
+        if (preg_match('/^\d+$/', $sifra) === 1) {
+            $keys[] = (string) (int) $sifra;
+        }
+
+        return array_values(array_unique($keys));
+    }
+
     public static function externalProductId(string $sifra): string
     {
         return Uuid::uuid5(Uuid::NAMESPACE_DNS, 'eline:'.$sifra)->toString();

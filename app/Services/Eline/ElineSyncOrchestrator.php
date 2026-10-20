@@ -84,7 +84,10 @@ class ElineSyncOrchestrator
 
             $artikli = $this->client->fetchArtikli();
             $cjenovnici = $this->client->fetchCjenovnici();
-            $priceMap = $this->client->buildPriceMap($cjenovnici);
+            $priceMap = $this->client->applyShelfMpc(
+                $this->client->buildPriceMap($cjenovnici),
+                $cjenovnici,
+            );
             unset($cjenovnici);
 
             $mappings = $this->discoveryService->enabledMappingsByCategoryName();
@@ -226,7 +229,10 @@ class ElineSyncOrchestrator
         try {
             $artikli = $this->client->fetchArtikli();
             $cjenovnici = $this->client->fetchCjenovnici();
-            $priceMap = $this->client->buildPriceMap($cjenovnici);
+            $priceMap = $this->client->applyShelfMpc(
+                $this->client->buildPriceMap($cjenovnici),
+                $cjenovnici,
+            );
             unset($cjenovnici);
 
             $mappings = $this->discoveryService->enabledMappingsByCategoryName();

@@ -127,13 +127,10 @@ class ElinePriceRestoreService
             return ['action' => 'skipped_locked'] + $empty;
         }
 
-        $sifra = (string) $product->eline_sifra;
-        $choice = $priceChoices[$sifra] ?? null;
-        $candidates = $choice['candidates'] ?? [];
-        $fallback = $choice['mpc'] ?? round((float) ($product->api_price ?? 0), 2);
-        $target = $this->resolveFeedTarget($product, $candidates, $fallback);
+        $choice = $this->choiceForProduct($product, $priceChoices);
+        $target = round((float) ($choice['mpc'] ?? 0), 2);
 
-        if ($target <= 0) {
+        if ($choice === null || $target <= 0) {
             return ['action' => 'skipped_missing'] + $empty;
         }
 
@@ -162,52 +159,20 @@ class ElinePriceRestoreService
     }
 
     /**
-     * Ako shop već ima neku MPC iz cjenovnika, ta cijena ostaje.
-     * Zaokružena cijena (675 → 669) vraća se na onu MPC iz feeda.
-     *
-     * @param  list<float>  $candidates
+     * @param  array<string, array{mpc: float, candidates: list<float>}>  $priceChoices
+     * @return array{mpc: float, candidates: list<float>}|null
      */
-    private function resolveFeedTarget(Product $product, array $candidates, float $fallback): float
+    private function choiceForProduct(Product $product, array $priceChoices): ?array
     {
-        $candidates = array_values(array_unique(array_map(
-            fn (float|int|string $mpc): float => round((float) $mpc, 2),
-            $candidates,
-        )));
-
-        foreach ([
-            round((float) $product->regular_price, 2),
-            round((float) ($product->api_price ?? 0), 2),
-            round((float) $product->display_price, 2),
-        ] as $current) {
-            if ($current > 0 && in_array($current, $candidates, true)) {
-                return $current;
+        foreach ([(string) $product->eline_sifra, (string) $product->sku] as $raw) {
+            foreach (ElineSupport::sifraKeys($raw) as $key) {
+                if (isset($priceChoices[$key])) {
+                    return $priceChoices[$key];
+                }
             }
         }
 
-        $currentShelf = round((float) ($product->regular_price ?: $product->display_price), 2);
-        $charmedMatches = [];
-
-        foreach ($candidates as $mpc) {
-            if ($mpc <= 100 || $mpc === $currentShelf) {
-                continue;
-            }
-
-            if (round($this->priceCalculator->applyOver100CharmPrice($mpc), 2) === $currentShelf) {
-                $charmedMatches[] = $mpc;
-            }
-        }
-
-        if ($charmedMatches !== []) {
-            $fallback = round($fallback, 2);
-
-            if (in_array($fallback, $charmedMatches, true)) {
-                return $fallback;
-            }
-
-            return max($charmedMatches);
-        }
-
-        return round($fallback, 2);
+        return null;
     }
 
     private function priceLabel(Product $product): string

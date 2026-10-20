@@ -50,16 +50,23 @@ class ElineApiClientTest extends TestCase
     {
         $client = new ElineApiClient;
         $rows = [
-            ['sifra' => '575', 'skladiste' => 1, 'mpc' => 254.45, 'aktivan' => 255],
             ['sifra' => '575', 'skladiste' => 2, 'mpc' => 310, 'aktivan' => 255],
+            ['sifra' => '575', 'skladiste' => 1, 'mpc' => 254.45, 'aktivan' => 255],
             ['sifra' => '575', 'skladiste' => 3, 'mpc' => 999, 'aktivan' => 0],
+            ['sifra' => '2716', 'skladiste' => 2, 'mpc' => 669, 'aktivan' => 255],
+            ['sifra' => '2716', 'skladiste' => 1, 'mpc' => 675, 'aktivan' => 255],
         ];
 
         $this->assertSame(999, $client->buildPriceMap($rows)['575']['mpc']);
 
         $choice = $client->priceChoicesBySifra($rows)['575'];
         $this->assertSame(310.0, $choice['mpc']);
-        $this->assertEqualsCanonicalizing([254.45, 310.0], $choice['candidates']);
+        $this->assertEqualsCanonicalizing([310.0, 254.45], $choice['candidates']);
+        $this->assertSame(675.0, $client->priceChoicesBySifra($rows)['2716']['mpc']);
+
+        $withShelf = $client->applyShelfMpc($client->buildPriceMap($rows), $rows);
+        $this->assertSame(310.0, $withShelf['575']['mpc']);
+        $this->assertSame(675.0, $withShelf['2716']['mpc']);
     }
 
     public function test_merge_product_data_combines_article_and_price(): void

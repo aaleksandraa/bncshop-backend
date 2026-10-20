@@ -63,7 +63,7 @@ class ElineApiClient
     }
 
     /**
-     * MPC po šifri. Sync i dalje uzima zadnji red. candidates su sve aktivne MPC vrijednosti.
+     * MPC za shop je najviša aktivna MPC, čak i kad drugo skladište ima nižu cijenu.
      *
      * @param  array<int, array<string, mixed>>  $cjenovnici
      * @return array<string, array{mpc: float, candidates: list<float>}>
@@ -72,8 +72,6 @@ class ElineApiClient
     {
         /** @var array<string, list<float>> $candidates */
         $candidates = [];
-        /** @var array<string, float> $lastActive */
-        $lastActive = [];
 
         foreach ($cjenovnici as $entry) {
             if (! isset($entry['sifra']) || ! $this->isPriceRowActive($entry)) {
@@ -87,7 +85,6 @@ class ElineApiClient
             }
 
             $sifra = (string) $entry['sifra'];
-            $lastActive[$sifra] = $mpc;
             $candidates[$sifra] ??= [];
 
             if (! in_array($mpc, $candidates[$sifra], true)) {
@@ -97,14 +94,50 @@ class ElineApiClient
 
         $choices = [];
 
-        foreach ($lastActive as $sifra => $mpc) {
-            $choices[$sifra] = [
-                'mpc' => $mpc,
-                'candidates' => $candidates[$sifra],
+        foreach ($candidates as $sifra => $mpcs) {
+            $choice = [
+                'mpc' => max($mpcs),
+                'candidates' => $mpcs,
             ];
+
+            foreach (ElineSupport::sifraKeys($sifra) as $key) {
+                $choices[$key] = $choice;
+            }
         }
 
         return $choices;
+    }
+
+    /**
+     * Cijena za shop je najviša aktivna MPC. Zaliha ostaje iz reda koji sync već koristi.
+     *
+     * @param  array<string, array<string, mixed>>  $priceMap
+     * @param  array<int, array<string, mixed>>  $cjenovnici
+     * @return array<string, array<string, mixed>>
+     */
+    public function applyShelfMpc(array $priceMap, array $cjenovnici): array
+    {
+        $choices = $this->priceChoicesBySifra($cjenovnici);
+
+        foreach ($priceMap as $sifra => $entry) {
+            $choice = null;
+
+            foreach (ElineSupport::sifraKeys((string) $sifra) as $key) {
+                if (isset($choices[$key])) {
+                    $choice = $choices[$key];
+                    break;
+                }
+            }
+
+            if ($choice === null) {
+                continue;
+            }
+
+            $entry['mpc'] = $choice['mpc'];
+            $priceMap[(string) $sifra] = $entry;
+        }
+
+        return $priceMap;
     }
 
     /**
