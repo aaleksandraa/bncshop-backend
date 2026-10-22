@@ -55,6 +55,11 @@ class B2bProduct extends Model
         return $this->hasMany(B2bProductAttributeValue::class, 'b2b_product_id');
     }
 
+    public function stockMovements(): HasMany
+    {
+        return $this->hasMany(B2bStockMovement::class, 'b2b_product_id');
+    }
+
     public function primaryImage(): ?B2bProductImage
     {
         if ($this->relationLoaded('images')) {

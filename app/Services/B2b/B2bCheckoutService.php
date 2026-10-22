@@ -20,6 +20,7 @@ class B2bCheckoutService
         private readonly B2bShippingCalculator $shippingCalculator,
         private readonly B2bOrderInvoicePdf $invoicePdf,
         private readonly B2bAccessMailer $mailer,
+        private readonly B2bStockLedger $stockLedger,
     ) {}
 
     /**
@@ -130,7 +131,9 @@ class B2bCheckoutService
                     'customer_discount_percent' => $itemData['pricing']['customer_discount_percent'],
                 ]);
 
+                $quantityBefore = (int) $product->stock_quantity;
                 $product->decrement('stock_quantity', $itemData['quantity']);
+                $this->stockLedger->recordOrderDeduction($product, $quantityBefore, $order);
             }
 
             B2bOrderStatusHistory::query()->create([

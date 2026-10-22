@@ -4,6 +4,7 @@ namespace App\Filament\B2b\Resources\B2bProductResource\Pages;
 
 use App\Filament\B2b\Resources\B2bProductResource;
 use App\Services\B2b\B2bProductAttributeService;
+use App\Services\B2b\B2bStockLedger;
 use Filament\Resources\Pages\CreateRecord;
 
 class CreateB2bProduct extends CreateRecord
@@ -25,6 +26,12 @@ class CreateB2bProduct extends CreateRecord
         app(B2bProductAttributeService::class)->syncFromForm(
             $this->record,
             $this->pendingAttributeData,
+        );
+
+        app(B2bStockLedger::class)->recordAdminAdjustment(
+            $this->record->fresh(),
+            0,
+            auth()->user(),
         );
     }
 }

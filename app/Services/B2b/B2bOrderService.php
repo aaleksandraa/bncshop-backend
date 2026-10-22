@@ -14,6 +14,7 @@ class B2bOrderService
 {
     public function __construct(
         private readonly B2bAccessMailer $mailer,
+        private readonly B2bStockLedger $stockLedger,
     ) {}
 
     public function updateStatus(B2bOrder $order, string $newStatus, ?User $changedBy = null, ?string $note = null): B2bOrder
@@ -60,12 +61,22 @@ class B2bOrderService
 
     private function restoreStock(B2bOrder $order): void
     {
+        $order->loadMissing('items');
+
         foreach ($order->items as $item) {
-            if ($item->b2b_product_id) {
-                B2bProduct::query()
-                    ->whereKey($item->b2b_product_id)
-                    ->increment('stock_quantity', $item->quantity);
+            if (! $item->b2b_product_id) {
+                continue;
             }
+
+            $product = B2bProduct::query()->whereKey($item->b2b_product_id)->first();
+
+            if (! $product) {
+                continue;
+            }
+
+            $quantityBefore = (int) $product->stock_quantity;
+            $product->increment('stock_quantity', (int) $item->quantity);
+            $this->stockLedger->recordOrderRestoration($product, $quantityBefore, $order);
         }
     }
 }

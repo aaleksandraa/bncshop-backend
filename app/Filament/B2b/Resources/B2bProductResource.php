@@ -4,6 +4,7 @@ namespace App\Filament\B2b\Resources;
 
 use App\Filament\Support\OptimizedMediaUpload;
 use App\Filament\B2b\Resources\B2bProductResource\Pages;
+use App\Filament\B2b\Resources\B2bProductResource\RelationManagers;
 use App\Filament\B2b\Concerns\BuildsB2bProductAttributeFields;
 use App\Filament\Concerns\AuthorizesWithPermissions;
 use App\Models\B2bProduct;
@@ -81,6 +82,7 @@ class B2bProductResource extends Resource
                     ->helperText('Ako je uključeno, kupac vidi samo redovnu/akcijsku cijenu proizvoda.'),
                 Forms\Components\TextInput::make('stock_quantity')
                     ->label('Količina na zalihi')
+                    ->helperText('Svaka izmjena se bilježi u istoriji zalihe ispod kartice.')
                     ->required()
                     ->numeric()
                     ->minValue(0)
@@ -144,6 +146,13 @@ class B2bProductResource extends Resource
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
+    }
+
+    public static function getRelations(): array
+    {
+        return [
+            RelationManagers\StockMovementsRelationManager::class,
+        ];
     }
 
     public static function getPages(): array
