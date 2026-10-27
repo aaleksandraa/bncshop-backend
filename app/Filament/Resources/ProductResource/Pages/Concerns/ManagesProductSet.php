@@ -15,12 +15,19 @@ trait ManagesProductSet
      */
     protected function prepareSetProductData(array $data): array
     {
-        if (empty($data['external_product_id'])) {
-            $data['external_product_id'] = (string) Str::uuid();
-        }
+        // These fields are not on the form. On edit, an empty value used to
+        // mint a random UUID and mark the product manual, while eline_sifra
+        // stayed on the row. The next eLine sync then inserted a duplicate.
+        if ($this->record === null) {
+            if (empty($data['external_product_id'])) {
+                $data['external_product_id'] = (string) Str::uuid();
+            }
 
-        if (empty($data['import_source'])) {
-            $data['import_source'] = 'manual';
+            if (empty($data['import_source'])) {
+                $data['import_source'] = 'manual';
+            }
+        } else {
+            unset($data['external_product_id'], $data['import_source']);
         }
 
         if (! empty($data['is_set'])) {
@@ -37,8 +44,10 @@ trait ManagesProductSet
      */
     protected function applyManualProductConditionFlags(array $data): array
     {
-        $importSource = $data['import_source'] ?? null;
-        $isManual = $importSource === 'manual' || $importSource === null || ! empty($data['is_set']);
+        $importSource = $data['import_source'] ?? $this->record?->import_source;
+        $isManual = $importSource === 'manual'
+            || ($this->record === null && $importSource === null)
+            || ! empty($data['is_set']);
 
         if (! $isManual) {
             return $data;
