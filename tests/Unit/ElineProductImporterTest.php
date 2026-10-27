@@ -203,6 +203,7 @@ class ElineProductImporterTest extends TestCase
             'sku' => '2251',
             'available_stock' => 0,
             'api_stock' => 0,
+            'manual_stock_override' => 0,
             'stock_status' => 'out_of_stock',
         ]);
 
@@ -239,6 +240,7 @@ class ElineProductImporterTest extends TestCase
         $this->assertSame('eline', $fresh->import_source);
         $this->assertSame(3, $fresh->available_stock);
         $this->assertSame(3, $fresh->api_stock);
+        $this->assertNull($fresh->manual_stock_override);
         $this->assertSame('store_available', $fresh->stock_status);
         $this->assertSame('599.00', $fresh->regular_price);
     }

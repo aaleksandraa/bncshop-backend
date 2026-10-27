@@ -138,6 +138,8 @@ class ElineChangeDetectorTest extends TestCase
             'is_new' => true,
             'is_public' => true,
             'status' => 'active',
+            'api_stock' => 3,
+            'available_stock' => 3,
         ]);
 
         $mappings = ElineCategoryMapping::query()
@@ -192,6 +194,7 @@ class ElineChangeDetectorTest extends TestCase
             'is_refurbished' => false,
             'is_public' => false,
             'status' => 'active',
+            'api_stock' => 2,
             'available_stock' => 2,
         ]);
 
@@ -261,6 +264,62 @@ class ElineChangeDetectorTest extends TestCase
         $result = app(ElineChangeDetector::class)->detect(Collection::make([$item]), $mappings);
 
         $this->assertSame(0, $result['new_items']);
+        $this->assertSame(1, $result['modified_items']);
+        $this->assertSame(['2251'], collect($result['changed'])->pluck('sifra')->all());
+    }
+
+    public function test_reimports_when_shop_stock_differs_from_feed_even_if_hash_matches(): void
+    {
+        $category = Category::factory()->create();
+        $elineCategory = ElineCategory::query()->create([
+            'name' => 'Refurbished racunari',
+            'product_count' => 1,
+        ]);
+
+        ElineCategoryMapping::query()->create([
+            'eline_category_id' => $elineCategory->id,
+            'category_id' => $category->id,
+            'is_enabled' => true,
+            'product_condition' => ElineCategoryMapping::CONDITION_REFURBISHED,
+        ]);
+
+        $item = [
+            'sifra' => '2251',
+            'naziv' => 'LAPTOP DELL 9410',
+            'opis' => 'Opis',
+            'eline_category' => 'Refurbished racunari',
+            'aktivan' => 255,
+            'mpc' => 599.0,
+            'stanje' => 3,
+            'price_aktivan' => 255,
+        ];
+
+        Product::query()->create([
+            'external_product_id' => ElineSupport::externalProductId('2251'),
+            'import_source' => 'eline',
+            'eline_sifra' => '2251',
+            'eline_feed_hash' => ElineSupport::feedHash($item),
+            'sku' => '2251',
+            'name' => 'LAPTOP DELL 9410',
+            'slug' => 'laptop-dell-9410-stock',
+            'category_id' => $category->id,
+            'regular_price' => 599,
+            'display_price' => 599,
+            'is_refurbished' => true,
+            'is_public' => true,
+            'status' => 'active',
+            'api_stock' => 0,
+            'available_stock' => 0,
+        ]);
+
+        $mappings = ElineCategoryMapping::query()
+            ->with(['elineCategory', 'category'])
+            ->where('is_enabled', true)
+            ->get()
+            ->keyBy(fn (ElineCategoryMapping $mapping): string => (string) $mapping->elineCategory?->name);
+
+        $result = app(ElineChangeDetector::class)->detect(Collection::make([$item]), $mappings);
+
         $this->assertSame(1, $result['modified_items']);
         $this->assertSame(['2251'], collect($result['changed'])->pluck('sifra')->all());
     }

@@ -165,6 +165,7 @@ class ElineProductImporter
             'regular_price' => $mpc,
             'api_stock' => $stanje,
             'available_stock' => $stanje,
+            'manual_stock_override' => null,
             'reserved_stock' => 0,
             'stock_status' => $stanje > 0 ? 'store_available' : 'out_of_stock',
             'sync_status' => 'synced',

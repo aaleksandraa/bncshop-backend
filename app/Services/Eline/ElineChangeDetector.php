@@ -70,8 +70,11 @@ class ElineChangeDetector
             // even when the stored hash still matches the feed.
             $needsRelink = $existingProduct->import_source !== 'eline';
             $knownHash = $existingProduct->eline_feed_hash;
+            $feedStock = (int) ($item['stanje'] ?? 0);
+            $stockDrift = (int) $existingProduct->available_stock !== $feedStock
+                || (int) $existingProduct->api_stock !== $feedStock;
 
-            if ($needsRelink || $knownHash === null || $knownHash !== $hash) {
+            if ($needsRelink || $stockDrift || $knownHash === null || $knownHash !== $hash) {
                 $modifiedItems++;
                 $changed->push($item);
 
@@ -117,6 +120,8 @@ class ElineChangeDetector
                 'is_public',
                 'status',
                 'is_set',
+                'api_stock',
+                'available_stock',
             ]);
 
         $indexed = collect();
