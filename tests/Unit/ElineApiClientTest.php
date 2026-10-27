@@ -69,6 +69,35 @@ class ElineApiClientTest extends TestCase
         $this->assertSame(675.0, $withShelf['2716']['mpc']);
     }
 
+    public function test_active_warehouse_stock_is_kept_when_a_later_row_is_zero(): void
+    {
+        $client = new ElineApiClient;
+        $rows = [
+            ['sifra' => '2251', 'skladiste' => 9, 'mpc' => 100, 'stanje' => 40, 'aktivan' => 0],
+            ['sifra' => '2251', 'skladiste' => 1, 'mpc' => 599, 'stanje' => 3, 'aktivan' => 255],
+            ['sifra' => '2251', 'skladiste' => 2, 'mpc' => 599, 'stanje' => 0, 'aktivan' => 255],
+        ];
+
+        $this->assertSame(0, (int) $client->buildPriceMap($rows)['2251']['stanje']);
+
+        $withShelf = $client->applyShelfMpc($client->buildPriceMap($rows), $rows);
+
+        $this->assertSame(3, (int) $withShelf['2251']['stanje']);
+
+        $items = $client->mergeProductData(
+            [[
+                'sifra' => '2251',
+                'naziv' => 'LAPTOP DELL 9410 i5-10310u / 16 / 512 / 14 TOUCH / REFURBISHED',
+                'grupakategorija' => 'Refurbished racunari',
+                'aktivan' => 255,
+            ]],
+            $withShelf,
+        );
+
+        $this->assertSame(3, $items[0]['stanje']);
+        $this->assertSame(599.0, $items[0]['mpc']);
+    }
+
     public function test_merge_product_data_combines_article_and_price(): void
     {
         $client = new ElineApiClient;

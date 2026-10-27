@@ -118,7 +118,9 @@ class ElineApiClient
     }
 
     /**
-     * Cijena za shop je najviša aktivna MPC. Zaliha ostaje iz reda koji sync već koristi.
+     * Cijena za shop je najviša aktivna MPC.
+     * Zaliha je zbir stanja aktivnih skladišta. Posljednji red u JSON-u ne smije
+     * pregaziti skladište koje stvarno ima komade.
      *
      * @param  array<string, array<string, mixed>>  $priceMap
      * @param  array<int, array<string, mixed>>  $cjenovnici
@@ -144,10 +146,41 @@ class ElineApiClient
 
             $entry['mpc'] = $choice['mpc'];
             $entry['mpc_rows'] = $choice['rows'];
+            $stock = $this->sellableStock($choice['rows']);
+
+            if ($stock !== null) {
+                $entry['stanje'] = $stock;
+            }
+
             $priceMap[(string) $sifra] = $entry;
         }
 
         return $priceMap;
+    }
+
+    /**
+     * @param  list<array{stanje?: float|null, active?: bool}>  $rows
+     */
+    private function sellableStock(array $rows): ?int
+    {
+        $active = array_values(array_filter(
+            $rows,
+            fn (array $row): bool => ($row['active'] ?? true) === true,
+        ));
+        $pool = $active !== [] ? $active : $rows;
+        $sum = 0;
+        $seen = false;
+
+        foreach ($pool as $row) {
+            if (! array_key_exists('stanje', $row) || $row['stanje'] === null) {
+                continue;
+            }
+
+            $seen = true;
+            $sum += (int) floor((float) $row['stanje']);
+        }
+
+        return $seen ? max(0, $sum) : null;
     }
 
     /**
