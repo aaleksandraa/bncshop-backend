@@ -9,8 +9,10 @@ use App\Models\ElineCategoryMapping;
 use App\Models\ElineProductOverride;
 use App\Models\Product;
 use App\Services\Eline\ElineProductImporter;
+use App\Services\Eline\ElineSupport;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class ElineProductImporterTest extends TestCase
@@ -170,5 +172,74 @@ class ElineProductImporterTest extends TestCase
 
         $this->assertSame(1, $stats['skipped']);
         $this->assertNull(Product::query()->where('eline_sifra', '101')->first());
+    }
+
+    public function test_updates_existing_sifra_when_external_id_differs(): void
+    {
+        $source = ApiSource::query()->create([
+            'name' => 'eLine ERP',
+            'target_system_code' => 'eline',
+            'base_url' => 'https://example.test',
+            'is_active' => true,
+        ]);
+
+        $category = Category::factory()->create();
+        $elineCategory = ElineCategory::query()->create([
+            'name' => 'Refurbished racunari',
+            'product_count' => 1,
+        ]);
+
+        ElineCategoryMapping::query()->create([
+            'eline_category_id' => $elineCategory->id,
+            'category_id' => $category->id,
+            'is_enabled' => true,
+            'product_condition' => ElineCategoryMapping::CONDITION_REFURBISHED,
+        ]);
+
+        $existing = Product::factory()->create([
+            'external_product_id' => (string) Str::uuid(),
+            'import_source' => 'manual',
+            'eline_sifra' => '2251',
+            'sku' => '2251',
+            'available_stock' => 0,
+            'api_stock' => 0,
+            'stock_status' => 'out_of_stock',
+        ]);
+
+        $mappings = ElineCategoryMapping::query()
+            ->with(['elineCategory', 'category'])
+            ->where('is_enabled', true)
+            ->get()
+            ->keyBy(fn (ElineCategoryMapping $mapping): string => (string) $mapping->elineCategory?->name);
+
+        $stats = app(ElineProductImporter::class)->importMany(
+            Collection::make([[
+                'sifra' => '2251',
+                'naziv' => 'LAPTOP DELL 9410 i5-10310u / 16 / 512 / 14 TOUCH / REFURBISHED',
+                'opis' => 'Display (incha): 13,3',
+                'eline_category' => 'Refurbished racunari',
+                'aktivan' => 255,
+                'mpc' => 599,
+                'stanje' => 3,
+                'price_aktivan' => 255,
+            ]]),
+            $mappings,
+            $source,
+        );
+
+        $this->assertSame([], $stats['errors']);
+        $this->assertSame(0, $stats['created']);
+        $this->assertSame(1, $stats['updated']);
+        $this->assertSame(1, Product::query()->where('eline_sifra', '2251')->count());
+
+        $fresh = $existing->fresh();
+
+        $this->assertSame($existing->external_product_id, $fresh->external_product_id);
+        $this->assertNotSame(ElineSupport::externalProductId('2251'), $fresh->external_product_id);
+        $this->assertSame('eline', $fresh->import_source);
+        $this->assertSame(3, $fresh->available_stock);
+        $this->assertSame(3, $fresh->api_stock);
+        $this->assertSame('store_available', $fresh->stock_status);
+        $this->assertSame('599.00', $fresh->regular_price);
     }
 }

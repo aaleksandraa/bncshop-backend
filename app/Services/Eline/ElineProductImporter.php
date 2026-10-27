@@ -121,9 +121,8 @@ class ElineProductImporter
 
         $importState = $this->resolveImportState($item, $mapping);
         $categoryId = $importState['category_id'];
-        $externalId = ElineSupport::externalProductId($sifra);
 
-        $product = Product::query()->firstOrNew(['external_product_id' => $externalId]);
+        $product = $this->findProductForSifra($sifra);
         $wasExisting = $product->exists;
 
         if ($wasExisting && $product->is_set) {
@@ -321,10 +320,9 @@ class ElineProductImporter
             return $skipped;
         }
 
-        $externalId = ElineSupport::externalProductId($sifra);
-        $product = Product::query()->where('external_product_id', $externalId)->first();
+        $product = $this->findProductForSifra($sifra);
 
-        if ($product === null || ! $product->isFromEline() || $product->is_set) {
+        if (! $product->exists || ! $product->isFromEline() || $product->is_set) {
             return $skipped;
         }
 
@@ -402,6 +400,36 @@ class ElineProductImporter
         if ($this->fieldLockService->shouldApply($product, $field, $newValue, $currentValue)) {
             $product->{$field} = $newValue;
         }
+    }
+
+    /**
+     * Feed id is a deterministic UUID. A product entered earlier can already
+     * own this eline_sifra under a different external_product_id. Updating that
+     * row avoids a unique violation and keeps its existing id.
+     */
+    private function findProductForSifra(string $sifra): Product
+    {
+        $externalId = ElineSupport::externalProductId($sifra);
+
+        $product = Product::query()->where('external_product_id', $externalId)->first();
+
+        if ($product !== null) {
+            return $product;
+        }
+
+        $keys = ElineSupport::sifraKeys($sifra);
+
+        if ($keys !== []) {
+            $product = Product::query()->whereIn('eline_sifra', $keys)->first();
+
+            if ($product !== null) {
+                return $product;
+            }
+        }
+
+        return new Product([
+            'external_product_id' => $externalId,
+        ]);
     }
 
     private function resolveSlug(Product $product, string $name): string
