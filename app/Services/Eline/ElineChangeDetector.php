@@ -26,16 +26,7 @@ class ElineChangeDetector
      */
     public function detect(Collection $items, Collection $mappingsByCategory): array
     {
-        $knownHashes = Product::query()
-            ->fromEline()
-            ->whereNotNull('eline_sifra')
-            ->pluck('eline_feed_hash', 'eline_sifra');
-
-        $knownProducts = Product::query()
-            ->fromEline()
-            ->whereNotNull('eline_sifra')
-            ->get(['id', 'eline_sifra', 'category_id', 'is_refurbished', 'is_new', 'is_public', 'status'])
-            ->keyBy('eline_sifra');
+        $knownProducts = $this->productsBySifra();
 
         $changed = collect();
         $allFeedSifre = [];
@@ -59,26 +50,35 @@ class ElineChangeDetector
 
             $allFeedSifre[] = $sifra;
             $hash = ElineSupport::feedHash($item);
-            $knownHash = $knownHashes->get($sifra);
+            $existingProduct = $this->existingProduct($knownProducts, $sifra);
 
-            if ($knownHash === null) {
+            if ($existingProduct === null) {
                 $newItems++;
                 $changed->push($item);
 
                 continue;
             }
 
-            if ($knownHash !== $hash) {
+            if ($existingProduct->is_set) {
+                $unchanged++;
+
+                continue;
+            }
+
+            // A row can already own this sifra after an admin save flipped it
+            // off eLine. Keep importing it until the source is eLine again,
+            // even when the stored hash still matches the feed.
+            $needsRelink = $existingProduct->import_source !== 'eline';
+            $knownHash = $existingProduct->eline_feed_hash;
+
+            if ($needsRelink || $knownHash === null || $knownHash !== $hash) {
                 $modifiedItems++;
                 $changed->push($item);
 
                 continue;
             }
 
-            /** @var Product|null $existingProduct */
-            $existingProduct = $knownProducts->get($sifra);
-
-            if ($existingProduct !== null && $this->productImporter->needsMappingReapply($existingProduct, $item, $mapping)) {
+            if ($this->productImporter->needsMappingReapply($existingProduct, $item, $mapping)) {
                 $modifiedItems++;
                 $changed->push($item);
 
@@ -96,5 +96,59 @@ class ElineChangeDetector
             'new_items' => $newItems,
             'modified_items' => $modifiedItems,
         ];
+    }
+
+    /**
+     * @return Collection<string, Product>
+     */
+    private function productsBySifra(): Collection
+    {
+        $products = Product::query()
+            ->whereNotNull('eline_sifra')
+            ->get([
+                'id',
+                'eline_sifra',
+                'eline_feed_hash',
+                'external_product_id',
+                'import_source',
+                'category_id',
+                'is_refurbished',
+                'is_new',
+                'is_public',
+                'status',
+                'is_set',
+            ]);
+
+        $indexed = collect();
+
+        foreach ($products as $product) {
+            $indexed->put((string) $product->eline_sifra, $product);
+        }
+
+        foreach ($products as $product) {
+            foreach (ElineSupport::sifraKeys((string) $product->eline_sifra) as $key) {
+                if (! $indexed->has($key)) {
+                    $indexed->put($key, $product);
+                }
+            }
+        }
+
+        return $indexed;
+    }
+
+    /**
+     * @param  Collection<string, Product>  $knownProducts
+     */
+    private function existingProduct(Collection $knownProducts, string $sifra): ?Product
+    {
+        foreach (ElineSupport::sifraKeys($sifra) as $key) {
+            $product = $knownProducts->get($key);
+
+            if ($product instanceof Product) {
+                return $product;
+            }
+        }
+
+        return null;
     }
 }

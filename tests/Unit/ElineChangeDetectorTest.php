@@ -207,4 +207,61 @@ class ElineChangeDetectorTest extends TestCase
         $this->assertSame(1, $result['modified_items']);
         $this->assertCount(1, $result['changed']);
     }
+
+    public function test_relinks_a_sifra_that_was_saved_as_manual_even_when_hash_matches(): void
+    {
+        $category = Category::factory()->create();
+        $elineCategory = ElineCategory::query()->create([
+            'name' => 'Refurbished racunari',
+            'product_count' => 1,
+        ]);
+
+        ElineCategoryMapping::query()->create([
+            'eline_category_id' => $elineCategory->id,
+            'category_id' => $category->id,
+            'is_enabled' => true,
+            'product_condition' => ElineCategoryMapping::CONDITION_REFURBISHED,
+        ]);
+
+        $item = [
+            'sifra' => '2251',
+            'naziv' => 'LAPTOP DELL 9410',
+            'opis' => 'Opis',
+            'eline_category' => 'Refurbished racunari',
+            'aktivan' => 255,
+            'mpc' => 599.0,
+            'stanje' => 3,
+            'price_aktivan' => 255,
+        ];
+
+        Product::query()->create([
+            'external_product_id' => '11111111-1111-4111-8111-111111111111',
+            'import_source' => 'manual',
+            'eline_sifra' => '2251',
+            'eline_feed_hash' => ElineSupport::feedHash($item),
+            'sku' => '2251',
+            'name' => 'LAPTOP DELL 9410',
+            'slug' => 'laptop-dell-9410',
+            'category_id' => $category->id,
+            'regular_price' => 599,
+            'display_price' => 599,
+            'is_refurbished' => true,
+            'is_public' => true,
+            'status' => 'active',
+            'available_stock' => 0,
+            'api_stock' => 0,
+        ]);
+
+        $mappings = ElineCategoryMapping::query()
+            ->with(['elineCategory', 'category'])
+            ->where('is_enabled', true)
+            ->get()
+            ->keyBy(fn (ElineCategoryMapping $mapping): string => (string) $mapping->elineCategory?->name);
+
+        $result = app(ElineChangeDetector::class)->detect(Collection::make([$item]), $mappings);
+
+        $this->assertSame(0, $result['new_items']);
+        $this->assertSame(1, $result['modified_items']);
+        $this->assertSame(['2251'], collect($result['changed'])->pluck('sifra')->all());
+    }
 }

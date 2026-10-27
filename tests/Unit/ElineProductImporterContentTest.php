@@ -119,6 +119,7 @@ class ElineProductImporterContentTest extends TestCase
         $this->assertSame('Novi opis iz ERP-a', $fresh->description);
         $this->assertSame('fixed-slug', $fresh->slug);
         $this->assertSame(500.0, (float) $fresh->regular_price);
+        $this->assertSame($product->eline_feed_hash, $fresh->eline_feed_hash);
     }
 
     public function test_apply_content_updates_name_but_preserves_locked_description(): void

@@ -341,7 +341,8 @@ class ElineProductImporter
         $this->applyLockedField($product, 'description', $description);
         $this->applyLockedField($product, 'short_description', $shortDescription);
 
-        $product->eline_feed_hash = $this->feedHashForStorage($product, $item);
+        // Leave eline_feed_hash to the price/stock import. Writing it here
+        // would record the feed stanje without saving available_stock.
         $product->save();
 
         return ['status' => 'updated', 'product_id' => (int) $product->id];
