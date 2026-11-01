@@ -298,24 +298,64 @@ class PriceCalculator
         $netPrice = $wholesalePrice * (1 + ($marginPercentage / 100));
         $vatRate = (float) config('bnc.vat_rate_percent', 17) / 100;
 
-        return $this->applyOver100CharmPrice(
-            $this->roundSellPrice(($netPrice * (1 + $vatRate)) + $adjustment)
-        );
+        $gross = round(($netPrice * (1 + $vatRate)) + $adjustment, 2);
+
+        return $this->applyCharmPrice($gross);
     }
 
     /**
-     * A1 sell prices above 100 KM end on 9 of the previous decade (340–349 → 339).
-     * Applied after rounding up to whole KM. At most 100 KM is unchanged.
+     * A1 sell price charm: ≤100 KM → X,90 (.50+ rounds up to whole+.90, below .50 to (whole−1)+.90);
+     * &gt;100 KM → round up to whole KM, then previous decade + 9 (347 → 339).
+     */
+    public function applyCharmPrice(float $price): float
+    {
+        if ($price <= 0) {
+            return 0.0;
+        }
+
+        $price = round($price, 2);
+
+        if ($price > 100) {
+            $whole = $this->roundSellPrice($price);
+
+            return (float) ((int) floor($whole / 10) * 10 - 1);
+        }
+
+        return $this->applyUnder100CharmPrice($price);
+    }
+
+    /**
+     * @deprecated Use applyCharmPrice(); kept for tests and call sites that only handled &gt;100 KM.
      */
     public function applyOver100CharmPrice(float $price): float
     {
-        $whole = $this->roundSellPrice($price);
+        return $this->applyCharmPrice($price);
+    }
 
-        if ($whole <= 100) {
-            return $whole;
+    public function applyUnder100CharmPrice(float $price): float
+    {
+        if ($price <= 0) {
+            return 0.0;
         }
 
-        return (float) ((int) floor($whole / 10) * 10 - 1);
+        $price = round($price, 2);
+
+        if ($price > 100) {
+            return $this->applyCharmPrice($price);
+        }
+
+        $whole = (int) floor($price);
+        $fraction = round($price - $whole, 2);
+
+        if ($fraction >= 0.50) {
+            return round($whole + 0.90, 2);
+        }
+
+        if ($whole <= 0) {
+            return 0.90;
+        }
+
+        return round(($whole - 1) + 0.90, 2);
     }
 
     /**
@@ -366,7 +406,7 @@ class PriceCalculator
 
         if (! $offer || $offer->supplier_price === null || (float) $offer->supplier_price <= 0) {
             $regularPrice = $apiPrice > 0
-                ? $this->applyOver100CharmPrice($apiPrice)
+                ? $this->applyCharmPrice($apiPrice)
                 : $fallback;
 
             return [
@@ -404,13 +444,13 @@ class PriceCalculator
         }
 
         if ($appliedAdjustment !== null && $apiPrice > 0) {
-            $regularPrice = $this->applyOver100CharmPrice($apiPrice + $adjustment);
+            $regularPrice = $this->applyCharmPrice($apiPrice + $adjustment);
         } elseif ($apiPrice > 0) {
-            $regularPrice = $this->applyOver100CharmPrice($apiPrice);
+            $regularPrice = $this->applyCharmPrice($apiPrice);
         } elseif ($fallback > 0) {
             $regularPrice = $fallback;
         } else {
-            $regularPrice = $this->applyOver100CharmPrice($wholesalePrice);
+            $regularPrice = $this->applyCharmPrice($wholesalePrice);
         }
 
         return array_merge($metadata, [

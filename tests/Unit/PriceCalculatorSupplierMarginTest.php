@@ -397,18 +397,21 @@ class PriceCalculatorSupplierMarginTest extends TestCase
         $this->assertSame(1279.0, (float) $fresh->calculated_price);
     }
 
-    public function test_apply_over_100_charm_price_rounds_down_to_nine_of_previous_decade(): void
+    public function test_apply_charm_price_for_over_and_under_100_km(): void
     {
         $calculator = app(PriceCalculator::class);
 
-        $this->assertSame(100.0, $calculator->applyOver100CharmPrice(100));
-        $this->assertSame(100.0, $calculator->applyOver100CharmPrice(99.5));
-        $this->assertSame(339.0, $calculator->applyOver100CharmPrice(341));
-        $this->assertSame(339.0, $calculator->applyOver100CharmPrice(347));
-        $this->assertSame(339.0, $calculator->applyOver100CharmPrice(349));
-        $this->assertSame(349.0, $calculator->applyOver100CharmPrice(350));
-        $this->assertSame(329.0, $calculator->applyOver100CharmPrice(339));
-        $this->assertSame(1279.0, $calculator->applyOver100CharmPrice(1284));
+        $this->assertSame(99.90, $calculator->applyUnder100CharmPrice(100));
+        $this->assertSame(99.90, $calculator->applyUnder100CharmPrice(99.5));
+        $this->assertSame(37.90, $calculator->applyUnder100CharmPrice(37.80));
+        $this->assertSame(37.90, $calculator->applyUnder100CharmPrice(37.50));
+        $this->assertSame(36.90, $calculator->applyUnder100CharmPrice(37.40));
+
+        $this->assertSame(99.90, $calculator->applyCharmPrice(100));
+        $this->assertSame(339.0, $calculator->applyCharmPrice(341));
+        $this->assertSame(339.0, $calculator->applyCharmPrice(347));
+        $this->assertSame(349.0, $calculator->applyCharmPrice(350));
+        $this->assertSame(1279.0, $calculator->applyCharmPrice(1284));
     }
 
     public function test_eline_products_keep_api_price_instead_of_wholesale_margin(): void
