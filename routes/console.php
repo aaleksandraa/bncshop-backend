@@ -29,3 +29,9 @@ Schedule::command('bnc:sync-olx-stock')->hourly()->withoutOverlapping(50);
 Schedule::command('analytics:aggregate-daily')->dailyAt('00:05');
 Schedule::command('bnc:loyalty-expire-points')->dailyAt('01:00');
 Schedule::command('sitemap:generate')->dailyAt('02:00');
+
+Schedule::command('bnc:ananas-daily catalog')->dailyAt('00:10')->withoutOverlapping(90);
+Schedule::command('bnc:ananas-daily price_stock')->dailyAt('00:25')->withoutOverlapping(90);
+Schedule::command('bnc:ananas-daily discounts')->dailyAt('02:30')->withoutOverlapping(90);
+Schedule::command('bnc:ananas-daily import')->dailyAt('08:00')->withoutOverlapping(90);
+Schedule::command('bnc:ananas-daily intraday_stock')->dailyAt('10:00')->withoutOverlapping(45);

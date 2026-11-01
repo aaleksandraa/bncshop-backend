@@ -2,6 +2,7 @@
 
 namespace App\Services\Ananas;
 
+use App\Models\AnanasSyncRun;
 use App\Models\ApiSource;
 use App\Models\SystemSetting;
 
@@ -24,6 +25,27 @@ class AnanasSyncSettings
             'environment' => config('bnc.ananas_env', self::ENV_STAGE),
             'vat_rate' => 17,
             'discount_currency' => AnanasDiscountPolicy::CURRENCY_BAM,
+            'daily_jobs_master_enabled' => false,
+            'daily_job_auto' => [
+                AnanasSyncRun::JOB_CATALOG => true,
+                AnanasSyncRun::JOB_PRICE_STOCK => true,
+                AnanasSyncRun::JOB_DISCOUNTS => true,
+                AnanasSyncRun::JOB_IMPORT => true,
+                AnanasSyncRun::JOB_INTRADAY_STOCK => true,
+            ],
+            'import_daily_limit' => 2000,
+            'price_lookup_verified' => [
+                self::ENV_STAGE => false,
+                self::ENV_PRODUCTION => false,
+            ],
+            'stock_only_verified' => [
+                self::ENV_STAGE => false,
+                self::ENV_PRODUCTION => false,
+            ],
+            'price_apply_mode' => [
+                self::ENV_STAGE => null,
+                self::ENV_PRODUCTION => null,
+            ],
         ];
     }
 
@@ -106,6 +128,126 @@ class AnanasSyncSettings
     public function isProduction(): bool
     {
         return $this->environment() === self::ENV_PRODUCTION;
+    }
+
+    public function dailyJobsMasterEnabled(): bool
+    {
+        return (bool) ($this->all()['daily_jobs_master_enabled'] ?? false);
+    }
+
+    public function isDailyJobAutoEnabled(string $jobKey): bool
+    {
+        $jobs = $this->all()['daily_job_auto'] ?? [];
+
+        if (! is_array($jobs)) {
+            return true;
+        }
+
+        return (bool) ($jobs[$jobKey] ?? true);
+    }
+
+    public function importDailyLimit(): int
+    {
+        return max(1, min(5000, (int) ($this->all()['import_daily_limit'] ?? 2000)));
+    }
+
+    public function envProbeFlag(string $key): bool
+    {
+        $env = $this->environment();
+        $all = $this->all();
+        $map = $all[$key] ?? [];
+
+        if (! is_array($map)) {
+            return false;
+        }
+
+        return (bool) ($map[$env] ?? false);
+    }
+
+    public function isPriceLookupVerifiedForCurrentEnv(): bool
+    {
+        return $this->envProbeFlag('price_lookup_verified');
+    }
+
+    public function isStockOnlyVerifiedForCurrentEnv(): bool
+    {
+        return $this->envProbeFlag('stock_only_verified');
+    }
+
+    /**
+     * @param  'basePrice'|'newBasePrice'|null  $mode
+     */
+    public function setPriceApplyModeForCurrentEnv(?string $mode): void
+    {
+        $all = $this->all();
+        $map = is_array($all['price_apply_mode'] ?? null) ? $all['price_apply_mode'] : [];
+        $map[$this->environment()] = $mode;
+        $all['price_apply_mode'] = $map;
+        $this->save($all);
+    }
+
+    public function priceApplyModeForCurrentEnv(): ?string
+    {
+        $all = $this->all();
+        $map = $all['price_apply_mode'] ?? [];
+
+        if (! is_array($map)) {
+            return null;
+        }
+
+        $mode = $map[$this->environment()] ?? null;
+
+        return is_string($mode) ? $mode : null;
+    }
+
+    public function setEnvProbe(string $key, bool $value): void
+    {
+        $all = $this->all();
+        $map = is_array($all[$key] ?? null) ? $all[$key] : [];
+        $map[$this->environment()] = $value;
+        $all[$key] = $map;
+        $this->save($all);
+    }
+
+    public function cronGateReason(string $jobKey, bool $manual = false): ?string
+    {
+        if ($manual) {
+            return null;
+        }
+
+        if (! $this->hasCredentials()) {
+            return 'Ananas credentials missing.';
+        }
+
+        if (! $this->isEnabled()) {
+            return 'Ananas export disabled.';
+        }
+
+        if (! $this->dailyJobsMasterEnabled()) {
+            return 'Daily jobs master switch is off.';
+        }
+
+        if (! $this->isDailyJobAutoEnabled($jobKey)) {
+            return 'Automatic run disabled for this job.';
+        }
+
+        if (! $this->allowCatalogWrites()) {
+            return 'Catalog writes disabled.';
+        }
+
+        if ($jobKey === AnanasSyncRun::JOB_INTRADAY_STOCK && ! $this->isStockOnlyVerifiedForCurrentEnv()) {
+            return 'Stock-only probe not verified for this environment.';
+        }
+
+        if ($jobKey === AnanasSyncRun::JOB_DISCOUNTS && ! $this->isPriceLookupVerifiedForCurrentEnv()) {
+            return 'Price lookup probe not verified for this environment.';
+        }
+
+        if ($this->isProduction() && $this->environment() !== self::ENV_PRODUCTION) {
+            return 'Production writes require ANANAS_ENV=production.';
+        }
+
+        return null;
     }
 
     public function apiSource(): ?ApiSource

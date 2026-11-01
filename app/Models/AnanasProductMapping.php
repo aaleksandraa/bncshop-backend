@@ -46,6 +46,8 @@ class AnanasProductMapping extends Model
         'last_error_at',
         'last_error',
         'remote_modified_at',
+        'remote_missing_at',
+        'takedown_state_hash',
     ];
 
     protected function casts(): array
@@ -57,6 +59,7 @@ class AnanasProductMapping extends Model
             'last_success_at' => 'datetime',
             'last_error_at' => 'datetime',
             'remote_modified_at' => 'datetime',
+            'remote_missing_at' => 'datetime',
         ];
     }
 

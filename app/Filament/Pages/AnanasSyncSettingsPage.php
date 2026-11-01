@@ -3,7 +3,10 @@
 namespace App\Filament\Pages;
 
 use App\Filament\Resources\AnanasCategoryMappingResource;
+use App\Models\AnanasSyncRun;
 use App\Services\Ananas\AnanasApiClient;
+use App\Services\Ananas\AnanasDailyOrchestrator;
+use App\Services\Ananas\AnanasSyncRunService;
 use App\Services\Ananas\AnanasCatalogWriteGuard;
 use App\Services\Ananas\AnanasDiscountPolicy;
 use App\Services\Ananas\AnanasDiscountService;
@@ -66,6 +69,18 @@ class AnanasSyncSettingsPage extends Page implements HasForms
 
     public int $discountDays = 7;
 
+    public string $discountInventoryIds = '';
+
+    public int $importDailyLimit = 2000;
+
+    /** @var list<array<string, mixed>> */
+    public array $dailyJobDefinitions = [];
+
+    /** @var list<array<string, mixed>> */
+    public array $dailyRunHistory = [];
+
+    public bool $dailyJobsActive = false;
+
     public static function canAccess(): bool
     {
         $user = auth()->user();
@@ -111,7 +126,9 @@ class AnanasSyncSettingsPage extends Page implements HasForms
             $all['client_secret'] = '';
             $all['environment'] = $settings->environment();
 
+            $this->importDailyLimit = $settings->importDailyLimit();
             $this->form->fill($all);
+            $this->refreshDailyJobsUi($settings);
         } catch (\Throwable $e) {
             report($e);
             $this->pageLoadError = $e->getMessage();
@@ -172,6 +189,15 @@ class AnanasSyncSettingsPage extends Page implements HasForms
                             ])
                             ->default(17)
                             ->helperText('Import i PUT šalju regularPrice (redovna BAM/KM), ne akcijsku. Polje vat je oznaka stope. Stage je za ovaj nalog prihvatio samo 17; 0 u .env se mapira na 17.'),
+                        Toggle::make('daily_jobs_master_enabled')
+                            ->label('Dnevni poslovi uključeni (cron)')
+                            ->helperText('Master prekidač za automatski ritam. Ručno pokretanje ispod radi i kad je isključeno.'),
+                        TextInput::make('import_daily_limit')
+                            ->label('Dnevni limit importa (08:00)')
+                            ->numeric()
+                            ->minValue(1)
+                            ->maxValue(5000)
+                            ->default(2000),
                         Select::make('discount_currency')
                             ->label('Valuta akcije (discountPriceCurrency)')
                             ->options([
@@ -452,6 +478,122 @@ class AnanasSyncSettingsPage extends Page implements HasForms
         return AnanasCategoryMappingResource::getUrl();
     }
 
+    public function refreshDailyJobsUi(?AnanasSyncSettings $settings = null): void
+    {
+        $settings ??= app(AnanasSyncSettings::class);
+
+        $this->dailyJobDefinitions = [
+            ['key' => AnanasSyncRun::JOB_CATALOG, 'label' => 'Katalog', 'schedule' => '00:10'],
+            ['key' => AnanasSyncRun::JOB_PRICE_STOCK, 'label' => 'Cijene i zalihe', 'schedule' => 'lanac / 00:25'],
+            ['key' => AnanasSyncRun::JOB_DISCOUNTS, 'label' => 'Akcije (BNC)', 'schedule' => 'lanac / 02:30'],
+            ['key' => AnanasSyncRun::JOB_IMPORT, 'label' => 'Novi artikli', 'schedule' => '08:00'],
+            ['key' => AnanasSyncRun::JOB_INTRADAY_STOCK, 'label' => 'Promjena zalihe', 'schedule' => '10:00'],
+        ];
+
+        $latestByJob = [];
+
+        foreach ($this->dailyJobDefinitions as $def) {
+            $latest = AnanasSyncRun::query()
+                ->where('job_key', $def['key'])
+                ->latest('id')
+                ->first();
+
+            $latestByJob[$def['key']] = $latest;
+        }
+
+        foreach ($this->dailyJobDefinitions as $index => $def) {
+            $run = $latestByJob[$def['key']] ?? null;
+            $auto = (bool) ($settings->all()['daily_job_auto'][$def['key']] ?? true);
+            $this->dailyJobDefinitions[$index]['auto'] = $auto;
+            $this->dailyJobDefinitions[$index]['latest'] = $run ? [
+                'id' => $run->id,
+                'status' => $run->status,
+                'updated' => $run->updated_count,
+                'skipped' => $run->skipped_count,
+                'failed' => $run->failed_item_count,
+                'error' => $run->error_message,
+                'triggered_by' => $run->triggered_by,
+                'finished_at' => $run->finished_at?->toDateTimeString(),
+            ] : null;
+            $this->dailyJobDefinitions[$index]['locked'] = $run !== null && $run->isActive();
+        }
+
+        $this->dailyRunHistory = AnanasSyncRun::query()
+            ->latest('id')
+            ->limit(20)
+            ->get()
+            ->map(static fn (AnanasSyncRun $run): array => [
+                'id' => $run->id,
+                'job_key' => $run->job_key,
+                'status' => $run->status,
+                'triggered_by' => $run->triggered_by,
+                'updated' => $run->updated_count,
+                'skipped' => $run->skipped_count,
+                'failed' => $run->failed_item_count,
+                'failed_ids' => $run->failed_inventory_ids ?? [],
+                'error' => $run->error_message,
+                'finished_at' => $run->finished_at?->toDateTimeString(),
+            ])
+            ->all();
+
+        $this->dailyJobsActive = AnanasSyncRun::query()
+            ->whereIn('status', [AnanasSyncRun::STATUS_QUEUED, AnanasSyncRun::STATUS_RUNNING])
+            ->exists();
+    }
+
+    public function toggleDailyJobAuto(string $jobKey, AnanasSyncSettings $settings): void
+    {
+        $all = $settings->all();
+        $jobs = is_array($all['daily_job_auto'] ?? null) ? $all['daily_job_auto'] : [];
+        $jobs[$jobKey] = ! (bool) ($jobs[$jobKey] ?? true);
+        $all['daily_job_auto'] = $jobs;
+        $settings->save($all);
+        $this->refreshDailyJobsUi($settings);
+    }
+
+    public function startDailyJob(string $jobKey, AnanasDailyOrchestrator $orchestrator): void
+    {
+        $userId = auth()->id();
+        $run = $orchestrator->dispatchIfAllowed($jobKey, 'admin', is_int($userId) ? $userId : null);
+
+        if ($run === null) {
+            Notification::make()->title('Posao nije pokrenut')->body('Već je u redu ili u toku.')->warning()->send();
+            $this->refreshDailyJobsUi();
+
+            return;
+        }
+
+        Notification::make()->title('Posao u redu')->body('#'.$run->id.' ('.$jobKey.')')->success()->send();
+        $this->refreshDailyJobsUi();
+    }
+
+    public function cancelDailyJob(int $runId, AnanasSyncRunService $runs): void
+    {
+        $run = AnanasSyncRun::query()->find($runId);
+
+        if ($run === null) {
+            return;
+        }
+
+        if ($run->status === AnanasSyncRun::STATUS_QUEUED) {
+            $runs->finishCancelled($run);
+        } else {
+            $runs->requestCancel($run);
+        }
+
+        Notification::make()->title('Zaustavljanje zatraženo')->success()->send();
+        $this->refreshDailyJobsUi();
+    }
+
+    public function saveDailyImportLimit(AnanasSyncSettings $settings): void
+    {
+        $all = $settings->all();
+        $all['import_daily_limit'] = max(1, min(5000, $this->importDailyLimit));
+        $settings->save($all);
+        $this->importDailyLimit = $settings->importDailyLimit();
+        Notification::make()->title('Dnevni limit importa sačuvan')->success()->send();
+    }
+
     private function runImport(AnanasProductImportService $importService, bool $dryRun): void
     {
         $limit = max(1, min($this->importLimit, (int) config('bnc.ananas_import_batch_max_size', 2000)));
@@ -547,8 +689,22 @@ class AnanasSyncSettingsPage extends Page implements HasForms
         $percent = max(5, min(95, $this->discountPercent));
         $days = max(1, min(30, $this->discountDays));
 
+        $rawIds = preg_split('/[\s,;]+/', trim($this->discountInventoryIds)) ?: [];
+        $inventory = array_values(array_unique(array_filter(array_map(static function (string $part): int {
+            return (int) preg_replace('/\D+/', '', $part);
+        }, $rawIds), static fn (int $id): bool => $id > 0)));
+
+        if ($inventory === []) {
+            Notification::make()
+                ->title('Unesite merchant ID-eve')
+                ->body('Ručna akcija šalje procenat samo za navedene ID-eve. Dnevni posao u 02:30 koristi BNC akcijsku cijenu.')
+                ->warning()
+                ->send();
+
+            return;
+        }
+
         try {
-            $inventory = $discountService->actionableInventoryIds(limit: max(1, min($this->importLimit, 2000)));
             $result = $discountService->schedule(
                 inventoryIds: $inventory,
                 percentOff: $percent,

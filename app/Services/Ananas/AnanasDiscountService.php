@@ -417,7 +417,7 @@ class AnanasDiscountService
      * @param  list<int>  $inventoryIds
      * @return array{current: array<int, float>, pending: array<int, float>}
      */
-    private function ananasCatalogPrices(array $inventoryIds): array
+    public function ananasCatalogPrices(array $inventoryIds): array
     {
         if ($inventoryIds === [] || ! $this->settings->hasCredentials()) {
             return ['current' => [], 'pending' => []];

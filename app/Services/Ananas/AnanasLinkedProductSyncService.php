@@ -3,6 +3,7 @@
 namespace App\Services\Ananas;
 
 use App\Models\AnanasProductMapping;
+use App\Models\AnanasSyncRun;
 use App\Models\Product;
 use App\Services\Pricing\PriceCalculator;
 
@@ -435,6 +436,279 @@ class AnanasLinkedProductSyncService
     }
 
     /**
+     * @return array{updated: int, skipped: int, errors: list<string>, failed_ids: list<string>, price_changed_ids: list<int>, aborted_vat: bool}
+     */
+    public function syncDailyPriceStock(
+        AnanasSyncRun $run,
+        AnanasSyncRunService $runService,
+        bool $allowProduction = false,
+        ?int $vatRate = null,
+    ): array {
+        return $this->syncDailyBulk(
+            run: $run,
+            runService: $runService,
+            stockOnly: false,
+            allowProduction: $allowProduction,
+            vatRate: $vatRate,
+            requireWeight: true,
+        );
+    }
+
+    /**
+     * @return array{updated: int, skipped: int, errors: list<string>, failed_ids: list<string>, price_changed_ids: list<int>, aborted_vat: bool}
+     */
+    public function syncDailyStockOnly(
+        AnanasSyncRun $run,
+        AnanasSyncRunService $runService,
+        bool $allowProduction = false,
+    ): array {
+        return $this->syncDailyBulk(
+            run: $run,
+            runService: $runService,
+            stockOnly: true,
+            allowProduction: $allowProduction,
+            vatRate: null,
+            requireWeight: false,
+        );
+    }
+
+    /**
+     * @return array{updated: int, skipped: int, errors: list<string>, failed_ids: list<string>, price_changed_ids: list<int>, aborted_vat: bool}
+     */
+    private function syncDailyBulk(
+        AnanasSyncRun $run,
+        AnanasSyncRunService $runService,
+        bool $stockOnly,
+        bool $allowProduction,
+        ?int $vatRate,
+        bool $requireWeight,
+    ): array {
+        $exclude = array_flip($runService->takedownExcludeIds());
+        $updated = 0;
+        $skipped = 0;
+        $errors = [];
+        $failedIds = [];
+        $priceChangedIds = [];
+        $abortedVat = false;
+        $chunkSize = 200;
+        $firstChunk = true;
+
+        $query = AnanasProductMapping::query()
+            ->where('local_status', AnanasProductMapping::LOCAL_LINKED)
+            ->whereNotNull('ananas_product_id')
+            ->whereNull('remote_missing_at')
+            ->orderBy('id');
+
+        $buffer = [];
+
+        foreach ($query->cursor() as $mapping) {
+            if (! $mapping instanceof AnanasProductMapping) {
+                continue;
+            }
+
+            $inventoryKey = (string) $mapping->inventoryId();
+
+            if ($inventoryKey !== '' && isset($exclude[$inventoryKey])) {
+                $skipped++;
+
+                continue;
+            }
+
+            $product = $mapping->product;
+
+            if ($product === null) {
+                $skipped++;
+
+                continue;
+            }
+
+            $item = $this->buildBulkUpdateItem(
+                $mapping,
+                $product,
+                force: false,
+                vatRate: $vatRate,
+                requireWeight: $requireWeight,
+                stockOnly: $stockOnly,
+            );
+
+            if ($item === null) {
+                $skipped++;
+
+                continue;
+            }
+
+            if (! $stockOnly && isset($item['basePrice'])) {
+                $priceChangedIds[] = (int) $mapping->inventoryId();
+            }
+
+            $buffer[] = ['mapping' => $mapping, 'item' => $item];
+
+            if (count($buffer) >= $chunkSize) {
+                $chunkResult = $this->flushDailyChunk(
+                    $buffer,
+                    $run,
+                    $runService,
+                    $allowProduction,
+                    $stockOnly,
+                    $firstChunk,
+                );
+                $updated += $chunkResult['updated'];
+                $skipped += $chunkResult['skipped'];
+                $errors = array_merge($errors, $chunkResult['errors']);
+                $failedIds = array_merge($failedIds, $chunkResult['failed_ids']);
+
+                if ($chunkResult['aborted_vat']) {
+                    $abortedVat = true;
+                    $buffer = [];
+
+                    break;
+                }
+
+                if ($runService->cancelRequested($runService->refreshCancel($run))) {
+                    $buffer = [];
+
+                    break;
+                }
+
+                $firstChunk = false;
+                $buffer = [];
+            }
+        }
+
+        if ($buffer !== [] && ! $abortedVat && ! $runService->cancelRequested($runService->refreshCancel($run))) {
+            $chunkResult = $this->flushDailyChunk(
+                $buffer,
+                $run,
+                $runService,
+                $allowProduction,
+                $stockOnly,
+                $firstChunk,
+            );
+            $updated += $chunkResult['updated'];
+            $skipped += $chunkResult['skipped'];
+            $errors = array_merge($errors, $chunkResult['errors']);
+            $failedIds = array_merge($failedIds, $chunkResult['failed_ids']);
+            $abortedVat = $chunkResult['aborted_vat'];
+        }
+
+        return [
+            'updated' => $updated,
+            'skipped' => $skipped,
+            'errors' => $errors,
+            'failed_ids' => $failedIds,
+            'price_changed_ids' => array_values(array_unique($priceChangedIds)),
+            'aborted_vat' => $abortedVat,
+        ];
+    }
+
+    /**
+     * @param  list<array{mapping: AnanasProductMapping, item: array<string, mixed>}>  $buffer
+     * @return array{updated: int, skipped: int, errors: list<string>, failed_ids: list<string>, aborted_vat: bool}
+     */
+    private function flushDailyChunk(
+        array $buffer,
+        AnanasSyncRun $run,
+        AnanasSyncRunService $runService,
+        bool $allowProduction,
+        bool $stockOnly,
+        bool $firstChunk,
+    ): array {
+        if ($buffer === []) {
+            return [
+                'updated' => 0,
+                'skipped' => 0,
+                'errors' => [],
+                'failed_ids' => [],
+                'aborted_vat' => false,
+            ];
+        }
+
+        $items = array_map(static fn (array $row): array => $row['item'], $buffer);
+
+        try {
+            $responses = $this->apiClient->updateProductsBulk($items, $allowProduction);
+        } catch (\Throwable $e) {
+            if ($firstChunk && $this->looksLikeVatRejection($e->getMessage())) {
+                return [
+                    'updated' => 0,
+                    'skipped' => 0,
+                    'errors' => [$e->getMessage()],
+                    'failed_ids' => [],
+                    'aborted_vat' => true,
+                ];
+            }
+
+            return [
+                'updated' => 0,
+                'skipped' => 0,
+                'errors' => [$e->getMessage()],
+                'failed_ids' => array_map(static fn (array $row): string => (string) $row['mapping']->inventoryId(), $buffer),
+                'aborted_vat' => false,
+            ];
+        }
+
+        $updated = 0;
+        $errors = [];
+        $failedIds = [];
+
+        foreach ($buffer as $index => $row) {
+            /** @var AnanasProductMapping $mapping */
+            $mapping = $row['mapping'];
+            $response = $responses[$index] ?? null;
+            $status = is_array($response) ? strtoupper((string) ($response['status'] ?? '')) : '';
+            $item = $row['item'];
+
+            if ($status === 'SUCCESS') {
+                $updated++;
+                $update = [
+                    'local_status' => AnanasProductMapping::LOCAL_LINKED,
+                    'stock_hash' => hash('sha256', (string) ($item['stockLevel'] ?? 0)),
+                    'last_success_at' => now(),
+                ];
+
+                if (! $stockOnly && isset($item['basePrice'])) {
+                    $update['price_hash'] = hash('sha256', (string) $item['basePrice']);
+                }
+
+                $mapping->update($update);
+
+                continue;
+            }
+
+            $message = is_array($response) ? implode('; ', $response['errors'] ?? ['FAIL']) : 'unknown';
+            $errors[] = sprintf('Mapping %d product %s: %s', $mapping->id, $mapping->ananas_product_id, $message);
+            $failedIds[] = (string) $mapping->inventoryId();
+
+            if ($firstChunk && $this->looksLikeVatRejection($message)) {
+                return [
+                    'updated' => $updated,
+                    'skipped' => 0,
+                    'errors' => $errors,
+                    'failed_ids' => $failedIds,
+                    'aborted_vat' => true,
+                ];
+            }
+        }
+
+        $runService->heartbeat($run);
+
+        return [
+            'updated' => $updated,
+            'skipped' => 0,
+            'errors' => $errors,
+            'failed_ids' => $failedIds,
+            'aborted_vat' => false,
+        ];
+    }
+
+    private function looksLikeVatRejection(string $message): bool
+    {
+        $lower = strtolower($message);
+
+        return str_contains($lower, 'vat') || str_contains($lower, 'pdv');
+    }
+
+    /**
      * @return array<string, mixed>|null
      */
     private function buildBulkUpdateItem(
@@ -443,11 +717,26 @@ class AnanasLinkedProductSyncService
         bool $force = false,
         ?int $vatRate = null,
         bool $requireWeight = true,
+        bool $stockOnly = false,
     ): ?array {
         $remoteId = $mapping->inventoryId();
 
         if ($remoteId <= 0) {
             return null;
+        }
+
+        $stockLevel = max(0, (int) $product->available_stock);
+        $stockHash = hash('sha256', (string) $stockLevel);
+
+        if ($stockOnly) {
+            if (! $force && $mapping->stock_hash === $stockHash) {
+                return null;
+            }
+
+            return [
+                'id' => $remoteId,
+                'stockLevel' => $stockLevel,
+            ];
         }
 
         $weight = $this->packageWeightResolver->resolve($product);
@@ -465,9 +754,7 @@ class AnanasLinkedProductSyncService
             return null;
         }
 
-        $stockLevel = max(0, (int) $product->available_stock);
         $basePrice = round($pricing->regularPrice, 2);
-        $stockHash = hash('sha256', (string) $stockLevel);
         $priceHash = hash('sha256', (string) $basePrice);
 
         if (! $force && $mapping->stock_hash === $stockHash && $mapping->price_hash === $priceHash) {
