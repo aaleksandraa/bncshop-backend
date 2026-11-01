@@ -22,8 +22,8 @@ GitHub repozitoriji:
 ```env
 APP_NAME="BNC Webshop"
 APP_ENV=production
-APP_URL=https://api.bncshop.ba
-FRONTEND_URL=https://bncshop.ba
+APP_URL=https://api.bnc.ba
+FRONTEND_URL=https://bnc.ba
 
 DB_CONNECTION=pgsql
 DB_HOST=127.0.0.1
@@ -45,9 +45,9 @@ MAIL_MAILER=smtp
 MAIL_HOST=
 MAIL_PORT=587
 
-SANCTUM_STATEFUL_DOMAINS=bncshop.ba,localhost:3000
+SANCTUM_STATEFUL_DOMAINS=bnc.ba,www.bnc.ba,localhost:3000
 SANCTUM_TOKEN_EXPIRATION=43200
-SESSION_DOMAIN=.bncshop.ba
+SESSION_DOMAIN=.bnc.ba
 
 SENTRY_LARAVEL_DSN=
 SENTRY_TRACES_SAMPLE_RATE=0.1
@@ -58,8 +58,8 @@ See also [env.production.example.md](./env.production.example.md) for the full p
 ### Frontend (.env.local) — [bncshop-frontend](https://github.com/aaleksandraa/bncshop-frontend)
 
 ```env
-NEXT_PUBLIC_API_URL=https://api.bncshop.ba/api/v1
-NEXT_PUBLIC_SITE_URL=https://bncshop.ba
+NEXT_PUBLIC_API_URL=https://api.bnc.ba/api/v1
+NEXT_PUBLIC_SITE_URL=https://bnc.ba
 ```
 
 ## Docker Compose (development)

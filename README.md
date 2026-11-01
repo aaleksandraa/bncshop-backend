@@ -13,7 +13,7 @@ Frontend repo: https://github.com/aaleksandraa/bncshop-frontend
 ├── deploy/               Supervisor/systemd za Horizon
 ├── json-api-za-import/   JSON uzorci za lokalni import
 ├── scripts/              Deploy i load test
-└── public/               Document root (api.bncshop.ba)
+└── public/               Document root (api.bnc.ba)
 ```
 
 ## Brzi start (development)
@@ -75,7 +75,9 @@ bash scripts/deploy-production.sh
 
 | URL | Svrha |
 |-----|-------|
-| `https://api.bncshop.ba` | REST API |
-| `https://api.bncshop.ba/admin` | Filament admin |
-| `https://api.bncshop.ba/horizon` | Queue dashboard |
-| `https://bncshop.ba` | Frontend (drugi repo) |
+| `https://api.bnc.ba` | REST API |
+| `https://api.bnc.ba/admin` | Filament admin |
+| `https://api.bnc.ba/horizon` | Queue dashboard |
+| `https://bnc.ba` | Frontend (drugi repo) |
+
+Produkcijske domene i SSH putanje: [docs/BNC-PRODUCTION-DOMAINS.md](docs/BNC-PRODUCTION-DOMAINS.md)

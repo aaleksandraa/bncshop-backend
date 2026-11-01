@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Production: api.bnc.ba — run from Laravel root (see docs/BNC-PRODUCTION-DOMAINS.md)
+#   cd /var/www/vhosts/bnc.ba/api.bnc.ba
+#   PHP=/opt/plesk/php/8.3/bin/php bash scripts/verify-a1-charm-pricing.sh
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
