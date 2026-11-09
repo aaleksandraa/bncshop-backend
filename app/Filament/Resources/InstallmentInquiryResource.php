@@ -7,6 +7,7 @@ use App\Filament\Resources\InstallmentInquiryResource\Pages;
 use App\Models\InstallmentInquiry;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
 use Filament\Infolists;
 use Filament\Infolists\Infolist;
 use Filament\Notifications\Notification;
@@ -72,8 +73,20 @@ class InstallmentInquiryResource extends Resource
                                 'nova' => 'warning',
                                 'kontaktirana' => 'info',
                                 'zatvorena' => 'success',
+                                'otkazano' => 'danger',
                                 default => 'gray',
                             }),
+                        Infolists\Components\TextEntry::make('cancellation_reason')
+                            ->label('Razlog otkazivanja')
+                            ->columnSpanFull()
+                            ->visible(fn (InstallmentInquiry $record): bool => filled($record->cancellation_reason)),
+                        Infolists\Components\TextEntry::make('cancelled_at')
+                            ->label('Otkazano')
+                            ->dateTime('d.m.Y H:i')
+                            ->visible(fn (InstallmentInquiry $record): bool => $record->cancelled_at !== null),
+                        Infolists\Components\TextEntry::make('cancelledBy.name')
+                            ->label('Otkazao')
+                            ->visible(fn (InstallmentInquiry $record): bool => filled($record->cancelled_by)),
                         Infolists\Components\TextEntry::make('created_at')
                             ->label('Primljeno')
                             ->dateTime('d.m.Y H:i'),
@@ -177,8 +190,12 @@ class InstallmentInquiryResource extends Resource
                         'nova' => 'warning',
                         'kontaktirana' => 'info',
                         'zatvorena' => 'success',
+                        'otkazano' => 'danger',
                         default => 'gray',
-                    }),
+                    })
+                    ->description(fn (InstallmentInquiry $record): ?string => $record->status === InstallmentInquiry::STATUS_CANCELLED
+                        ? $record->cancellation_reason
+                        : null),
             ])
             ->defaultSort('created_at', 'desc')
             ->filters([
@@ -195,21 +212,48 @@ class InstallmentInquiryResource extends Resource
                     ->label('Promijeni status')
                     ->icon('heroicon-o-arrow-path')
                     ->visible(fn (): bool => static::userCan('update'))
-                    ->form([
-                        Forms\Components\Select::make('status')
-                            ->label('Novi status')
-                            ->options(InstallmentInquiry::statusOptions())
-                            ->required(),
+                    ->fillForm(fn (InstallmentInquiry $record): array => [
+                        'status' => $record->status,
+                        'cancellation_reason' => $record->cancellation_reason,
                     ])
+                    ->form(static::statusForm())
                     ->action(function (InstallmentInquiry $record, array $data): void {
-                        $record->update(['status' => $data['status']]);
+                        $actor = auth()->user();
+
+                        $record->applyStatus(
+                            $data['status'],
+                            $data['cancellation_reason'] ?? null,
+                            $actor instanceof \App\Models\User ? $actor : null,
+                        );
 
                         Notification::make()
-                            ->title('Status ažuriran')
+                            ->title($data['status'] === InstallmentInquiry::STATUS_CANCELLED ? 'Upit je otkazan' : 'Status ažuriran')
                             ->success()
                             ->send();
                     }),
             ]);
+    }
+
+    /**
+     * @return array<int, Forms\Components\Component>
+     */
+    public static function statusForm(): array
+    {
+        return [
+            Forms\Components\Select::make('status')
+                ->label('Novi status')
+                ->options(InstallmentInquiry::statusOptions())
+                ->live()
+                ->required(),
+            Forms\Components\Textarea::make('cancellation_reason')
+                ->label('Razlog otkazivanja')
+                ->helperText('Obavezno kada je status Otkazano.')
+                ->rows(3)
+                ->minLength(3)
+                ->maxLength(1000)
+                ->visible(fn (Get $get): bool => $get('status') === InstallmentInquiry::STATUS_CANCELLED)
+                ->required(fn (Get $get): bool => $get('status') === InstallmentInquiry::STATUS_CANCELLED),
+        ];
     }
 
     public static function getPages(): array

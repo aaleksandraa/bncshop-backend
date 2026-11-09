@@ -15,7 +15,7 @@ class SellerInstallmentInquiryController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $query = InstallmentInquiry::query()->orderByDesc('created_at');
+        $query = InstallmentInquiry::query()->with('cancelledBy')->orderByDesc('created_at');
 
         if ($status = $request->string('status')->toString()) {
             $query->where('status', $status);
@@ -32,7 +32,8 @@ class SellerInstallmentInquiryController extends Controller
                     ->orWhere('last_name', 'like', "%{$search}%")
                     ->orWhere('phone', 'like', "%{$search}%")
                     ->orWhere('email', 'like', "%{$search}%")
-                    ->orWhere('product_name', 'like', "%{$search}%");
+                    ->orWhere('product_name', 'like', "%{$search}%")
+                    ->orWhere('cancellation_reason', 'like', "%{$search}%");
             });
         }
 
@@ -47,7 +48,7 @@ class SellerInstallmentInquiryController extends Controller
 
     public function show(int $id): JsonResponse
     {
-        $inquiry = InstallmentInquiry::query()->findOrFail($id);
+        $inquiry = InstallmentInquiry::query()->with('cancelledBy')->findOrFail($id);
 
         return $this->success($this->formatInquiry($inquiry));
     }
@@ -61,11 +62,14 @@ class SellerInstallmentInquiryController extends Controller
         }
 
         $inquiry = InstallmentInquiry::query()->findOrFail($id);
-        $inquiry->update([
-            'status' => $request->validated('status'),
-        ]);
+        $inquiry->applyStatus(
+            $request->validated('status'),
+            $request->validated('cancellation_reason'),
+            $user,
+        );
+        $inquiry->load('cancelledBy');
 
-        return $this->success($this->formatInquiry($inquiry->refresh()));
+        return $this->success($this->formatInquiry($inquiry));
     }
 
     /**
@@ -77,6 +81,9 @@ class SellerInstallmentInquiryController extends Controller
             'id' => $inquiry->id,
             'status' => $inquiry->status,
             'status_label' => InstallmentInquiry::statusOptions()[$inquiry->status] ?? $inquiry->status,
+            'cancellation_reason' => $inquiry->cancellation_reason,
+            'cancelled_at' => $inquiry->cancelled_at,
+            'cancelled_by_name' => $inquiry->cancelledBy?->name,
             'created_at' => $inquiry->created_at,
             'first_name' => $inquiry->first_name,
             'last_name' => $inquiry->last_name,

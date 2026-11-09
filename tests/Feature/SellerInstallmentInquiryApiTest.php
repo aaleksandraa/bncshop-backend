@@ -60,6 +60,66 @@ class SellerInstallmentInquiryApiTest extends TestCase
         $this->assertDatabaseHas('installment_inquiries', [
             'id' => $inquiry->id,
             'status' => 'kontaktirana',
+            'cancellation_reason' => null,
+        ]);
+    }
+
+    public function test_seller_must_give_a_reason_to_cancel_an_inquiry(): void
+    {
+        $seller = $this->loginSeller('seller-cancel@test.test');
+        $inquiry = $this->createInquiry();
+
+        $this->patchJsonStateful("/api/v1/seller/installment-inquiries/{$inquiry->id}/status", [
+            'status' => 'otkazano',
+        ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['cancellation_reason']);
+
+        $this->patchJsonStateful("/api/v1/seller/installment-inquiries/{$inquiry->id}/status", [
+            'status' => 'otkazano',
+            'cancellation_reason' => 'ab',
+        ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['cancellation_reason']);
+
+        $this->patchJsonStateful("/api/v1/seller/installment-inquiries/{$inquiry->id}/status", [
+            'status' => 'otkazano',
+            'cancellation_reason' => '  Kupac je odustao od kupovine.  ',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.status', 'otkazano')
+            ->assertJsonPath('data.status_label', 'Otkazano')
+            ->assertJsonPath('data.cancellation_reason', 'Kupac je odustao od kupovine.')
+            ->assertJsonPath('data.cancelled_by_name', 'Test Prodavac');
+
+        $this->assertDatabaseHas('installment_inquiries', [
+            'id' => $inquiry->id,
+            'status' => 'otkazano',
+            'cancellation_reason' => 'Kupac je odustao od kupovine.',
+            'cancelled_by' => $seller->id,
+        ]);
+
+        $inquiry->refresh();
+        $this->assertNotNull($inquiry->cancelled_at);
+
+        $this->getJsonStateful('/api/v1/seller/installment-inquiries?status=otkazano&search=odustao')
+            ->assertOk()
+            ->assertJsonPath('data.0.id', $inquiry->id);
+
+        $this->patchJsonStateful("/api/v1/seller/installment-inquiries/{$inquiry->id}/status", [
+            'status' => 'kontaktirana',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.status', 'kontaktirana')
+            ->assertJsonPath('data.cancellation_reason', null)
+            ->assertJsonPath('data.cancelled_by_name', null);
+
+        $this->assertDatabaseHas('installment_inquiries', [
+            'id' => $inquiry->id,
+            'status' => 'kontaktirana',
+            'cancellation_reason' => null,
+            'cancelled_at' => null,
+            'cancelled_by' => null,
         ]);
     }
 
