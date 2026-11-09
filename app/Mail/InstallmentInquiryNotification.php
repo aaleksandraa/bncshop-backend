@@ -38,6 +38,7 @@ class InstallmentInquiryNotification extends Mailable implements ShouldQueue
             view: 'emails.installment-inquiry',
             with: [
                 'inquiry' => $this->inquiry,
+                'sellerUrl' => rtrim((string) config('bnc.frontend_url'), '/').'/prodavac/kupovina-na-rate/'.$this->inquiry->id,
                 'adminUrl' => rtrim((string) config('app.url'), '/').'/admin/installment-inquiries/'.$this->inquiry->id,
             ],
         );

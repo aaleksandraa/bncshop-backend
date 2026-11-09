@@ -31,6 +31,7 @@ use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\RedirectController;
 use App\Http\Controllers\Api\V1\SearchController;
 use App\Http\Controllers\Api\V1\SellerAuthController;
+use App\Http\Controllers\Api\V1\SellerInstallmentInquiryController;
 use App\Http\Controllers\Api\V1\SellerOrderController;
 use App\Http\Controllers\Api\V1\SellerCatalogProductController;
 use App\Http\Controllers\Api\V1\SellerProductController;
@@ -182,6 +183,9 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/orders', [SellerOrderController::class, 'index']);
         Route::get('/orders/{id}', [SellerOrderController::class, 'show']);
         Route::patch('/orders/{id}/status', [SellerOrderController::class, 'updateStatus']);
+        Route::get('/installment-inquiries', [SellerInstallmentInquiryController::class, 'index']);
+        Route::get('/installment-inquiries/{id}', [SellerInstallmentInquiryController::class, 'show']);
+        Route::patch('/installment-inquiries/{id}/status', [SellerInstallmentInquiryController::class, 'updateStatus']);
         Route::get('/products/categories', [SellerProductController::class, 'categories']);
         Route::get('/products', [SellerProductController::class, 'index']);
         Route::get('/products/{id}', [SellerProductController::class, 'show']);

@@ -34,6 +34,9 @@
     </ul>
 
     <p>
+        <a href="{{ $sellerUrl }}">Otvori upit u prodavačkom panelu</a>
+    </p>
+    <p>
         <a href="{{ $adminUrl }}">Otvori upit u admin panelu</a>
     </p>
 </body>
