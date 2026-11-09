@@ -124,7 +124,11 @@ class AnanasDailyOrchestrator
             skipped: (int) ($pull['skipped'] ?? 0),
             failedIds: [],
             errorMessage: ($pull['errors'] ?? []) !== [] ? implode('; ', array_slice($pull['errors'], 0, 3)) : null,
-            meta: ['total_elements' => $pull['total_elements'] ?? 0],
+            meta: [
+                'total_elements' => $pull['total_elements'] ?? 0,
+                'skip_reasons' => $pull['skip_reasons'] ?? [],
+                'unmatched_sample' => $pull['unmatched_sample'] ?? [],
+            ],
         );
 
         $takedownRun = $this->runService->queueRun(RunModel::JOB_TAKEDOWN, 'chain', $run->triggered_by_user_id);

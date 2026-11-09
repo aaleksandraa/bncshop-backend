@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Filament\Resources\AnanasCategoryMappingResource;
+use App\Models\AnanasProductMapping;
 use App\Models\AnanasSyncRun;
 use App\Services\Ananas\AnanasApiClient;
 use App\Services\Ananas\AnanasDailyOrchestrator;
@@ -78,6 +79,14 @@ class AnanasSyncSettingsPage extends Page implements HasForms
 
     /** @var list<array<string, mixed>> */
     public array $dailyRunHistory = [];
+
+    /** @var array<string, int> */
+    public array $mappingStatusCounts = [];
+
+    public int $linkedMappingCount = 0;
+
+    /** @var list<array<string, mixed>> */
+    public array $linkedMappingSample = [];
 
     public bool $dailyJobsActive = false;
 
@@ -512,6 +521,7 @@ class AnanasSyncSettingsPage extends Page implements HasForms
                 'skipped' => $run->skipped_count,
                 'failed' => $run->failed_item_count,
                 'error' => $run->error_message,
+                'meta' => $run->meta ?? [],
                 'triggered_by' => $run->triggered_by,
                 'finished_at' => $run->finished_at?->toDateTimeString(),
             ] : null;
@@ -532,7 +542,32 @@ class AnanasSyncSettingsPage extends Page implements HasForms
                 'failed' => $run->failed_item_count,
                 'failed_ids' => $run->failed_inventory_ids ?? [],
                 'error' => $run->error_message,
+                'meta' => $run->meta ?? [],
                 'finished_at' => $run->finished_at?->toDateTimeString(),
+            ])
+            ->all();
+
+        $this->mappingStatusCounts = AnanasProductMapping::query()
+            ->selectRaw('local_status, count(*) as aggregate')
+            ->groupBy('local_status')
+            ->pluck('aggregate', 'local_status')
+            ->map(static fn ($count): int => (int) $count)
+            ->all();
+
+        $this->linkedMappingCount = (int) ($this->mappingStatusCounts[AnanasProductMapping::LOCAL_LINKED] ?? 0);
+
+        $this->linkedMappingSample = AnanasProductMapping::query()
+            ->where('local_status', AnanasProductMapping::LOCAL_LINKED)
+            ->whereNotNull('ananas_product_id')
+            ->orderByDesc('last_success_at')
+            ->limit(40)
+            ->get(['product_id', 'ean', 'merchant_inventory_id', 'ananas_product_id', 'remote_status', 'last_success_at'])
+            ->map(static fn (AnanasProductMapping $mapping): array => [
+                'product_id' => $mapping->product_id,
+                'ean' => $mapping->ean,
+                'inventory_id' => $mapping->merchant_inventory_id ?: $mapping->ananas_product_id,
+                'remote_status' => $mapping->remote_status,
+                'last_success_at' => $mapping->last_success_at?->toDateTimeString(),
             ])
             ->all();
 

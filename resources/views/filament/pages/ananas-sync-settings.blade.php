@@ -115,8 +115,50 @@
         <x-filament::section heading="Dnevni poslovi (Ananas ritam)" class="mb-6">
             <p class="mb-4 text-sm text-gray-600 dark:text-gray-300">
                 Master prekidač i limit importa su u sekciji <strong>Export</strong> (Sačuvaj postavke).
-                Automatski cron poštuje export, catalog writes i probe po okruženju.
+                Broj na katalogu (npr. ↑91) je koliko je Ananas artikala <strong>povezano</strong> s BNC proizvodom.
+                Ostali BNC proizvodi nisu na Ananasu dok ih ne pošalje import u 08:00.
             </p>
+
+            <div class="mb-4 rounded-lg border border-gray-200 p-3 text-sm dark:border-gray-700">
+                <p class="font-medium">Trenutno u bazi</p>
+                <p class="mt-1">Povezano (LINKED): <strong>{{ $linkedMappingCount }}</strong></p>
+                @if ($mappingStatusCounts !== [])
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        @foreach ($mappingStatusCounts as $status => $count)
+                            {{ $status }}: {{ $count }}@if (! $loop->last) · @endif
+                        @endforeach
+                    </p>
+                @endif
+                @if ($linkedMappingSample !== [])
+                    <div class="mt-3 overflow-x-auto">
+                        <table class="w-full min-w-[36rem] text-left text-xs">
+                            <thead>
+                                <tr class="text-gray-500 dark:text-gray-400">
+                                    <th class="py-1 pr-3">BNC</th>
+                                    <th class="py-1 pr-3">EAN</th>
+                                    <th class="py-1 pr-3">Ananas ID</th>
+                                    <th class="py-1 pr-3">Status</th>
+                                    <th class="py-1">Zadnje</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($linkedMappingSample as $row)
+                                    <tr class="border-t border-gray-100 dark:border-gray-800">
+                                        <td class="py-1 pr-3">{{ $row['product_id'] }}</td>
+                                        <td class="py-1 pr-3">{{ $row['ean'] ?: '—' }}</td>
+                                        <td class="py-1 pr-3">{{ $row['inventory_id'] }}</td>
+                                        <td class="py-1 pr-3">{{ $row['remote_status'] ?: '—' }}</td>
+                                        <td class="py-1">{{ $row['last_success_at'] ?: '—' }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                        @if ($linkedMappingCount > count($linkedMappingSample))
+                            <p class="mt-2 text-xs text-gray-500">Prikazano prvih {{ count($linkedMappingSample) }} od {{ $linkedMappingCount }}.</p>
+                        @endif
+                    </div>
+                @endif
+            </div>
 
             <div class="mb-4 max-w-xs">
                 <label class="mb-1 block text-xs text-gray-500 dark:text-gray-400">Dnevni limit importa (08:00)</label>
@@ -166,6 +208,12 @@
                                         @if (filled($job['latest']['error']))
                                             <div class="text-danger-600 dark:text-danger-400">{{ \Illuminate\Support\Str::limit($job['latest']['error'], 120) }}</div>
                                         @endif
+                                        @if (! empty($job['latest']['meta']['total_elements']))
+                                            <div>Ananas lista: {{ $job['latest']['meta']['total_elements'] }}</div>
+                                        @endif
+                                        @foreach (($job['latest']['meta']['skip_reasons'] ?? []) as $reason => $count)
+                                            <div>{{ $reason }}: {{ $count }}</div>
+                                        @endforeach
                                     @else
                                         —
                                     @endif
@@ -209,6 +257,9 @@
                                 · ↑{{ $row['updated'] }} fail {{ $row['failed'] }}
                                 @if (($row['failed_ids'] ?? []) !== [])
                                     · IDs: {{ implode(', ', array_slice($row['failed_ids'], 0, 5)) }}
+                                @endif
+                                @if (! empty($row['meta']['skip_reasons']))
+                                    · {{ collect($row['meta']['skip_reasons'])->map(fn ($count, $reason) => $reason.' '.$count)->implode(', ') }}
                                 @endif
                             </li>
                         @endforeach

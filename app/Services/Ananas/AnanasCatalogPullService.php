@@ -31,6 +31,8 @@ class AnanasCatalogPullService
         $errors = [];
         $linked = 0;
         $skipped = 0;
+        $skipReasons = [];
+        $unmatchedSample = [];
         $rows = [];
         $inventoryIds = [];
         $all = [];
@@ -106,7 +108,12 @@ class AnanasCatalogPullService
                 $linked++;
             } else {
                 $skipped++;
-                if ($row['error'] !== null) {
+                $reason = (string) ($row['reason'] ?? 'other');
+                $skipReasons[$reason] = ($skipReasons[$reason] ?? 0) + 1;
+                if ($reason === 'no_unique_match' && count($unmatchedSample) < 50 && ($row['inventory_id'] ?? null)) {
+                    $unmatchedSample[] = (string) $row['inventory_id'];
+                }
+                if ($row['error'] !== null && count($errors) < 50) {
                     $errors[] = $row['error'];
                 }
             }
@@ -119,6 +126,8 @@ class AnanasCatalogPullService
             'linked' => $linked,
             'skipped' => $skipped,
             'errors' => $errors,
+            'skip_reasons' => $skipReasons,
+            'unmatched_sample' => $unmatchedSample,
             'rows' => $rows,
             'inventory_ids' => array_values(array_unique($inventoryIds)),
             'remote_rows' => $all,
@@ -153,7 +162,7 @@ class AnanasCatalogPullService
 
     /**
      * @param  array<string, mixed>  $remote
-     * @return array{action: string, inventory_id: string|null, product_id: int|null, error: string|null}
+     * @return array{action: string, inventory_id: string|null, product_id: int|null, error: string|null, reason: string|null}
      */
     private function processRemoteRow(array $remote): array
     {
@@ -166,6 +175,7 @@ class AnanasCatalogPullService
         if ($product === null) {
             return [
                 'action' => 'skipped',
+                'reason' => 'no_unique_match',
                 'inventory_id' => $remoteId !== '' ? $remoteId : null,
                 'product_id' => null,
                 'error' => $remoteId !== ''
@@ -174,9 +184,22 @@ class AnanasCatalogPullService
             ];
         }
 
-        if (! $this->exportScope->isInScopedCategory($product) || ! $this->eligibilityPolicy->evaluate($product)->eligible) {
+        if (! $this->exportScope->isInScopedCategory($product)) {
             return [
                 'action' => 'skipped',
+                'reason' => 'category_not_enabled',
+                'inventory_id' => $remoteId,
+                'product_id' => $product->id,
+                'error' => null,
+            ];
+        }
+
+        $eligibility = $this->eligibilityPolicy->evaluate($product);
+
+        if (! $eligibility->eligible) {
+            return [
+                'action' => 'skipped',
+                'reason' => 'not_eligible:'.($eligibility->reasonCode ?? 'unknown'),
                 'inventory_id' => $remoteId,
                 'product_id' => $product->id,
                 'error' => null,
@@ -192,6 +215,7 @@ class AnanasCatalogPullService
             ], true)) {
             return [
                 'action' => 'skipped',
+                'reason' => 'export_disabled',
                 'inventory_id' => $remoteId,
                 'product_id' => $product->id,
                 'error' => null,
@@ -207,6 +231,7 @@ class AnanasCatalogPullService
 
         return [
             'action' => 'linked',
+            'reason' => null,
             'inventory_id' => $remoteId,
             'product_id' => $product->id,
             'error' => null,
