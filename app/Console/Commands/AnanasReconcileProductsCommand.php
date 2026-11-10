@@ -40,6 +40,15 @@ class AnanasReconcileProductsCommand extends Command
         $this->line('Pending: '.$result['pending']);
         $this->line('Failed: '.$result['failed']);
 
+        if (($result['pages'] ?? 0) > 0) {
+            $this->line(sprintf(
+                'Catalog GET: %d page(s), size %d, %d remote products.',
+                $result['pages'],
+                200,
+                $result['remote_count'] ?? 0,
+            ));
+        }
+
         foreach ($result['details'] as $detail) {
             $this->line(' - '.$detail);
         }
