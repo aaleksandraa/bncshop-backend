@@ -273,6 +273,7 @@ class AnanasCatalogPullService
         $seen = array_flip(array_map('strval', $seenInventoryIds));
 
         AnanasProductMapping::query()
+            ->forCurrentRemoteEnvironment()
             ->where('local_status', AnanasProductMapping::LOCAL_LINKED)
             ->whereNotNull('ananas_product_id')
             ->chunkById(200, function ($mappings) use ($seen): void {

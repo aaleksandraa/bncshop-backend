@@ -30,6 +30,7 @@ class AnanasProductReconciliationService
         }
 
         $query = AnanasProductMapping::query()
+            ->forCurrentRemoteEnvironment()
             ->whereIn('local_status', $statuses)
             ->whereNotNull('ean')
             ->orderByDesc('last_submitted_at')

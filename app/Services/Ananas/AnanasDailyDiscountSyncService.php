@@ -42,6 +42,7 @@ class AnanasDailyDiscountSyncService
         $remotePrices = $narrowIds !== [] ? $this->discountService->ananasCatalogPrices($narrowIds) : ['current' => [], 'pending' => []];
 
         $query = AnanasProductMapping::query()
+            ->forCurrentRemoteEnvironment()
             ->where('local_status', AnanasProductMapping::LOCAL_LINKED)
             ->whereNotNull('ananas_product_id')
             ->whereNull('remote_missing_at')

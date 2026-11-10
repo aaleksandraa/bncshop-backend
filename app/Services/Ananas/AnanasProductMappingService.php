@@ -46,6 +46,7 @@ class AnanasProductMappingService
             'external_id' => (string) ($payload['externalId'] ?? $product->id),
             'ean_exists_on_ananas' => $eanInMasterCatalog,
             'local_status' => $localStatus,
+            'remote_environment' => $this->settingsEnvironment(),
             'last_progress_id' => $progressId,
             'payload_hash' => $this->productMapper->fingerprintPayload($payload),
             'stock_hash' => hash('sha256', (string) ($payload['stockLevel'] ?? 0)),
@@ -72,6 +73,7 @@ class AnanasProductMappingService
             'ananas_code' => isset($remoteProduct['ananasCode']) ? (string) $remoteProduct['ananasCode'] : $mapping->ananas_code,
             'group_id' => isset($remoteProduct['groupId']) ? (string) $remoteProduct['groupId'] : $mapping->group_id,
             'remote_status' => $remoteStatus,
+            'remote_environment' => $this->settingsEnvironment(),
             'local_status' => $remoteId !== null
                 ? AnanasProductMapping::LOCAL_LINKED
                 : AnanasProductMapping::LOCAL_PENDING_ONBOARDING,
@@ -105,5 +107,10 @@ class AnanasProductMappingService
         ])->save();
 
         return $mapping->fresh() ?? $mapping;
+    }
+
+    private function settingsEnvironment(): string
+    {
+        return app(AnanasSyncSettings::class)->environment();
     }
 }

@@ -144,6 +144,7 @@
                         <thead>
                             <tr class="border-b border-gray-200 text-gray-500 dark:border-gray-700 dark:text-gray-400">
                                 <th class="py-2 pr-3 font-medium">BNC</th>
+                                <th class="py-2 pr-3 font-medium">Okruženje</th>
                                 <th class="py-2 pr-3 font-medium">Naziv</th>
                                 <th class="py-2 pr-3 font-medium">EAN</th>
                                 <th class="py-2 pr-3 font-medium">Ananas ID</th>
@@ -155,6 +156,7 @@
                             @foreach ($linkedMappingSample as $row)
                                 <tr class="border-b border-gray-100 dark:border-gray-800">
                                     <td class="py-2 pr-3">{{ $row['product_id'] }}</td>
+                                    <td class="py-2 pr-3">{{ $row['environment'] }}</td>
                                     <td class="py-2 pr-3">{{ $row['name'] }}</td>
                                     <td class="py-2 pr-3">{{ $row['ean'] ?: '—' }}</td>
                                     <td class="py-2 pr-3">{{ $row['inventory_id'] }}</td>

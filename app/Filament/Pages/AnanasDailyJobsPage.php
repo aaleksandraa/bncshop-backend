@@ -129,14 +129,25 @@ class AnanasDailyJobsPage extends Page
             ])
             ->all();
 
-        $this->mappingStatusCounts = AnanasProductMapping::query()
-            ->selectRaw('local_status, count(*) as aggregate')
-            ->groupBy('local_status')
-            ->pluck('aggregate', 'local_status')
-            ->map(static fn ($count): int => (int) $count)
-            ->all();
+        $this->mappingStatusCounts = [];
 
-        $this->linkedMappingCount = (int) ($this->mappingStatusCounts[AnanasProductMapping::LOCAL_LINKED] ?? 0);
+        $statusRows = AnanasProductMapping::query()
+            ->selectRaw('local_status, remote_environment, count(*) as aggregate')
+            ->groupBy('local_status', 'remote_environment')
+            ->get();
+
+        foreach ($statusRows as $row) {
+            $label = $row->local_status.' / '.($row->remote_environment ?: 'bez okruženja');
+            $this->mappingStatusCounts[$label] = (int) $row->aggregate;
+        }
+
+        $this->linkedMappingCount = 0;
+
+        foreach ($this->mappingStatusCounts as $label => $count) {
+            if (str_starts_with((string) $label, AnanasProductMapping::LOCAL_LINKED.' /')) {
+                $this->linkedMappingCount += $count;
+            }
+        }
 
         $this->linkedMappingSample = AnanasProductMapping::query()
             ->with('product:id,name')
@@ -147,6 +158,7 @@ class AnanasDailyJobsPage extends Page
             ->get()
             ->map(static fn (AnanasProductMapping $mapping): array => [
                 'product_id' => $mapping->product_id,
+                'environment' => $mapping->remote_environment ?: '—',
                 'name' => $mapping->product?->name ?: '—',
                 'ean' => $mapping->ean,
                 'inventory_id' => $mapping->merchant_inventory_id ?: $mapping->ananas_product_id,

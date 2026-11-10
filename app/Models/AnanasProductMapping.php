@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Services\Ananas\AnanasSyncSettings;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -36,6 +38,7 @@ class AnanasProductMapping extends Model
         'group_id',
         'remote_status',
         'local_status',
+        'remote_environment',
         'ean_exists_on_ananas',
         'last_progress_id',
         'payload_hash',
@@ -85,6 +88,26 @@ class AnanasProductMapping extends Model
     public function discountActions(): HasMany
     {
         return $this->hasMany(AnanasDiscountAction::class);
+    }
+
+    /**
+     * @param  Builder<AnanasProductMapping>  $query
+     * @return Builder<AnanasProductMapping>
+     */
+    public function scopeForCurrentRemoteEnvironment(Builder $query): Builder
+    {
+        return $query->where('remote_environment', app(AnanasSyncSettings::class)->environment());
+    }
+
+    public function blocksAnotherExport(?string $environment = null): bool
+    {
+        if (! in_array((string) $this->local_status, self::inFlightStatuses(), true)) {
+            return false;
+        }
+
+        $environment ??= app(AnanasSyncSettings::class)->environment();
+
+        return $this->remote_environment === null || $this->remote_environment === $environment;
     }
 
     public function inventoryId(): int

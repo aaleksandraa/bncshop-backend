@@ -133,7 +133,11 @@ class AnanasProductImportService
         foreach ($this->exportScope->baseQuery()
             ->with(['images', 'manufacturer', 'attributeValues.attributeDefinition', 'ananasProductMapping'])
             ->whereDoesntHave('ananasProductMapping', function ($query): void {
-                $query->whereIn('local_status', AnanasProductMapping::inFlightStatuses());
+                $query->whereIn('local_status', AnanasProductMapping::inFlightStatuses())
+                    ->where(function ($inner): void {
+                        $inner->whereNull('remote_environment')
+                            ->orWhere('remote_environment', app(AnanasSyncSettings::class)->environment());
+                    });
             })
             ->lazyById(25) as $product) {
             yield $product;
@@ -239,7 +243,7 @@ class AnanasProductImportService
             return false;
         }
 
-        return in_array((string) $mapping->local_status, AnanasProductMapping::inFlightStatuses(), true);
+        return $mapping->blocksAnotherExport();
     }
 
     /**

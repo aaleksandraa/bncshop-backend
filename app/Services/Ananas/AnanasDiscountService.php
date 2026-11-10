@@ -338,6 +338,7 @@ class AnanasDiscountService
     public function actionableInventoryIds(array $inventoryIds = [], int $limit = 25): array
     {
         $query = AnanasProductMapping::query()
+            ->forCurrentRemoteEnvironment()
             ->where('local_status', AnanasProductMapping::LOCAL_LINKED)
             ->whereIn('remote_status', ['READY_FOR_PUBLISH', 'PUBLISHED'])
             ->orderByDesc('last_success_at');
@@ -468,6 +469,7 @@ class AnanasDiscountService
     private function findLinkedMapping(int $inventoryId): ?AnanasProductMapping
     {
         return AnanasProductMapping::query()
+            ->forCurrentRemoteEnvironment()
             ->with('product')
             ->where('local_status', AnanasProductMapping::LOCAL_LINKED)
             ->where(function ($query) use ($inventoryId): void {

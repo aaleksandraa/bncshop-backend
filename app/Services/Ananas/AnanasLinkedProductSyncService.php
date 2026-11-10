@@ -45,6 +45,7 @@ class AnanasLinkedProductSyncService
         $wanted = array_values(array_unique(array_filter(array_map('intval', $inventoryIds), static fn (int $id): bool => $id > 0)));
 
         $query = AnanasProductMapping::query()
+            ->forCurrentRemoteEnvironment()
             ->where('local_status', AnanasProductMapping::LOCAL_LINKED)
             ->whereNotNull('ananas_product_id')
             ->orderByDesc('last_success_at')
@@ -217,6 +218,7 @@ class AnanasLinkedProductSyncService
         array $inventoryIds = [],
     ): array {
         $query = AnanasProductMapping::query()
+            ->forCurrentRemoteEnvironment()
             ->where('local_status', AnanasProductMapping::LOCAL_LINKED)
             ->where('remote_status', $remoteStatus)
             ->orderByDesc('last_success_at');
@@ -494,6 +496,7 @@ class AnanasLinkedProductSyncService
         $firstChunk = true;
 
         $query = AnanasProductMapping::query()
+            ->forCurrentRemoteEnvironment()
             ->where('local_status', AnanasProductMapping::LOCAL_LINKED)
             ->whereNotNull('ananas_product_id')
             ->whereNull('remote_missing_at')
