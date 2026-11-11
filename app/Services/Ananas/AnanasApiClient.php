@@ -383,6 +383,23 @@ class AnanasApiClient
             return [];
         }
 
+        $merged = [];
+
+        foreach (array_chunk($ids, 100) as $chunk) {
+            $merged += $this->getInventoryPriceChunk($chunk, $dateFrom);
+        }
+
+        return $merged;
+    }
+
+    /**
+     * Docs: merchantInventoryIds is limited to 100 IDs per GET.
+     *
+     * @param  list<int>  $ids
+     * @return array<int, float>
+     */
+    private function getInventoryPriceChunk(array $ids, ?string $dateFrom): array
+    {
         $query = [
             'dateFrom' => $dateFrom ?: now(config('app.timezone', 'Europe/Sarajevo'))->format('d/m/Y'),
             'merchantInventoryIds' => implode(',', $ids),

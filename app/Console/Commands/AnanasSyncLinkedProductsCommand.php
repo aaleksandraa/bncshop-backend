@@ -114,6 +114,10 @@ class AnanasSyncLinkedProductsCommand extends Command
             $this->comment('Ananas may apply a new basePrice after midnight (00:01). Lookup until GET basePrice > 0 — that is the regular catalog price. Do not POST discounts unless an akcija is requested.');
         }
 
+        if (! $dryRun && $result['updated'] > 0 && $result['errors'] === [] && $settings->isProduction()) {
+            $settings->setEnvProbe('stock_only_verified', true);
+        }
+
         return $result['errors'] === [] ? self::SUCCESS : self::FAILURE;
     }
 }

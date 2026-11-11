@@ -168,6 +168,7 @@ class AnanasDiscountService
 
     /**
      * @param  list<int>  $inventoryIds
+     * @param  array{current: array<int, float>, pending: array<int, float>}|null  $preloadedCatalog
      * @return array{
      *     scheduled: int,
      *     failed: int,
@@ -189,9 +190,10 @@ class AnanasDiscountService
         ?Carbon $from = null,
         ?Carbon $to = null,
         ?string $currency = null,
+        ?array $preloadedCatalog = null,
     ): array {
         $ids = $this->normalizeInventoryIds($inventoryIds);
-        $catalog = $this->ananasCatalogPrices($ids);
+        $catalog = $preloadedCatalog ?? $this->ananasCatalogPrices($ids);
         $built = $this->buildSchedule(
             inventoryIds: $ids,
             type: $type,
@@ -426,14 +428,27 @@ class AnanasDiscountService
 
         $current = [];
         $pending = [];
+        $pricesLoaded = false;
 
         try {
             $current = $this->apiClient->getInventoryPrices($inventoryIds);
+            $pricesLoaded = true;
         } catch (\Throwable $e) {
             Log::warning('Ananas GET /prices failed for discount basePrice', [
                 'integration' => 'ananas',
                 'error' => $e->getMessage(),
             ]);
+        }
+
+        if ($pricesLoaded && $this->settings->isProduction()) {
+            try {
+                $this->settings->setEnvProbe('price_lookup_verified', true);
+            } catch (\Throwable $e) {
+                Log::warning('Ananas price lookup probe flag was not saved', [
+                    'integration' => 'ananas',
+                    'error' => $e->getMessage(),
+                ]);
+            }
         }
 
         try {

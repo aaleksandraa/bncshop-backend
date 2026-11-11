@@ -244,4 +244,34 @@ class AnanasApiClientWriteTest extends TestCase
 
         $this->assertSame(2000.0, $result[2567075]);
     }
+
+    public function test_get_inventory_prices_chunks_requests_at_one_hundred_ids(): void
+    {
+        Http::fake([
+            'api.qa2.ananastest.com/iam/api/v1/auth/token' => Http::response([
+                'access_token' => 'token-abc',
+                'expires_in' => 900,
+            ], 200),
+            '*merchant-integration/prices*' => Http::response([], 200),
+        ]);
+
+        app(AnanasApiClient::class)->getInventoryPrices(range(1, 101));
+
+        $priceCalls = 0;
+        $lengths = [];
+
+        foreach (Http::recorded() as [$request]) {
+            if (! str_contains($request->url(), 'merchant-integration/prices')) {
+                continue;
+            }
+
+            $priceCalls++;
+            $query = [];
+            parse_str((string) parse_url($request->url(), PHP_URL_QUERY), $query);
+            $lengths[] = count(array_filter(explode(',', (string) ($query['merchantInventoryIds'] ?? ''))));
+        }
+
+        $this->assertSame(2, $priceCalls);
+        $this->assertSame([100, 1], $lengths);
+    }
 }

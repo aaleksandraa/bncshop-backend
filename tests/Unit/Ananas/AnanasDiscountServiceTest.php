@@ -414,6 +414,7 @@ class AnanasDiscountServiceTest extends TestCase
             'merchant_inventory_id' => (string) $inventoryId,
             'local_status' => AnanasProductMapping::LOCAL_LINKED,
             'remote_status' => 'READY_FOR_PUBLISH',
+            'remote_environment' => app(\App\Services\Ananas\AnanasSyncSettings::class)->environment(),
             'export_enabled' => true,
         ]);
 

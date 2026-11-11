@@ -217,6 +217,10 @@ class AnanasDailyOrchestrator
         $vat = (int) ($this->settings->all()['vat_rate'] ?? 17);
         $result = $this->linkedSync->syncDailyPriceStock($run, $this->runService, $allow, $vat);
 
+        if ($result['updated'] > 0 && $this->settings->isProduction()) {
+            $this->settings->setEnvProbe('stock_only_verified', true);
+        }
+
         if ($this->runService->cancelRequested($this->runService->refreshCancel($run))) {
             $this->runService->finishCancelled($run);
 

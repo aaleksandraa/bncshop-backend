@@ -30,6 +30,7 @@ class AnanasDailyDiscountSyncService
         AnanasSyncRunService $runService,
         array $priceChangedInventoryIds,
         bool $allowProduction = false,
+        bool $dryRun = false,
     ): array {
         $exclude = array_flip($runService->takedownExcludeIds());
         $scheduled = 0;
@@ -37,9 +38,8 @@ class AnanasDailyDiscountSyncService
         $skipped = 0;
         $failedIds = [];
         $errors = [];
-
-        $narrowIds = array_values(array_unique(array_map('intval', $priceChangedInventoryIds)));
-        $remotePrices = $narrowIds !== [] ? $this->discountService->ananasCatalogPrices($narrowIds) : ['current' => [], 'pending' => []];
+        $rows = [];
+        $priceIds = [];
 
         $query = AnanasProductMapping::query()
             ->forCurrentRemoteEnvironment()
@@ -59,11 +59,7 @@ class AnanasDailyDiscountSyncService
 
             $inventoryId = (int) $mapping->inventoryId();
 
-            if ($inventoryId <= 0) {
-                continue;
-            }
-
-            if ($inventoryId === self::TEST_INVENTORY_ID) {
+            if ($inventoryId <= 0 || $inventoryId === self::TEST_INVENTORY_ID) {
                 continue;
             }
 
@@ -86,15 +82,55 @@ class AnanasDailyDiscountSyncService
             $pricing = $this->priceCalculator->calculate($product);
             $onBncSale = $pricing->onSale
                 && round($pricing->displayPrice, 2) < round($pricing->regularPrice, 2);
-
             $active = AnanasDiscountAction::query()
                 ->where('merchant_inventory_id', $key)
                 ->where('local_status', AnanasDiscountAction::STATUS_SCHEDULED)
                 ->latest('id')
                 ->first();
 
+            if (! $onBncSale && ($active === null || ! filled($active->ananas_discount_id))) {
+                $skipped++;
+
+                continue;
+            }
+
+            $priceIds[] = $inventoryId;
+            $rows[] = [
+                'mapping' => $mapping,
+                'inventoryId' => $inventoryId,
+                'onBncSale' => $onBncSale,
+                'active' => $active,
+                'pricing' => $pricing,
+            ];
+        }
+
+        $priceIds = array_values(array_unique(array_merge(
+            $priceIds,
+            array_map('intval', $priceChangedInventoryIds),
+        )));
+        $remotePrices = $priceIds !== []
+            ? $this->discountService->ananasCatalogPrices($priceIds)
+            : ['current' => [], 'pending' => []];
+
+        foreach ($rows as $row) {
+            if ($runService->cancelRequested($runService->refreshCancel($run))) {
+                break;
+            }
+
+            $inventoryId = $row['inventoryId'];
+            $key = (string) $inventoryId;
+            $pricing = $row['pricing'];
+            $active = $row['active'];
+            $onBncSale = $row['onBncSale'];
+
             if (! $onBncSale) {
                 if ($active !== null && filled($active->ananas_discount_id)) {
+                    if ($dryRun) {
+                        $cancelled++;
+
+                        continue;
+                    }
+
                     try {
                         $this->writeGuard->assertAllowed($allowProduction);
                         $this->discountService->cancel((string) $active->ananas_discount_id, dryRun: false, allowProduction: $allowProduction);
@@ -147,14 +183,18 @@ class AnanasDailyDiscountSyncService
             }
 
             if ($active !== null && filled($active->ananas_discount_id)) {
-                try {
-                    $this->discountService->cancel((string) $active->ananas_discount_id, dryRun: false, allowProduction: $allowProduction);
+                if ($dryRun) {
                     $cancelled++;
-                } catch (\Throwable $e) {
-                    $errors[] = 'Inventory '.$inventoryId.': cancel before reschedule — '.$e->getMessage();
-                    $failedIds[] = $key;
+                } else {
+                    try {
+                        $this->discountService->cancel((string) $active->ananas_discount_id, dryRun: false, allowProduction: $allowProduction);
+                        $cancelled++;
+                    } catch (\Throwable $e) {
+                        $errors[] = 'Inventory '.$inventoryId.': cancel before reschedule — '.$e->getMessage();
+                        $failedIds[] = $key;
 
-                    continue;
+                        continue;
+                    }
                 }
             }
 
@@ -166,11 +206,12 @@ class AnanasDailyDiscountSyncService
                     days: $from->diffInDays($to) + 1,
                     absolutePrice: $salePrice,
                     useBncSale: false,
-                    dryRun: false,
+                    dryRun: $dryRun,
                     allowProduction: $allowProduction,
                     from: $from,
                     to: $to,
                     currency: $this->settings->discountCurrency(),
+                    preloadedCatalog: $remotePrices,
                 );
 
                 $scheduled += (int) ($result['scheduled'] ?? 0);
