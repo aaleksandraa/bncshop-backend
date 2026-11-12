@@ -106,4 +106,45 @@ class AnanasDailyCadenceTest extends TestCase
         Cache::put($runs->catalogSnapshotCacheKey(), ['remote_rows' => []], now()->addHour());
         $this->assertIsArray($runs->catalogSnapshot());
     }
+
+    public function test_cached_config_production_overrides_stored_stage(): void
+    {
+        config([
+            'bnc.ananas_env' => 'stage',
+            'bnc.ananas_env_locked' => false,
+        ]);
+
+        app(AnanasSyncSettings::class)->save([
+            'environment' => AnanasSyncSettings::ENV_STAGE,
+        ]);
+
+        config([
+            'bnc.ananas_env' => 'production',
+            'bnc.ananas_env_locked' => true,
+            'bnc.ananas_production_token_url' => 'https://api.ananas.rs/iam/api/v1/auth/token',
+        ]);
+
+        $settings = app(AnanasSyncSettings::class);
+
+        $this->assertSame(AnanasSyncSettings::ENV_PRODUCTION, $settings->environment());
+        $this->assertStringContainsString('api.ananas.rs', $settings->tokenEndpointUrl());
+    }
+
+    public function test_explicit_stage_in_config_is_not_overridden_by_stored_production(): void
+    {
+        app(AnanasSyncSettings::class)->save([
+            'environment' => AnanasSyncSettings::ENV_PRODUCTION,
+        ]);
+
+        config([
+            'bnc.ananas_env' => 'stage',
+            'bnc.ananas_env_locked' => true,
+            'bnc.ananas_stage_token_url' => 'https://api.qa2.ananastest.com/iam/api/v1/auth/token',
+        ]);
+
+        $settings = app(AnanasSyncSettings::class);
+
+        $this->assertSame(AnanasSyncSettings::ENV_STAGE, $settings->environment());
+        $this->assertStringContainsString('api.qa2.ananastest.com', $settings->tokenEndpointUrl());
+    }
 }

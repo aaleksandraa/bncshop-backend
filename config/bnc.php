@@ -185,6 +185,7 @@ return [
     |--------------------------------------------------------------------------
     */
     'ananas_env' => env('ANANAS_ENV', 'stage'),
+    'ananas_env_locked' => filled(env('ANANAS_ENV')),
     'ananas_client_id' => env('ANANAS_CLIENT_ID'),
     'ananas_client_secret' => env('ANANAS_CLIENT_SECRET'),
     'ananas_allow_catalog_writes' => filter_var(env('ANANAS_ALLOW_CATALOG_WRITES', false), FILTER_VALIDATE_BOOL),

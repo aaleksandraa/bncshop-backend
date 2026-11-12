@@ -122,7 +122,7 @@ class AnanasSyncSettingsPage extends Page implements HasForms
 
     public function form(Form $form): Form
     {
-        $envLocked = filled(env('ANANAS_ENV'));
+        $envLocked = app(AnanasSyncSettings::class)->environmentLockedByConfig();
 
         return $form
             ->schema([

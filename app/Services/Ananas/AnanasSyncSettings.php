@@ -95,15 +95,24 @@ class AnanasSyncSettings
 
     public function environment(): string
     {
-        $fromEnv = env('ANANAS_ENV');
+        $configured = strtolower(trim((string) config('bnc.ananas_env', '')));
 
-        if (is_string($fromEnv) && trim($fromEnv) !== '') {
-            return strtolower(trim($fromEnv)) === self::ENV_PRODUCTION ? self::ENV_PRODUCTION : self::ENV_STAGE;
+        if ($configured === self::ENV_PRODUCTION) {
+            return self::ENV_PRODUCTION;
         }
 
-        $env = strtolower(trim((string) ($this->storedSettings()['environment'] ?? self::ENV_STAGE)));
+        if ($this->environmentLockedByConfig() && $configured === self::ENV_STAGE) {
+            return self::ENV_STAGE;
+        }
 
-        return $env === self::ENV_PRODUCTION ? self::ENV_PRODUCTION : self::ENV_STAGE;
+        $stored = strtolower(trim((string) ($this->storedSettings()['environment'] ?? '')));
+
+        return $stored === self::ENV_PRODUCTION ? self::ENV_PRODUCTION : self::ENV_STAGE;
+    }
+
+    public function environmentLockedByConfig(): bool
+    {
+        return (bool) config('bnc.ananas_env_locked', false);
     }
 
     /**

@@ -86,11 +86,7 @@ class AnanasDailyOrchestrator
 
     private function allowProduction(bool $manual): bool
     {
-        if (! $this->settings->isProduction()) {
-            return false;
-        }
-
-        return env('ANANAS_ENV') === AnanasSyncSettings::ENV_PRODUCTION;
+        return $this->settings->isProduction();
     }
 
     private function runCatalogChain(AnanasSyncRun $run, bool $manual): void
