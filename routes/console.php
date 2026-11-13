@@ -35,3 +35,7 @@ Schedule::command('bnc:ananas-daily price_stock')->dailyAt('00:25')->withoutOver
 Schedule::command('bnc:ananas-daily discounts')->dailyAt('02:30')->withoutOverlapping(90);
 Schedule::command('bnc:ananas-daily import')->dailyAt('08:00')->withoutOverlapping(90);
 Schedule::command('bnc:ananas-daily intraday_stock')->dailyAt('10:00')->withoutOverlapping(45);
+
+Schedule::command('bnc:ananas-pull-orders')->everyTenMinutes()->withoutOverlapping(8);
+Schedule::command('bnc:ananas-pull-orders')->dailyAt('00:20')->withoutOverlapping(8);
+Schedule::command('bnc:ananas-pull-orders')->dailyAt('09:55')->withoutOverlapping(8);

@@ -10,6 +10,8 @@ class AnanasRateLimiter
 
     public const CATEGORY_WAREHOUSES = 'warehouses';
 
+    public const CATEGORY_ORDERS = 'orders';
+
     /**
      * Enforce Ananas documented limits before an outbound request.
      *
@@ -18,7 +20,7 @@ class AnanasRateLimiter
     public function throttle(string $category = self::CATEGORY_PRODUCTS): void
     {
         $limits = match ($category) {
-            self::CATEGORY_WAREHOUSES => [
+            self::CATEGORY_WAREHOUSES, self::CATEGORY_ORDERS => [
                 'rps' => (int) config('bnc.ananas_rate_limit_warehouses_rps', 5),
                 'rpm' => (int) config('bnc.ananas_rate_limit_warehouses_rpm', 300),
             ],

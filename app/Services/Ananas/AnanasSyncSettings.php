@@ -46,7 +46,59 @@ class AnanasSyncSettings
                 self::ENV_STAGE => null,
                 self::ENV_PRODUCTION => null,
             ],
+            'orders_pull_enabled' => false,
+            'orders_pull_watermark' => null,
+            'orders_notify_since' => null,
         ];
+    }
+
+    public function isOrdersPullEnabled(): bool
+    {
+        return (bool) ($this->all()['orders_pull_enabled'] ?? false);
+    }
+
+    public function ordersPullWatermark(): ?\Carbon\Carbon
+    {
+        $raw = $this->all()['orders_pull_watermark'] ?? null;
+
+        if (! is_string($raw) || trim($raw) === '') {
+            return null;
+        }
+
+        try {
+            return \Carbon\Carbon::parse($raw);
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    public function setOrdersPullWatermark(\Carbon\Carbon $at): void
+    {
+        $all = $this->all();
+        $all['orders_pull_watermark'] = $at->toIso8601String();
+        $this->save($all);
+    }
+
+    public function ordersNotifySince(): ?\Carbon\Carbon
+    {
+        $raw = $this->all()['orders_notify_since'] ?? null;
+
+        if (! is_string($raw) || trim($raw) === '') {
+            return null;
+        }
+
+        try {
+            return \Carbon\Carbon::parse($raw);
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    public function enableOrdersNotifyFromNow(): void
+    {
+        $all = $this->all();
+        $all['orders_notify_since'] = now()->toIso8601String();
+        $this->save($all);
     }
 
     /**

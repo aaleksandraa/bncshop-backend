@@ -15,6 +15,7 @@ class AnanasLinkedProductSyncService
         private readonly AnanasEligibilityPolicy $eligibilityPolicy,
         private readonly PriceCalculator $priceCalculator,
         private readonly AnanasProductMappingService $mappingService,
+        private readonly AnanasCommittedStockService $committedStock,
     ) {}
 
     /**
@@ -728,7 +729,7 @@ class AnanasLinkedProductSyncService
             return null;
         }
 
-        $stockLevel = max(0, (int) $product->available_stock);
+        $stockLevel = $this->committedStock->effectiveStockLevelForAnanas($product);
         $stockHash = hash('sha256', (string) $stockLevel);
 
         if ($stockOnly) {

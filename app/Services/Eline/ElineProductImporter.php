@@ -178,6 +178,13 @@ class ElineProductImporter
         $product->eline_feed_hash = $this->feedHashForStorage($product, $item);
 
         $product->save();
+
+        $openAnanas = app(\App\Services\Ananas\AnanasCommittedStockService::class)
+            ->openQuantityForProduct((int) $product->id);
+        $product->available_stock = max(0, (int) $product->api_stock - (int) $product->reserved_stock - $openAnanas);
+        $product->stock_status = $product->available_stock > 0 ? 'store_available' : 'out_of_stock';
+        $product->save();
+
         $this->priceCalculator->recalculateAndPersist($product->fresh());
 
         $freshProduct = $product->fresh();

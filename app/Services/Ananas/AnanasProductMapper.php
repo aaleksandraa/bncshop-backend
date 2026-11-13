@@ -72,7 +72,7 @@ class AnanasProductMapper
             // Regular BNC sell price (VAT already in the number). Never displayPrice / akcija.
             'basePrice' => round($pricing->regularPrice, 2),
             'vat' => $this->eligibilityPolicy->resolvedVatRate(),
-            'stockLevel' => max(0, (int) $product->available_stock),
+            'stockLevel' => app(AnanasCommittedStockService::class)->effectiveStockLevelForAnanas($product),
             'sku' => $this->resolveSku($product),
             'externalId' => (string) $product->id,
             'productType' => $categoryMapping->ananas_product_type,

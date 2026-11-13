@@ -155,6 +155,85 @@ class AnanasApiClient
         return is_array($payload) ? $payload : [];
     }
 
+    public function defaultWarehouseAddressId(): ?int
+    {
+        $payload = $this->getWarehouses();
+        $rows = $this->normalizeListPayload($payload);
+
+        foreach ($rows as $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+
+            if ((bool) ($row['defaultAddress'] ?? $row['defaultAddres'] ?? false)) {
+                $id = (int) ($row['id'] ?? 0);
+
+                return $id > 0 ? $id : null;
+            }
+        }
+
+        $first = $rows[0] ?? null;
+
+        if (is_array($first)) {
+            $id = (int) ($first['id'] ?? 0);
+
+            return $id > 0 ? $id : null;
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $query
+     * @return array<string, mixed>
+     */
+    public function getOrdersPage(array $query = []): array
+    {
+        $payload = $this->getJson(
+            $this->settings->productBaseUrl(),
+            '/order/api/v1/merchant-integration/orders',
+            $query,
+            AnanasRateLimiter::CATEGORY_ORDERS,
+        );
+
+        return is_array($payload) ? $payload : [];
+    }
+
+    /**
+     * @param  array<string, mixed>  $query
+     * @return array<string, mixed>
+     */
+    public function getOutboundShipmentsPage(array $query): array
+    {
+        $payload = $this->getJson(
+            $this->settings->productBaseUrl(),
+            '/order/api/v1/merchant-integration/outbound-orders/shipments',
+            $query,
+            AnanasRateLimiter::CATEGORY_ORDERS,
+        );
+
+        return is_array($payload) ? $payload : [];
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $confirmedQuantities
+     * @return array{ok: bool, status: int}
+     */
+    public function confirmOrderQuantities(string $orderId, array $confirmedQuantities, bool $allowProduction = false): array
+    {
+        $this->writeGuard->assertAllowed($allowProduction);
+
+        $path = '/order/api/v1/merchant-integration/orders/'.rawurlencode($orderId).'/confirm';
+        $this->putJson(
+            $this->settings->productBaseUrl(),
+            $path,
+            $confirmedQuantities,
+            AnanasRateLimiter::CATEGORY_ORDERS,
+        );
+
+        return ['ok' => true, 'status' => 201];
+    }
+
     /**
      * @param  array<string, mixed>  $query
      * @return array<int, mixed>|array<string, mixed>

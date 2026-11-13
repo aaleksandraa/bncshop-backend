@@ -164,6 +164,9 @@ class AnanasSyncSettingsPage extends Page implements HasForms
                         Toggle::make('allow_catalog_writes')
                             ->label('Dozvoli catalog write API pozive')
                             ->helperText('Uključite prije live importa, probe i publish. Dry-run radi i bez ovoga. POST import ostaje blokiran dok je isključeno.'),
+                        Toggle::make('orders_pull_enabled')
+                            ->label('Povlačenje narudžbi')
+                            ->helperText('Svakih 10 minuta povlači Ananas narudžbe, šalje mail na prodaju i prilagođava zalihu. Podrazumijevano isključeno.'),
                         Select::make('vat_rate')
                             ->label('Ananas VAT (PDV)')
                             ->options([
@@ -192,6 +195,7 @@ class AnanasSyncSettingsPage extends Page implements HasForms
     public function save(AnanasSyncSettings $settings, AnanasApiClient $client): void
     {
         $state = $this->form->getState();
+        $wasOrdersPullEnabled = $settings->isOrdersPullEnabled();
 
         $settings->saveCredentials([
             'client_id' => $state['client_id'] ?? null,
@@ -205,6 +209,11 @@ class AnanasSyncSettingsPage extends Page implements HasForms
         }
 
         $settings->save($state);
+
+        if (! $wasOrdersPullEnabled && (bool) ($state['orders_pull_enabled'] ?? false)) {
+            $settings->enableOrdersNotifyFromNow();
+        }
+
         $client->clearTokenCache();
         $this->status = $settings->status();
 
